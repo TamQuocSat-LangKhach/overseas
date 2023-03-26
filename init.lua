@@ -669,13 +669,14 @@ local os__zhenjun = fk.CreateTriggerSkill{
     
     local target = room:getPlayerById(to)
     room:addPlayerMark(target, "_os__zhenjun_target", 1)
-    local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond", "#os__zhenjun_slash", true) --exppattern没有black，没有^
-    room:setPlayerMark(target, "_os__zhenjun_target", 0)
+    local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond", "#os__zhenjun_slash", true) --exppattern没有black，没有^。另外，丈八颜色判断有问题，贯石斧可以弃置自己。
     if use then
       room:useCard(use)
+      room:setPlayerMark(target, "_os__zhenjun_target", 0)
       local x = target:getMark("_os__zhenjun_damage") + 1
       player:drawCards(x, self.name)
     else
+      room:setPlayerMark(target, "_os__zhenjun_target", 0)
       local victim = room:askForChoosePlayers(
         player,
         table.map(
@@ -706,10 +707,11 @@ local os__zhenjun = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    return (target == player and player:getMark("_os__zhenjun_target") > 0)
+    return target == player and player:getMark("_os__zhenjun_target") > 0 and data.card and data.card.trueName == "slash"
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__zhenjun_damage", data.damage)
+    local room = player.room
+    room:addPlayerMark(player, "_os__zhenjun_damage", data.damage)
   end,
 }
 os__yujin:addSkill(os__zhenjun)
