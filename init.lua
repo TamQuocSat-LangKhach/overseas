@@ -425,7 +425,7 @@ local os__fenming = fk.CreateTriggerSkill{
     if not player.chained and room:askForChoice(player, {"beishui_os__fenming", "Cancel"}, self.name) == "beishui_os__fenming" then 
       player:setChainState(true)
       if not target:isNude() then room:askForDiscard(target, 1, 1, true, self.name, false) end
-      target:setChainState(true)
+      if not target.chained then target:setChainState(true) end
     else
       if target:isNude() or #room:askForDiscard(target, 1, 1, true, self.name, not target.chained) == 0 then --如果不能弃牌，或者可以弃牌但不弃牌（但如果处于连环状态则必须弃牌）
         target:setChainState(true)
@@ -914,7 +914,7 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
     local x = getSkillsNum(target)
     local choices = {"os__gongge_draw", "os__gongge_damage", "Cancel"}
     if #target:getCardIds(Player.Equip) + #target:getCardIds(Player.Hand) > x then table.insert(choices, 2, "os__gongge_discard") end
-    local choice = room:askForChoice(player, choices, self.name, "#os__gongge-choice")
+    local choice = room:askForChoice(player, choices, self.name, "#os__gongge-choice:::" .. x)
     if choice ~= "Cancel" then
       self.cost_data = {result, choice}
       return true
@@ -930,13 +930,13 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
     local x = getSkillsNum(target)
     if choice == "os__gongge_draw" then
       player:drawCards(x+1, self.name)
-      room:setPlayerMark(player, "@os__gongge", "gh_draw")
+      room:setPlayerMark(player, "@os__gongge", "gg_draw")
     elseif choice == "os__gongge_discard" then
       local cards = room:askForCardsChosen(player, target, x+1, x+1, "he", self.name)
       room:throwCard(cards, self.name, target, player)
-      room:setPlayerMark(player, "@os__gongge", "gh_discard")
+      room:setPlayerMark(player, "@os__gongge", "gg_discard")
     elseif choice == "os__gongge_damage" then
-      room:setPlayerMark(player, "@os__gongge", "gh_damage")
+      room:setPlayerMark(player, "@os__gongge", "gg_damage")
     end
   end,
 
@@ -944,7 +944,7 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
   can_refresh = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     if event == fk.CardUseFinished then
-      if player:getMark("@os__gongge") == "gh_draw" then
+      if player:getMark("@os__gongge") == "gg_draw" then
         local use = data
         local effect = use.responseToEvent
         return effect and effect.from == player.id and use.toCard
@@ -953,7 +953,7 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
         return (data.card.id and data.card.id == player:getMark("_os__gongge"))
       end
     else
-      return player:getMark("@os__gongge") == "gh_damage" and player:getMark("_os__gongge_target") == data.to.id
+      return player:getMark("@os__gongge") == "gg_damage" and player:getMark("_os__gongge_target") == data.to.id
     end
     return false
   end,
@@ -966,7 +966,7 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
           room:setPlayerMark(player, "@os__gongge", 0)
         end
         local x = getSkillsNum(target)
-        if player:getMark("@os__gongge") == "gh_discard" then
+        if player:getMark("@os__gongge") == "gg_discard" then
           if target.hp >= player.hp then
             local cids
             if #player:getCardIds(Player.Equip) + #player:getCardIds(Player.Hand) > x then
@@ -985,7 +985,7 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
               room:obtainCard(target, dummy, false, fk.ReasonGive)
             end
           end
-        elseif player:getMark("@os__gongge") == "gh_damage" then
+        elseif player:getMark("@os__gongge") == "gg_damage" then
           room:recover({
             who = target,
             num = x,
@@ -1015,14 +1015,14 @@ Fk:loadTranslationTable{
   "2、弃置其X+1张牌，此牌结算后，若其体力值不小于你，你交给其X张牌。3、此牌对其造成伤害+X，此牌结算后其回复X点体力。（X为其武将技能数）",
   ["#os__gongge-ask"] = "攻阁：你可对一名目标发动“攻阁”",
 
-  ["#os__gongge-choice"] = "攻阁：请选择一项（X为其武将技能数+1）",
-  ["os__gongge_draw"] = "摸X张牌",
-  ["os__gongge_discard"] = "弃置其X张牌",
-  ["os__gongge_damage"] = "伤害+X",
+  ["#os__gongge-choice"] = "攻阁：请选择一项（X=%arg）",
+  ["os__gongge_draw"] = "摸 X+1 张牌",
+  ["os__gongge_discard"] = "弃置其 X+1 张牌",
+  ["os__gongge_damage"] = "伤害 +X",
   ["@os__gongge"] = "攻阁",
-  ["gh_draw"] = "摸牌",
-  ["gh_discard"] = "弃牌",
-  ["gh_damage"] = "加伤",
+  ["gg_draw"] = "摸牌",
+  ["gg_discard"] = "弃牌",
+  ["gg_damage"] = "加伤",
 }
 
 Fk:loadTranslationTable{
