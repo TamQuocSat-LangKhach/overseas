@@ -641,7 +641,7 @@ Fk:loadTranslationTable{
   ["#os__shuaiyan-ask"] = "率言：你可展示所有手牌，选择一名其他角色，令其交给你一张牌",
 }
 
-local os__yujin = General(extension, "os__yujin", "qun", 4)
+local os__sp_yujin = General(extension, "os__sp_yujin", "qun", 4)
 local os__zhenjun = fk.CreateTriggerSkill{
   name = "os__zhenjun",
   anim_type = "control",
@@ -714,10 +714,10 @@ local os__zhenjun = fk.CreateTriggerSkill{
     room:addPlayerMark(player, "_os__zhenjun_damage", data.damage)
   end,
 }
-os__yujin:addSkill(os__zhenjun)
+os__sp_yujin:addSkill(os__zhenjun)
 
 Fk:loadTranslationTable{
-  ["os__yujin"] = "SP于禁",
+  ["os__sp_yujin"] = "SP于禁",
   ["os__zhenjun"] = "镇军",
   [":os__zhenjun"] = "出牌阶段开始时，你可以交给一名其他角色一张牌，令其使用一张非黑色的【杀】：若其执行，则此【杀】结算后你摸一张牌，若此【杀】造成过伤害，你额外摸伤害值数张牌；若其不执行，则你可对其或其攻击范围内的一名角色造成1点伤害。",
 
