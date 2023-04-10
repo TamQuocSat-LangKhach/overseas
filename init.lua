@@ -922,62 +922,72 @@ local os__gongge = fk.CreateTriggerSkill{ --对地主神技
       room:setPlayerMark(player, "@os__gongge", "gg_discard")
     elseif choice == "os__gongge_damage" then
       room:setPlayerMark(player, "@os__gongge", "gg_damage")
-      data.additionalDamage = (data.additionalDamage or 0) + x
+      --data.additionalDamage = (data.additionalDamage or 0) + x
     end
   end,
 
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardUseFinished, fk.DamageCaused},
   can_refresh = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return false end
-    if player:getMark("@os__gongge") == "gg_draw" then
-      local use = data
-      local effect = use.responseToEvent
-      return effect and effect.from == player.id and use.toCard
+    if not player:hasSkill(self.name) or not target == player then return false end
+    if event == fk.CardUseFinished then
+      if player:getMark("@os__gongge") == "gg_draw" then
+        local use = data
+        local effect = use.responseToEvent
+        return effect and effect.from == player.id and use.toCard
+      end
+      if player:getMark("@os__gongge") ~= 0 then
+        return (data.card.id and data.card.id == player:getMark("_os__gongge"))
+      end
+      return false
+    else
+      if player:getMark("@os__gongge") == "gg_damage" and data.to.id == player:getMark("_os__gongge_target") then
+        return true
+      end
     end
-    if player:getMark("@os__gongge") ~= 0 then
-      return (data.card.id and data.card.id == player:getMark("_os__gongge"))
-    end
-    return false
   end,
   on_refresh = function(self, event, target, player, data)
-    if data.card.id and data.card.id == player:getMark("_os__gongge") then
-      local room = player.room
-      local target = room:getPlayerById(player:getMark("_os__gongge_target"))
-      if not target:isAlive() then
-        room:setPlayerMark(player, "@os__gongge", 0)
-      end
-      local x = getSkillsNum(target)
-      if player:getMark("@os__gongge") == "gg_discard" then
-        if target.hp >= player.hp then
-          local cids
-          if #player:getCardIds(Player.Equip) + #player:getCardIds(Player.Hand) > x then
-            cids = room:askForCard(player, x, x, true, self.name, false, "", "#os__gongge-cards::" .. target.id .. ":" .. x)
-          else
-            cids = player:getCardIds(Player.Hand)
-            table.insertTable(cids, player:getCardIds(Player.Equip))
-          end
-          local cards = table.map(cids, function(p) 
-            return Fk:getCardById(p)
-          end)
-          
-          if #cards > 0 then
-            local dummy = Fk:cloneCard'slash'
-            dummy:addSubcards(cards)
-            room:obtainCard(target, dummy, false, fk.ReasonGive)
-          end
+    if event == fk.CardUseFinished then
+      if data.card.id and data.card.id == player:getMark("_os__gongge") then
+        local room = player.room
+        local target = room:getPlayerById(player:getMark("_os__gongge_target"))
+        if not target:isAlive() then
+          room:setPlayerMark(player, "@os__gongge", 0)
         end
-      elseif player:getMark("@os__gongge") == "gg_damage" then
-        room:recover({
-          who = target,
-          num = x,
-          recoverBy = target,
-          skillName = self.name,
-        })
+        local x = getSkillsNum(target)
+        if player:getMark("@os__gongge") == "gg_discard" then
+          if target.hp >= player.hp then
+            local cids
+            if #player:getCardIds(Player.Equip) + #player:getCardIds(Player.Hand) > x then
+              cids = room:askForCard(player, x, x, true, self.name, false, "", "#os__gongge-cards::" .. target.id .. ":" .. x)
+            else
+              cids = player:getCardIds(Player.Hand)
+              table.insertTable(cids, player:getCardIds(Player.Equip))
+            end
+            local cards = table.map(cids, function(p) 
+              return Fk:getCardById(p)
+            end)
+            
+            if #cards > 0 then
+              local dummy = Fk:cloneCard'slash'
+              dummy:addSubcards(cards)
+              room:obtainCard(target, dummy, false, fk.ReasonGive)
+            end
+          end
+        elseif player:getMark("@os__gongge") == "gg_damage" then
+          room:recover({
+            who = target,
+            num = x,
+            recoverBy = target,
+            skillName = self.name,
+          })
+        end
+        room:setPlayerMark(player, "@os__gongge", 0)
+      else
+        player:skip(Player.Draw)
+        player.room:setPlayerMark(player, "@os__gongge", 0)
       end
-      room:setPlayerMark(player, "@os__gongge", 0)
     else
-      player:skip(Player.Draw)
-      player.room:setPlayerMark(player, "@os__gongge", 0)
+      data.damage = data.damage + getSkillsNum(data.to)
     end
   end,
 }
@@ -1827,7 +1837,180 @@ Fk:loadTranslationTable{
   ["#os__xiafeng"] = "黠凤：本回合使用的前X张牌无距离和次数限制且不能被响应，手牌上限+X",
 }
 
+local nashime = General(extension, "nashime", "qun", 3)
 
+local os__chijie = fk.CreateTriggerSkill{
+  name = "os__chijie",
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local kingdoms = {}
+    for _, p in ipairs(player.room:getAlivePlayers()) do
+      table.insertIfNeed(kingdoms, p.kingdom)
+    end
+    table.insert(kingdoms, "Cancel")
+    local choice = player.room:askForChoice(player, kingdoms, self.name, "#os__chijie-choose")
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    player.kingdom = self.cost_data
+    player.room:broadcastProperty(player, "kingdom")
+  end,
+}
+
+local os__waishi = fk.CreateActiveSkill{
+  name = "os__waishi",
+  anim_type = "control",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark("@os__waishi_times") + 1
+  end,
+  card_filter = function(self, to_select, selected)
+    local kingdoms = {}
+    table.insertIfNeed(kingdoms, Self.kingdom)
+    local player = Self.next
+    while player.id ~= Self.id do --getAliveSiblings
+      if not player.dead then table.insertIfNeed(kingdoms, player.kingdom) end
+      player = player.next
+    end
+    return #selected < #kingdoms 
+  end,
+  min_card_num = 1,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id and #selected_cards > 0 then
+      local to = Fk:currentRoom():getPlayerById(to_select)
+      return to:getHandcardNum() + #to:getCardIds(Player.Equip) >= #selected_cards
+    end
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cids = target:getCardIds(Player.Hand)
+    table.insertTable(cids, target:getCardIds(Player.Equip))
+    
+    local card_ids = {}
+    for i = 1, #effect.cards, 1 do
+      if #cids > 0 then
+        local id = cids[math.random(1, #cids)]
+        table.insert(card_ids, id)
+        table.removeOne(cids, id)
+      end
+    end
+    room:moveCards(
+      {
+        ids = effect.cards,
+        from = effect.from,
+        to = effect.tos[1],
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonGive,
+        proposer = player.id,
+        skillName = self.name,
+      },
+      {
+        ids = card_ids,
+        from = effect.tos[1],
+        to = effect.from,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonGive,
+        proposer = player.id,
+        skillName = self.name,
+      }
+    )
+    if target.kingdom == player.kingdom or target:getHandcardNum() > player:getHandcardNum() then
+      player:drawCards(1, self.name)
+    end
+  end,
+}
+
+local os__renshe = fk.CreateTriggerSkill{
+  name = "os__renshe",
+  events = {fk.Damaged},
+  anim_type = "masochism",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local choices = {"os__waishi_times", "os__renshe_draw", "Cancel"}
+    local room = player.room
+    if not table.every(room:getOtherPlayers(player), function(p)
+      return p.kingdom == player.kingdom
+    end) then
+      table.insert(choices, 1, "os__renshe_change")
+    end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = self.cost_data
+    if choice == "os__waishi_times" then
+      room:addPlayerMark(player, "@os__waishi_times", 1)
+    else
+      if choice == "os__renshe_change" then
+        local kingdoms = {}
+        for _, p in ipairs(room:getAlivePlayers()) do
+          table.insertIfNeed(kingdoms, p.kingdom)
+        end
+        table.removeOne(kingdoms, player.kingdom)
+        player.kingdom = room:askForChoice(player, kingdoms, self.name, "#os__chijie-choose")
+        room:broadcastProperty(player, "kingdom")
+      else
+        local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
+          return p.id
+        end), 1, 1, "#os__renshe-target", self.name, false)
+        if #target > 0 then
+          local to = room:getPlayerById(target[1])
+          for _, p in ipairs(room:getAlivePlayers()) do --为了按照行动顺序
+            if p == to or p == player then
+              p:drawCards(1, self.name)
+            end
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Play and player:getMark("@os__waishi_times") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@os__waishi_times", 0)
+  end,
+}
+
+nashime:addSkill(os__chijie)
+nashime:addSkill(os__waishi)
+nashime:addSkill(os__renshe)
+
+Fk:loadTranslationTable{
+  ["nashime"] = "难升米",
+  ["os__chijie"] = "持节",
+  [":os__chijie"] = "游戏开始时，你可将你的势力改为现存的一个势力。",
+  ["os__waishi"] = "外使",
+  [":os__waishi"] = "出牌阶段限一次，你可选择至多X张牌，并选择一名其他角色，令系统选择其X张牌（X为现存势力数），你与其交换这些牌，然后若其与你势力相同或手牌多于你，你摸一张牌。",
+  ["os__renshe"] = "忍涉",
+  [":os__renshe"] = "当你受到伤害后，你可选择一项：1.将势力改为现存的另一个势力；2.令〖外使〗的发动次数上限于你的出牌阶段结束前+1；3.与一名其他角色各摸一张牌。",
+
+  ["#os__chijie-choose"] = "持节：你可更改你的势力",
+  ["@os__chijie"] = "持节",
+  ["@chijie_general"] = "持节",
+  ["os__renshe_change"] = "将势力改为现存的另一个势力",
+  ["os__waishi_times"] = "令〖外使〗的发动次数上限于你的出牌阶段结束前+1",
+  ["@os__waishi_times"] = "外使次数+",
+  ["os__renshe_draw"] = "与一名其他角色各摸一张牌",
+  ["#os__renshe-target"] = "忍涉：选择一名其他角色，与其各摸一张牌",
+}
 
 
 
