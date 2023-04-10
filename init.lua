@@ -474,7 +474,7 @@ local os__zhuidu = fk.CreateActiveSkill{
       --if room:askForChoice(target, choices, self.name) == "os__zhuidu_equip" then
         --local card = room:askForCardChosen(target, target, "e", self.name)
         --room:throwCard(card, self.name, target, target)
-      if not room:askForDiscard(target, 1, 1, true, self.name, true, ".|.|.|equip", "#os__chuidu-discard2::" .. player.id) then
+      if #target:getCardIds(Player.Equip) < 1 or #room:askForDiscard(target, 1, 1, true, self.name, true, ".|.|.|equip", "#os__chuidu-discard2::" .. player.id) == 0 then
         room:damage{
           from = player,
           to = target,
