@@ -1757,14 +1757,17 @@ local os__xiafeng = fk.CreateTriggerSkill{
 local os__xiafeng_disres = fk.CreateTriggerSkill{
   name = "#os__xiafeng_disres",
   mute = true,
+  anim_type = "offensive",
   frequency = Skill.Compulsory,
-  --events = {fk.TargetSpecified, fk.AfterCardUseDeclared},
-  events = {fk.TargetSpecified},
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("_os__xiafeng_count") <= player:getMark("_os__xiafeng") and player:getMark("_os__xiafeng") > 0
   end,
   on_use = function(self, event, target, player, data)
-    data.disresponsive = true
+    data.disresponsiveList = data.disresponsiveList or {}
+    for _, target in ipairs(player.room:getAlivePlayers()) do
+      table.insertIfNeed(data.disresponsiveList, target.id)
+    end
   end,
 }
 
