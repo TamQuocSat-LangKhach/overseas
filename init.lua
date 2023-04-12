@@ -3332,7 +3332,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
   name = "#os__shelie_extra",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and string.len(player:getMark("@os__shelie-turn")) >= player.hp + 1 and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and (string.len(player:getMark("@os__shelie-turn")) + 1 ) / 2 >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#os__shelie_extra-ask")
