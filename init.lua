@@ -920,7 +920,7 @@ local os__zhenjun = fk.CreateTriggerSkill{
     local prompt = "#os__zhenjun-target"
     local plist, cid = room:askForChooseCardAndPlayers(player, table.map(room:getOtherPlayers(player), function(p)
       return p.id
-    end), 1, 1, nil, prompt, self.name)
+    end), 1, 1, nil, prompt, self.name, true)
     if #plist > 0 then
       self.cost_data = {plist[1], cid}
       return true
@@ -934,7 +934,7 @@ local os__zhenjun = fk.CreateTriggerSkill{
     
     local target = room:getPlayerById(to)
     room:addPlayerMark(target, "_os__zhenjun_target", 1)
-    local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond,nonsuit", "#os__zhenjun_slash", true) --exppattern没有black，没有^。另外，丈八颜色判断有问题，贯石斧可以弃置自己。
+    local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond,nonsuit", "#os__zhenjun_slash", true) --exppattern没有black，没有^
     if use then
       room:useCard(use)
       room:setPlayerMark(target, "_os__zhenjun_target", 0)
@@ -3070,8 +3070,9 @@ local os__shepan = fk.CreateTriggerSkill{
     end
     if player:getHandcardNum() == from:getHandcardNum() then
       player:addSkillUseHistory(self.name, -1)
-      room:askForChoice(player, {"os__shepan_nullify", "Cancel"}, self.name, "#os__shepan_nullify:::" .. data.card.name)
-      table.insertIfNeed(data.nullifiedTargets, player.id)
+      if room:askForChoice(player, {"os__shepan_nullify", "Cancel"}, self.name, "#os__shepan_nullify:::" .. data.card.name) == "os__shepan_nullify" then
+        table.insertIfNeed(data.nullifiedTargets, player.id)
+      end
     end
   end,
 }
@@ -3390,6 +3391,7 @@ local os__gongxin = fk.CreateActiveSkill{
     local num = #card_suits
     local id = room:askForAG(player, cids, true, self.name)
     room:closeAG(player)
+    if not id then return false end
     local choice = room:askForChoice(player, {"os__gongxin_discard", "os__gongxin_put", "Cancel"}, self.name, "#os__gongxin-treat:::" .. Fk:getCardById(id).name)
     if choice == "os__gongxin_discard" then
       room:throwCard({id}, self.name, target, player)
@@ -3464,6 +3466,8 @@ Fk:loadTranslationTable{
   ["os__gongxin_put"] = "置于牌堆顶",
   ["#os__gongxin-ask"] = "攻心：你可令 %dest 本回合无法使用或打出一种颜色的牌",
   ["@os__gongxin-turn"] = "攻心",
+  ["red+black"] = '<font color="#CC3131">红色</font>黑色',
+  ["black+red"] = '黑色<font color="#CC3131">红色</font>', --额？
 }
 
 Fk:loadTranslationTable{
