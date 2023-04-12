@@ -1519,7 +1519,7 @@ local os__jiaohua = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local pile = room.draw_pile
+    local pile = table.clone(room.draw_pile)
     table.insertTable(pile, room.discard_pile)
     local types = string.split(self.cost_data[2], ",")
     --local card = {getCardByPattern(room, ".|.|.|.|.|" .. self.cost_data[2], pile)}
