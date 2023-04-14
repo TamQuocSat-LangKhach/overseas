@@ -2241,28 +2241,30 @@ local os__hongju = fk.CreateTriggerSkill{
     player:drawCards(#player:getPile("os__glory"), self.name)
     local os__glory = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, ".|.|.|os__glory", "#os__hongju_card1", "os__glory")
     local num = #os__glory
-    local cids = room:askForCard(player, num, num, false, self.name, false, ".|.|.|hand", "#os__hongju_card2:::" .. tostring(num), nil)
-    room:moveCards( 
-      {
-        ids = os__glory,
-        from = player.id,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      },
-      {
-        ids = cids,
-        from = player.id,
-        to = player.id,
-        toArea = Card.PlayerSpecial,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        specialName = "os__glory",
-        skillName = self.name,
-      }
-    )
+    if num > 0 then
+      local cids = room:askForCard(player, num, num, false, self.name, false, ".|.|.|hand", "#os__hongju_card2:::" .. tostring(num), nil)
+      room:moveCards( 
+        {
+          ids = os__glory,
+          from = player.id,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonExchange,
+          proposer = player.id,
+          skillName = self.name,
+        },
+        {
+          ids = cids,
+          from = player.id,
+          to = player.id,
+          toArea = Card.PlayerSpecial,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          specialName = "os__glory",
+          skillName = self.name,
+        }
+      )
+    end
     room:handleAddLoseSkills(player, "os__qingce", nil)
     local choices = {"os__hongju_saotao", "Cancel"}
     if room:askForChoice(player, choices, self.name) == "os__hongju_saotao" then
