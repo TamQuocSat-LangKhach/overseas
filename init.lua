@@ -3722,14 +3722,21 @@ local os__juchen = fk.CreateTriggerSkill{
     local room = player.room
     local promt = "#os__juchen-ask::" .. player.id
     local dummy = Fk:cloneCard("dilu")
+    local ids = {}    
     for _, p in ipairs(room:getAlivePlayers()) do
       local cids = room:askForDiscard(p, 1, 1, true, self.name, false, nil, promt)
       
       if #cids > 0 then
         local id = cids[1]
         if Fk:getCardById(id).color == Card.Red then
-          dummy:addSubcard(id)
+          --dummy:addSubcard(id)
+          table.insert(ids, id)
         end
+      end
+    end
+    for _, id in ipairs(ids) do
+      if room:getCardArea(id) == Card.DiscardPile then
+        dummy:addSubcard(id)
       end
     end
     room:obtainCard(player, dummy, true, fk.ReasonJustMove) --?
@@ -3748,7 +3755,7 @@ Fk:loadTranslationTable{
   "<br></br>在施法技能的发动时机点，若你身上没有与该技能同名的施法标记，则你可发动此技能。" ..
   "<br></br>发动时你可以选择一个1-3之间的数字X，你获得该技能名的施法标记“X-X”，当一个角色的回合结束时，第二个X-1。当第二个X=0时，对应触发此技能的结算效果。</font>",
   ["os__juchen"] = "聚尘",
-  [":os__juchen"] = "结束阶段开始时，若你的手牌数和体力值均非全场最大，你可令所有角色弃置一张牌，然后你获得其中的红色牌。",
+  [":os__juchen"] = "结束阶段开始时，若你的手牌数和体力值均非全场最大，你可令所有角色弃置一张牌，然后你获得其中处于弃牌堆中的红色牌。",
 
   ["@os__xingzhui"] = "星坠",
   ["#os__xingzhui-ask"] = "星坠：你可令一名其他角色获得其中的黑色牌",
