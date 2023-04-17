@@ -3044,7 +3044,7 @@ local os__wushen_trg = fk.CreateTriggerSkill{
       elseif data.card.suit == Card.Heart then
         local targets = {}
         for _, p in ipairs(player.room:getOtherPlayers(player)) do
-          if p:getMark("@os__nightmare") > 0 and not table.contains(data.tos, p.id) then --(TargetGroup:getRealTargets(data.tos), p.id)
+          if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) then
             table.insert(targets, p.id)
           end
         end
@@ -4329,9 +4329,11 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
       return p.id end)
     if #targets == 0 then return false end
     local color = Fk:getCardById(card[1]):getColorString()
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#qianxi-choose:::" .. color, self.name, false)[1]
-    room:setPlayerMark(room:getPlayerById(to), "@qianxi-turn", color)
-    room:setPlayerMark(player, "_os_ex__qianxi_target-turn", to)
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#qianxi-choose:::" .. color, self.name, false)
+    if #to > 0 then
+      room:setPlayerMark(room:getPlayerById(to[1]), "@qianxi-turn", color)
+      room:setPlayerMark(player, "_os_ex__qianxi_target-turn", to)
+    end
   end,
 
   refresh_events = {fk.Damage, fk.EventPhaseChanging, fk.EventPhaseStart},
