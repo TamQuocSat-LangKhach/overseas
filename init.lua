@@ -3601,181 +3601,7 @@ Fk:loadTranslationTable{
 }
 
 
---[[local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
 
-local os__muyue = fk.CreateActiveSkill{
-  name = "os__muyue",
-  anim_type = "drawcard",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
-  end,
-  card_num = function() return Self:getMark("os__muyue_status") + 1 end,
-  card_filter = function(self, to_select, selected)
-    return #selected < Self:getMark("os__muyue_status") + 1
-  end,
-  interaction = 
-    local allCardNames = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick) then
-        table.insertIfNeed(allCardNames, card.trueName)
-      end
-    end
-
-    if #allCardNames == 0 then
-      return nil
-    end
-    UI.ComboBox{
-      choices = {"slash", "jink", "peach", "analeptic", "duel", "savage_assault", "archery_attack", "fire_attack", "dismantlement", "snatch", "collateral", "nullification", "ex_nihilo", "amazing_grace", "god_salvation", "iron_chain"}
-    }
-  ,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and #selected_cards == Self:getMark("os__muyue_status") + 1 and self.interaction.data
-  end,
-  target_num = 1,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local name = self.interaction.data
-    if #effect.cards > 0 and Fk:getCardById(effect.cards[1]).trueName == name then 
-      room:setPlayerMark(player, "os__muyue_status", -1)
-    else
-      room:setPlayerMark(player, "os__muyue_status", 0)
-    end
-    room:throwCard(effect.cards, self.name, player)
-    local card = {getCardByPattern(room, name)}
-    if #card > 0 then
-      room:moveCards({
-        ids = card,
-        to = target.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-      })
-    end
-  end,
-}
-
-local os__chayi = fk.CreateTriggerSkill{
-  name = "os__chayi",
-  anim_type = "control",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local target = room:askForChoosePlayers(
-      player,
-      table.map(room:getOtherPlayers(player), function(p)
-        return p.id
-      end),
-      1,
-      1,
-      "#os__chayi-ask",
-      self.name,
-      true
-    )
-
-    if #target > 0 then
-      self.cost_data = target[1]
-      return true
-    end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local target = room:getPlayerById(self.cost_data)
-    local choices = {"os__chayi_discard"}
-    if target:getHandcardNum() > 0 then table.insert(choices, 1, "os__chayi_show") end
-    local choice = room:askForChoice(target, choices, self.name, "#os__chayi-choice")
-    local cids = target:getCardIds(Player.Hand)
-    room:addPlayerMark(target, "_os__chayi", 1)
-    if choice == "os__chayi_show" then
-      target:showCards(cids)
-      room:setPlayerMark(target, "@os__chayi_show", tostring(#cids)) --如果为0，所以要用字符串
-    else
-      room:setPlayerMark(target, "@os__chayi_discard", tostring(#cids))
-      room:setPlayerMark(target, "_os__chayi_discarded", 0)
-    end
-  end,
-
-  refresh_events = {fk.EventPhaseChanging, fk.CardUsing},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseChanging then
-      return player == target and data.to == Player.NotActive and player:getMark("_os__chayi") > 0
-    else
-      return target == player and player:getMark("_os__chayi") > 0 and (player:getMark("@os__chayi_discard") ~= 0 or player:getMark("@@os__chayi_discard") > 0) and player:getMark("_os__chayi_discarded") < 1
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.EventPhaseChanging then
-      room:setPlayerMark(player, "_os__chayi", 0)
-      if player:getMark("@os__chayi_show") ~= 0 then --如果有至少两个陈震……
-        if player:getHandcardNum() ~= tonumber(player:getMark("@os__chayi_show")) then
-          room:setPlayerMark(player, "@@os__chayi_discard", 1)
-          room:setPlayerMark(target, "_os__chayi_discarded", 0)
-        end
-        room:setPlayerMark(player, "@os__chayi_show", 0)
-      elseif player:getMark("@os__chayi_discard") ~= 0 then
-        if player:getHandcardNum() ~= tonumber(player:getMark("@os__chayi_discard")) then
-          player:showCards(player:getCardIds(Player.Hand))
-        end
-        room:setPlayerMark(player, "@os__chayi_discard", 0)
-      end
-    else
-      room:setPlayerMark(player, "_os__chayi_discarded", 1)
-      room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__chayi-discard")
-      if player:getMark("@@os__chayi_discard") > 0 then
-        room:setPlayerMark(player, "@@os__chayi_discard", 0)
-      end
-    end
-  end,
-}
-
-local os__chayi_using = fk.CreateTriggerSkill{
-  name = "#os__chayi_using",
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    if target == player and player:getMark("_os__chayi") > 0 then
-      if player:getMark("@os__chayi_discard") ~= 0 and player:getMark("_os__chayi_discarded") < 1 then self:doCost(event, target, player, data) end
-      if player:getMark("@@os__chayi_discard") > 0 and player:getMark("_os__chayi_discarded") < 1 then self:doCost(event, target, player, data) end
-    end
-    return false
-  end,
-  on_cost = function() return true end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "_os__chayi_discarded", 1)
-    room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__chayi-discard")
-    if player:getMark("@@os__chayi_discard") > 0 then
-      room:setPlayerMark(player, "@@os__chayi_discard", 0)
-    end
-  end,
-}
-
-os__chenzhen:addSkill(os__muyue)
-os__chayi:addRelatedSkill(os__chayi_using)
-os__chenzhen:addSkill(os__chayi)
-
-Fk:loadTranslationTable{
-  ["os__chenzhen"] = "陈震",
-  ["os__muyue"] = "睦约",
-  [":os__muyue"] = "出牌阶段限一次，你选择一个基本牌或普通锦囊牌的牌名，弃置一张牌并选择一名角色，令其从牌堆中获得该牌名的牌。若你弃置的牌的牌名与该牌名相同，你下次发动此技能无需弃牌。",
-  ["os__chayi"] = "察异",
-  [":os__chayi"] = "结束阶段开始时，你可令一名其他角色选择一项：1. 展示其手牌；2. 其下一次使用牌时弃置一张牌。其下回合结束前，若其手牌数与你选择该角色时不同，则该角色执行另一项。",
-
-  ["#os__chayi-ask"] = "你可对一名其他角色发动“察异”",
-  ["#os__chayi-choice"] = "察异：你的下回合结束前，若你的手牌数与此时不同，你执行此时选择的另一项",
-  ["os__chayi_show"] = "展示手牌",
-  ["os__chayi_discard"] = "下一次使用牌时弃置一张牌",
-  ["@os__chayi_show"] = "察异 展示",
-  ["@os__chayi_discard"] = "察异 弃牌",
-  ["#os__chayi-discard"] = "察异：你使用了一张牌，须弃置一张牌",
-  ["@@os__chayi_discard"] = "察异 弃牌",
-}]]
 
 --[[local wangyue = General(extension, "wangyue", "qun", 4)
 
@@ -5165,6 +4991,17 @@ os_ex__handang:addSkill(os_ex__gongqi)
 os_ex__jiefan:addRelatedSkill(os_ex__jiefan_re)
 os_ex__handang:addSkill(os_ex__jiefan)
 
+Fk:loadTranslationTable{
+  ["os_ex__handang"] = "界韩当",
+  ["os_ex__gongqi"] = "弓骑",
+  [":os_ex__gongqi"] = "你的攻击范围无限。出牌阶段限一次，你可弃置一张牌，你于此阶段内使用与弃置的牌花色相同的【杀】无次数限制。若弃置的为装备牌，你可弃置一名其他角色的一张牌。",
+  ["os_ex__jiefan"] = "解烦",
+  [":os_ex__jiefan"] = "限定技，出牌阶段，你可选择一名角色，令能攻击到该角色的所有角色选择一项：1.弃置一张武器牌；2.令该角色摸一张牌。若你上一次发动〖解烦〗的目标角色进入了濒死状态，则此技能视为未发动过。",
+  
+  ["#os_ex__gongqi-ask"] = "弓骑：你可弃置一名其他角色的一张牌",
+  ["#os_ex__jiefan-discard"] = "解烦：弃置一张武器牌，否则 %dest 摸一张牌",
+}
+
 local os__zangba = General(extension, "os__zangba", "wei", 4)
 
 local os__hanyu = fk.CreateTriggerSkill{
@@ -5251,16 +5088,156 @@ Fk:loadTranslationTable{
   [":os__hanyu"] = "锁定技，游戏开始时，你从牌堆获得不同类别的牌各一张。",
   ["os__hengjiang"] = "横江",
   [":os__hengjiang"] = "出牌阶段限一次，你使用基本牌或普通锦囊牌指定唯一目标后，你可将此牌的目标改为攻击范围内的所有角色，此牌结算结束后你摸X张牌（X为响应此牌的角色数）。",
+}
 
-  ["os_ex__handang"] = "界韩当",
-  ["os_ex__gongqi"] = "弓骑",
-  [":os_ex__gongqi"] = "你的攻击范围无限。出牌阶段限一次，你可弃置一张牌，你于此阶段内使用与弃置的牌花色相同的【杀】无次数限制。若弃置的为装备牌，你可弃置一名其他角色的一张牌。",
-  ["os_ex__jiefan"] = "解烦",
-  [":os_ex__jiefan"] = "限定技，出牌阶段，你可选择一名角色，令能攻击到该角色的所有角色选择一项：1.弃置一张武器牌；2.令该角色摸一张牌。若你上一次发动〖解烦〗的目标角色进入了濒死状态，则此技能视为未发动过。",
-  
-  ["#os_ex__gongqi-ask"] = "弓骑：你可弃置一名其他角色的一张牌",
-  ["#os_ex__jiefan-discard"] = "解烦：弃置一张武器牌，否则 %dest 摸一张牌",
+local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
 
+local os__muyue = fk.CreateActiveSkill{
+  name = "os__muyue",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_num = function() return Self:getMark("os__muyue_status") + 1 end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self:getMark("os__muyue_status") + 1
+  end,
+  interaction = UI.ComboBox{ choices = {"slash", "jink", "peach", "analeptic", "duel", "savage_assault", "archery_attack", "fire_attack", "dismantlement", "snatch", "collateral", "nullification", "ex_nihilo", "amazing_grace", "god_salvation", "iron_chain"} },
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and #selected_cards == Self:getMark("os__muyue_status") + 1 and self.interaction.data
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local name = self.interaction.data
+    if #effect.cards > 0 and Fk:getCardById(effect.cards[1]).trueName == name then 
+      room:setPlayerMark(player, "os__muyue_status", -1)
+    else
+      room:setPlayerMark(player, "os__muyue_status", 0)
+    end
+    room:throwCard(effect.cards, self.name, player)
+    local card = {getCardByPattern(room, name)}
+    if #card > 0 then
+      room:moveCards({
+        ids = card,
+        to = target.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+  end,
+}
+
+local os__chayi = fk.CreateTriggerSkill{
+  name = "os__chayi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local target = room:askForChoosePlayers(
+      player,
+      table.map(room:getOtherPlayers(player), function(p)
+        return p.id
+      end),
+      1,
+      1,
+      "#os__chayi-ask",
+      self.name,
+      true
+    )
+
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local target = room:getPlayerById(self.cost_data)
+    local choices = {"os__chayi_discard"}
+    if target:getHandcardNum() > 0 then table.insert(choices, 1, "os__chayi_show") end
+    local choice = room:askForChoice(target, choices, self.name, "#os__chayi-choice")
+    local cids = target:getCardIds(Player.Hand)
+    room:addPlayerMark(target, "_os__chayi", 1)
+    if choice == "os__chayi_show" then
+      target:showCards(cids)
+      room:setPlayerMark(target, "@os__chayi_show", tostring(#cids)) --如果为0，所以要用string
+    else
+      room:setPlayerMark(target, "@os__chayi_discard", tostring(#cids))
+      room:setPlayerMark(target, "_os__chayi_discarded", 0)
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseChanging},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data.to == Player.NotActive and player:getMark("_os__chayi") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "_os__chayi", 0)
+    if player:getMark("@os__chayi_show") ~= 0 then
+      if player:getHandcardNum() ~= tonumber(player:getMark("@os__chayi_show")) then
+        room:setPlayerMark(player, "@@os__chayi_discard", 1)
+        room:setPlayerMark(target, "_os__chayi_discarded", 0)
+      end
+      room:setPlayerMark(player, "@os__chayi_show", 0)
+    end
+    if player:getMark("@os__chayi_discard") ~= 0 then
+      if player:getHandcardNum() ~= tonumber(player:getMark("@os__chayi_discard")) then
+        player:showCards(player:getCardIds(Player.Hand))
+      end
+      room:setPlayerMark(player, "@os__chayi_discard", 0)
+    end
+  end,
+}
+
+local os__chayi_using = fk.CreateTriggerSkill{
+  name = "#os__chayi_using",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("_os__chayi") > 0 and (player:getMark("@os__chayi_discard") ~= 0 or player:getMark("@@os__chayi_discard") > 0) and player:getMark("_os__chayi_discarded") < 1
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "_os__chayi_discarded", 1)
+    if not player:isNude() then
+      room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__chayi-discard")
+    end
+    room:setPlayerMark(player, "@@os__chayi_discard", 0)
+  end,
+}
+
+os__chenzhen:addSkill(os__muyue)
+os__chayi:addRelatedSkill(os__chayi_using)
+os__chenzhen:addSkill(os__chayi)
+
+Fk:loadTranslationTable{
+  ["os__chenzhen"] = "陈震",
+  ["os__muyue"] = "睦约",
+  [":os__muyue"] = "出牌阶段限一次，你选择一个基本牌或普通锦囊牌的牌名，弃置一张牌并选择一名角色，令其从牌堆中获得该牌名的牌。若你弃置的牌的牌名与该牌名相同，你下次发动此技能无需弃牌。",
+  ["os__chayi"] = "察异",
+  [":os__chayi"] = "结束阶段开始时，你可令一名其他角色选择一项：1. 展示其手牌；2. 其下一次使用牌时弃置一张牌。其下回合结束前，若其手牌数与你选择该角色时不同，则该角色执行另一项。",
+
+  ["#os__chayi-ask"] = "你可对一名其他角色发动“察异”",
+  ["#os__chayi-choice"] = "察异：你的下回合结束前，若你的手牌数与此时不同，你执行此时选择的另一项",
+  ["os__chayi_show"] = "展示手牌",
+  ["os__chayi_discard"] = "下一次使用牌时弃置一张牌",
+  ["@os__chayi_show"] = "察异 展示",
+  ["@os__chayi_discard"] = "察异 弃牌",
+  ["#os__chayi-discard"] = "察异：你使用了一张牌，须弃置一张牌",
+  ["@@os__chayi_discard"] = "察异 弃牌",
+  ["#os__chayi_using"] = "察异",
+}
+
+Fk:loadTranslationTable{
   ["yanxiang"] = "阎象",
   ["os__kujian"] = "苦谏",
   [":os__kujian"] = "出牌阶段限一次，你可将至多三张手牌标记为“谏”并交给一名其他角色。当其他角色使用或打出“谏”牌后，你与其各摸一张牌。当其他角色非因使用或打出从手牌区失去“谏”牌后，你与其各弃置一张牌。",
