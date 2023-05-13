@@ -464,10 +464,10 @@ local os__sidai = fk.CreateViewAsSkill{
 local os__sidai_tm = fk.CreateTargetModSkill{
   name = "#os__sidai_tm",
   residue_func = function(self, player, skill, scope, card)
-    return skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and table.contains(card.skillNames, "os__sidai") and 999 or 0
+    return skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "os__sidai") and 999 or 0
   end,
-  distance_limit_func = function(self, player, skill, scope, card)
-    return skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and table.contains(card.skillNames, "os__sidai") and 999 or 0
+  distance_limit_func = function(self, player, skill, card)
+    return card and table.contains(card.skillNames, "os__sidai") and 999 or 0
   end,
 }
 local os__sidai_buff = fk.CreateTriggerSkill{
