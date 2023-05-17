@@ -26,9 +26,9 @@ local os_ex__jingce = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PreCardUse, fk.AfterCardsMove, fk.Damage},
+  refresh_events = {fk.AfterCardUseDeclared, fk.AfterCardsMove, fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
+    if event == fk.AfterCardUseDeclared then
       return target == player and player:hasSkill(self.name) and player.phase == Player.Play
     elseif event == fk.AfterCardsMove then
       if player.phase == Player.Play then
@@ -45,7 +45,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
     return false
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
+    if event == fk.AfterCardUseDeclared then
       player.room:addPlayerMark(player, "_os_ex__jingce_use-phase", 1)
     elseif event == fk.AfterCardsMove then
       player.room:addPlayerMark(player, "_os_ex__jingce_draw-phase", 1)
@@ -314,7 +314,7 @@ local os_ex__chengpu = General(extension, "os_ex__chengpu", "wu", 4)
 
 local os_ex__lihuo = fk.CreateTriggerSkill{
   name = "os_ex__lihuo",
-  events = {fk.AfterCardUseDeclared, fk.TargetSpecified},
+  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(self.name)) then return false end
@@ -333,7 +333,7 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
       if #availableTargets == 0 then return false end
       local targets = player.room:askForChoosePlayers(player, availableTargets, 1, 1, "#os_ex__lihuo-targets", self.name, true)
       if #targets > 0 then
-        self.cost_data = targets[1]
+        self.cost_data = targets
         return true
       end
     end
@@ -347,7 +347,8 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
       data.card = fireSlash
       player.room:setPlayerMark(player, "_os_ex__lihuo", tostring(data.card.id)) --0!
     else
-      TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+      --TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+      table.insert(data.tos, self.cost_data)
     end
   end,
 }
@@ -491,7 +492,7 @@ os_ex__chengpu:addSkill(os_ex__chunlao)
 Fk:loadTranslationTable{
   ["os_ex__chengpu"] = "界程普",
   ["os_ex__lihuo"] = "疠火",
-  [":os_ex__lihuo"] = "你使用普【杀】可改为火【杀】，当此【杀】结算结束后，若此【杀】令其他角色进入过濒死状态，你失去1点体力。你使用火【杀】指定目标后，可多选择一个目标。",
+  [":os_ex__lihuo"] = "你使用普【杀】可改为火【杀】，当此【杀】结算结束后，若此【杀】令其他角色进入过濒死状态，你失去1点体力。当你使用火【杀】选择目标后，可多选择一个目标。",
   ["os_ex__chunlao"] = "醇醪",
   [":os_ex__chunlao"] = "准备阶段开始时，若场上没有“醇”，你可选择一名角色，将其区域内的一张牌置于其武将牌上，称为“醇”。有“醇”的角色使用【杀】时，｛若其为其他角色，其可交给你一张牌；若其为你，你可获得你一张牌｝，令此【杀】伤害值基数+1；其进入濒死状态时，你可将一张“醇”置入弃牌堆并摸一张牌，然后其回复1点体力。",
 

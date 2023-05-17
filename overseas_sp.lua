@@ -546,11 +546,9 @@ local os__dingfa = fk.CreateTriggerSkill{
     local x = 0
     for _, move in ipairs(data) do
       if move.from == player.id then
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-            x = x + 1
-          end
-        end
+        x = x + #table.filter(move.moveInfo, function(info)
+          return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+        end)
       end
     end
     if x > 0 then 
@@ -3451,9 +3449,9 @@ local os__bingzhao = fk.CreateTriggerSkill{
 
 local os__canshi = fk.CreateTriggerSkill{
   name = "os__canshi",
-  events = {fk.TargetConfirming, fk.TargetSpecifying},
+  events = {fk.TargetConfirming, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and #AimGroup:getAllTargets(data.tos) == 1 and ((event == fk.TargetConfirming and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0) or event == fk.TargetSpecifying) 
+    return target == player and player:hasSkill(self.name)  and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0) or (event == fk.AfterCardTargetDeclared and #data.tos == 1)) 
     and (data.card.type == Card.TypeBasic or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick))
   end,
   on_cost = function(self, event, target, player, data)
@@ -3481,8 +3479,8 @@ local os__canshi = fk.CreateTriggerSkill{
       room:setPlayerMark(room:getPlayerById(data.from), "@@os__puppet", 0)
     else
       room:doIndicate(player.id, self.cost_data)
+      table.insert(data.tos, self.cost_data)
       table.forEach(self.cost_data, function(pid) 
-        TargetGroup:pushTargets(data.targetGroup, pid)
         room:setPlayerMark(room:getPlayerById(pid), "@@os__puppet", 0)
       end)
     end
@@ -3507,7 +3505,7 @@ Fk:loadTranslationTable{
   ["os__bingzhao"] = "秉诏",
   [":os__bingzhao"] = "主公技，游戏开始时，你选择一个其他势力，该势力有“傀”的角色受到伤害后，可令你因〖骨疽〗额外摸一张牌。",
   ["os__canshi"] = "蚕食",
-  [":os__canshi"] = "当一名角色使用基本牌或普通锦囊牌指定你为唯一目标时，若其有“傀”，你可取消之，然后其弃“傀”。你使用基本牌或普通锦囊牌仅指定一名角色为目标时，你可多指定任意名带有“傀”的角色为目标，然后这些角色弃“傀”。",
+  [":os__canshi"] = "当一名角色使用基本牌或普通锦囊牌指定你为唯一目标时，若其有“傀”，你可取消之，然后其弃“傀”。你使用基本牌或普通锦囊牌仅选择一名角色为目标时，你可令任意名带有“傀”的角色也成为目标，然后这些角色弃“傀”。",
 
   ["@@os__puppet"] = "傀",
   ["#os__zongkui-ask"] = "纵傀：选择一名其他角色，令其获得一枚“傀”",
@@ -4885,7 +4883,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
     player:gainAnExtraPhase(self.cost_data == "phase_draw" and Player.Draw or Player.Play)
   end,
 
-  refresh_events = {fk.PreCardUse},
+  refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
