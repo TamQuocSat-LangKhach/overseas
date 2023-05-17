@@ -2149,17 +2149,7 @@ local os__shepan = fk.CreateTriggerSkill{
     if choice == "os__shepan_draw" then
       player:drawCards(1, self.name)
     else
-      local id = room:askForCardChosen(player, from, "hej", self.name)
-      room:moveCards({
-        ids = {id},
-        from = data.from,
-        to = nil,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonPut,
-        proposer = player.id,
-        skillName = self.name,
-      })
-      table.insert(room.draw_pile, 1, id)
+      room:moveCardTo({room:askForCardChosen(player, from, "hej", self.name)}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
     end
     if player:getHandcardNum() == from:getHandcardNum() then
       player:addSkillUseHistory(self.name, -1)
@@ -3227,7 +3217,7 @@ local os__wanwei = fk.CreateTriggerSkill{
       player:showCards(cids)
       local card = Fk:getCardById(cids[1])
       if card.skill:canUse(player) and not player:prohibitUse(card) then
-        local use = room:askForUseCard(player, card.name, ".|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. card.name, false) --八卦阵的pattern……
+        local use = room:askForUseCard(player, card.name, card.name .. "|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. card.name, false) --八卦阵的pattern……
         if use then
           room:useCard(use)
         end
@@ -3251,18 +3241,9 @@ local os__yuejian = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local cids = effect.cards
     local num = #cids
-    room:moveCards({
-      ids = cids,
-      from = player.id,
-      toArea = Card.DrawPile,
-      moveReason = fk.ReasonPut,
-      proposer = player.id,
-      skillName = self.name,
-    })
-    for i = num, 1, -1 do
-      table.insert(room.draw_pile, 1, cids[i])
-    end
-    room:askForGuanxing(player, room:getNCards(num))
+    room:moveCardTo(cids, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
+    room:askForGuanxing(player, room:getNCards(num), nil, nil, "os_yuejianPut", false) --不会更新牌堆牌数！
+    room:doBroadcastNotify("UpdateDrawPile", #room.draw_pile) --手动……
     if num > 0 then
       room:addPlayerMark(player, "@os__yuejian", 1)
     end
@@ -3727,15 +3708,7 @@ local os__zhiming = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:moveCards({
-      ids = self.cost_data,
-      from = player.id,
-      toArea = Card.DrawPile,
-      moveReason = fk.ReasonPut,
-      proposer = player.id,
-      skillName = self.name,
-    })
-    table.insert(room.draw_pile, 1, self.cost_data[1])
+    room:moveCardTo(self.cost_data, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
   end,
 }
 
@@ -4924,16 +4897,7 @@ local os__gongxin = fk.CreateActiveSkill{
     if choice == "os__gongxin_discard" then
       room:throwCard({id}, self.name, target, player)
     elseif choice == "os__gongxin_put" then
-      room:moveCards({
-        ids = {id},
-        from = target.id,
-        to = nil,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonPut,
-        proposer = player.id,
-        skillName = self.name,
-      })
-      table.insert(room.draw_pile, 1, id)
+      room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
     end
     card_suits = {}
     cids = target.player_cards[Player.Hand]
