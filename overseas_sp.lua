@@ -70,8 +70,13 @@ fengxi:addSkill(os__qingkou)
 Fk:loadTranslationTable{
   ["fengxi"] = "冯习",
   ["os__qingkou"] = "轻寇",
-  [":os__qingkou"] = "准备阶段，你可视为使用一张【决斗】。此【决斗】结算后，造成伤害的角色摸一张牌，若为你，你跳过此回合的判定阶段和弃牌阶段。",
+  [":os__qingkou"] = "准备阶段开始时，你可视为使用一张【决斗】。此【决斗】结算后，造成伤害的角色摸一张牌，若为你，你跳过此回合的判定阶段和弃牌阶段。",
+
   ["#os__qingkou-ask"] = "轻寇：你可选择一名其他角色，视为对其使用一张【决斗】",
+
+  ["$os__qingkou1"] = "哈哈哈哈，鼠辈岂能当我大汉雄师？",
+  ["$os__qingkou2"] = "凛凛汉将，岂畏江东鼠辈？",
+  ["~fengxi"] = "陛下，速退白帝……",
 }
 
 local zhangnan = General(extension, "zhangnan", "shu", 4)
@@ -138,8 +143,13 @@ zhangnan:addSkill(os__fenwu)
 Fk:loadTranslationTable{
   ["zhangnan"] = "张南",
   ["os__fenwu"] = "奋武",
-  [":os__fenwu"] = "结束阶段，你可失去1点体力，视为你对一名其他角色使用一张【杀】。若本回合你使用过超过一种基本牌，此【杀】伤害值基数+1。",
+  [":os__fenwu"] = "结束阶段开始时，你可失去1点体力，视为你对一名其他角色使用一张【杀】。若本回合你使用过超过一种基本牌，此【杀】伤害值基数+1。",
+  
   ["#os__fenwu-ask"] = "奋武：你可选择一名其他角色，失去1点体力，视为对其使用一张【杀】",
+
+  ["$os__fenwu1"] = "合围夷道，兵困吴贼！",
+  ["$os__fenwu2"] = "纵兵摧城，奋武破敌！",
+  ["~zhangnan"] = "骨埋吴地，魂归汉土……",
 }
 
 local yuejiu = General(extension, "yuejiu", "qun", 4)
@@ -270,14 +280,20 @@ os__niujin:addSkill(os__liewei)
 
 Fk:loadTranslationTable{
   ["os__niujin"] = "牛金",
-    ["os__cuorui"] = "挫锐",
-    [":os__cuorui"] = "限定技，准备阶段开始时，你可将手牌摸至X张（X为全场最大的手牌数，至多摸五张），跳过此回合的判定阶段。若你发动过〖挫锐〗，你可选择一名其他角色，对其造成1点伤害。", --其实是废除判定区
-    ["os__liewei"] = "裂围",
-    [":os__liewei"] = "锁定技，当一名角色死亡后，若其是你杀死的，你选择：1.摸两张牌；2.若〖挫锐〗发动过，令〖挫锐〗于此局游戏内的发动次数上限+1。",	
+  ["os__cuorui"] = "挫锐",
+  [":os__cuorui"] = "限定技，准备阶段开始时，你可将手牌摸至X张（X为全场最大的手牌数，至多摸五张），跳过此回合的判定阶段。若你发动过〖挫锐〗，你可选择一名其他角色，对其造成1点伤害。", --其实是废除判定区
+  ["os__liewei"] = "裂围",
+  [":os__liewei"] = "锁定技，当一名角色死亡后，若其是你杀死的，你选择：1.摸两张牌；2.若〖挫锐〗发动过，令〖挫锐〗于此局游戏内的发动次数上限+1。",	
 
   ["os__liewei_draw"] = "摸两张牌",
   ["os__liewei_cuorui"] = "令〖挫锐〗于此局游戏内的发动次数上限+1",
   ["#os__cuorui-target"] = "挫锐：你可对一名其他角色造成1点伤害",
+
+  ["$os__cuorui1"] = "区区乌合之众，如何困得住我？！",
+  ["$os__cuorui2"] = "今日就让你见识见识老牛的厉害！",
+  ["$os__liewei1"] = "敌阵已乱，速速突围！",
+  ["$os__liewei2"] = "杀你，如同捻死一只蚂蚁！",
+  ["~os__niujin"] = "这包围圈太厚，老牛，尽力了……",
 }
 
 local liufuren = General(extension, "liufuren", "qun", 3, 3, General.Female)
@@ -367,7 +383,7 @@ Fk:loadTranslationTable{
   ["os__shigong"] = "示恭",
   [":os__shigong"] = "限定技，当你回合外进入濒死状态时，你可令当前回合者选择一项：1. 增加1点体力上限，回复1点体力，摸一张牌，令你体力回复至体力上限；2. 弃置X张手牌（X为其当前体力值），令你体力回复至1点。",
   
-  ["os__zhuidu_damage"] = "对其造成 1 点伤害",
+  ["os__zhuidu_damage"] = "对其造成1点伤害",
   ["os__zhuidu_discard"] = "弃置其装备区的一张牌",
   ["beishui_os__zhuidu"] = "背水：你弃置一张牌",
   ["os__shigong_max"] = "令其体力回复至体力上限",
@@ -1205,6 +1221,12 @@ Fk:loadTranslationTable{
   ["os__liechi_same"] = "令其将手牌弃至与你手牌数相同",
   ["os__liechi_one"] = "你弃置其一张牌",
   ["beishui_os__liechi"] = "背水：你弃置一张装备牌",
+
+  ["$os__xuewei1"] = "吾主之尊，岂容尔等贼寇近前？",
+  ["$os__xuewei2"] = "血佑忠魂，身卫英主。",
+  ["$os__liechi1"] = "吾受汉帝恩，岂容吴贼辱？",
+  ["$os__liechi2"] = "汉将有死无降，怎会如吴狗一般？",
+  ["~os__furong"] = "吾主既然得返，此番已是功成……",
 }
 
 local liwei = General(extension, "liwei", "shu", 4)
@@ -1278,9 +1300,7 @@ local os__juntun = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.GameStart, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and not table.every(player.room:getAlivePlayers(), function(p)
-      return p:hasSkill("os__xiongjun")
-    end)
+    return player:hasSkill(self.name)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1293,7 +1313,7 @@ local os__juntun = fk.CreateTriggerSkill{
       end
     )
     if #targets == 0 then return false end
-    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__juntun-ask", self.name )
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__juntun-ask", self.name)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1302,8 +1322,7 @@ local os__juntun = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local target = room:getPlayerById(self.cost_data)
-    room:handleAddLoseSkills(target, "os__xiongjun", nil)
+    room:handleAddLoseSkills(room:getPlayerById(self.cost_data), "os__xiongjun", nil)
   end,
 
   refresh_events = {fk.Damage, fk.Damaged},
@@ -2474,16 +2493,7 @@ local os__xiongzheng = fk.CreateTriggerSkill{
     return false
   end,
   on_cost = function(self, event, target, player, data)
-    local target = player.room:askForChoosePlayers(
-      player,
-      self.cost_data,
-      1,
-      1,
-      "#os__xiongzheng-ask",
-      self.name,
-      true
-    )
-
+    local target = player.room:askForChoosePlayers(player, self.cost_data, 1, 1, "#os__xiongzheng-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -2586,28 +2596,27 @@ local os__luannian = fk.CreateTriggerSkill{
       return p.kingdom ~= "qun"
     end)
   end,
-  on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function(p)
       return (p.kingdom == "qun")
     end)
     table.forEach(targets, function(p)
-      room:handleAddLoseSkills(p, "os__luannian_other", nil, false, false)
+      room:handleAddLoseSkills(p, "&os__luannian_other", nil, false, true) --再改
     end)
   end,
 }
 
 local os__luannian_other = fk.CreateActiveSkill{
-  name = "os__luannian_other",
+  name = "&os__luannian_other",
   anim_type = "offensive",
   mute = true,
   can_use = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and player.kingdom == "qun" then
       local room = Fk:currentRoom()
-      local lord --手动getLord
+      local lord --手动
       for _, p in ipairs(room.alive_players) do
-        if p.role == "lord" and p:hasSkill("os__luannian") then lord = p break end
+        if p:hasSkill("os__luannian") then lord = p break end
       end
       if not lord then return false end
       local target
@@ -2626,14 +2635,14 @@ local os__luannian_other = fk.CreateActiveSkill{
   card_num = function(self)
     local lord
     for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p.role == "lord" and p:hasSkill("os__luannian") then lord = p break end
+      if p:hasSkill("os__luannian") then lord = p break end
     end
     return lord:getMark("@os__luannian-round") + 1
   end,
   card_filter = function(self, to_select, selected)
     local lord
     for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p.role == "lord" and p:hasSkill("os__luannian") then lord = p break end
+      if p:hasSkill("os__luannian") then lord = p break end
     end
     return #selected < lord:getMark("@os__luannian-round") + 1
   end,
@@ -2651,7 +2660,11 @@ local os__luannian_other = fk.CreateActiveSkill{
     end
     if not target then return false end
     room:doIndicate(effect.from, { target.id })
-    room:addPlayerMark(room:getLord(), "@os__luannian-round", 1)
+    local lord
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if p:hasSkill("os__luannian") then lord = p break end
+    end
+    room:addPlayerMark(lord, "@os__luannian-round", 1)
     room:throwCard(effect.cards, self.name, player)
     room:damage{
       from = player,
@@ -2665,7 +2678,7 @@ local os__luannian_other = fk.CreateActiveSkill{
 os__mateng:addSkill("mashu")
 os__mateng:addSkill(os__xiongzheng)
 os__mateng:addSkill(os__luannian)
-Fk:addSkill(os__luannian_other) --FIXME! attached_skill
+Fk:addSkill(os__luannian_other) --attached_skill
 
 Fk:loadTranslationTable{
   ["os__mateng"] = "马腾",
@@ -2683,8 +2696,8 @@ Fk:loadTranslationTable{
   ["#os__xiongzheng-draw"] = "选择任意名角色，各摸两张牌",
   ["@os__luannian-round"] = "乱年",
 
-  ["os__luannian_other"] = "乱年",
-  [":os__luannian_other"] = "出牌阶段限一次，你可弃置X张牌对“雄争”角色造成1点伤害（X为“乱年”本轮发动的次数+1）。",
+  ["&os__luannian_other"] = "乱年",
+  [":&os__luannian_other"] = "出牌阶段限一次，你可弃置X张牌对“雄争”角色造成1点伤害（X为“乱年”本轮发动的次数+1）。",
 }
 
 local os__hejin = General(extension, "os__hejin", "qun", 4)
@@ -3130,7 +3143,8 @@ local os__wanwei = fk.CreateTriggerSkill{
       player:showCards(cids)
       local card = Fk:getCardById(cids[1])
       if card.skill:canUse(player) and not player:prohibitUse(card) then
-        local use = room:askForUseCard(player, card.name, card.name .. "|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. card.name, false) --八卦阵的pattern……
+        local cardName = card.name
+        local use = room:askForUseCard(player, cardName, cardName .. "|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. cardName, false) --八卦阵的pattern……
         if use then
           room:useCard(use)
         end
@@ -3542,7 +3556,6 @@ Fk:loadTranslationTable{
 }
 
 local huchuquan = General(extension, "huchuquan", "qun", 4)
-huchuquan.hidden = true --隐藏了先
 local os__fupan = fk.CreateTriggerSkill{
   name = "os__fupan",
   events = {fk.Damage, fk.Damaged},
@@ -5147,6 +5160,183 @@ Fk:loadTranslationTable{
   ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类型，你与其各从弃牌堆中获得一张此类型的牌",
 }
 
+local caozhao = General(extension, "caozhao", "wei", 4)
+
+local os__fuzuan = fk.CreateActiveSkill{
+  name = "os__fuzuan",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected)
+    if #selected ~= 0 then return false end
+    for _, skill in ipairs(Fk:currentRoom():getPlayerById(to_select).player_skills) do
+      if skill:isSwitchSkill() then
+        return true
+      end
+    end
+    return false
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local skills = table.filter(target.player_skills, function(s)
+      return s:isSwitchSkill()
+    end)
+    local skillNames = table.map(skills, function(s)
+      return s.name
+    end)
+    local skill = skills[table.indexOf(skillNames, room:askForChoice(player, skillNames, self.name, "#os__fuzuan-ask:" .. target.id))]
+    local switchSkillName = skill.switchSkillName
+    room:setPlayerMark(
+      target,
+      MarkEnum.SwithSkillPreName .. switchSkillName,
+      target:getSwitchSkillState(switchSkillName, true)
+    )
+    target:addSkillUseHistory(skill.name) --……
+  end,
+}
+local os__fuzuan_trg = fk.CreateTriggerSkill{
+  name = "#os__fuzuan_trg",
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self.name) then return false end
+    return event == fk.Damaged or data.to ~= player
+  end,
+  on_trigger = function(self, event, target, player, data)
+    return player.room:askForUseActiveSkill(player, "os__fuzuan", "#os__fuzuan-trg", true)
+  end,
+  on_use = function(self, event, target, player, data)
+    return false
+  end,
+}
+os__fuzuan:addRelatedSkill(os__fuzuan_trg)
+
+local os__chongqi = fk.CreateTriggerSkill{
+  name = "os__chongqi",
+  anim_type = "support",
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(
+      table.filter(room:getOtherPlayers(player), function(p)
+        return (not p:hasSkill("os__fuzuan"))
+      end),
+      function(p)
+        return p.id
+      end
+    )
+    if #targets == 0 then return false end
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__chongqi-ask", self.name, true)
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, -1)
+    room:handleAddLoseSkills(room:getPlayerById(self.cost_data), "os__fuzuan", nil)
+  end,
+
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(self.name, true)
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == self
+    else
+      return target == player and player:hasSkill(self.name, true, true)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart or event == fk.EventAcquireSkill then
+      if player:hasSkill(self.name, true) then
+        for _, p in ipairs(room:getAlivePlayers()) do
+          room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
+        end
+      end
+    elseif event == fk.EventLoseSkill or event == fk.Deathed then
+      for _, p in ipairs(room:getAlivePlayers()) do
+        room:handleAddLoseSkills(p, "-os__feifu", nil, false, true)
+      end
+    end
+  end,
+}
+
+local os__feifu = fk.CreateTriggerSkill{
+  name = "os__feifu",
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
+  anim_type = "switch",
+  frequency = Skill.Compulsory,
+  switch_skill_name = "os__feifu",
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self.name) then return false end
+    return data.card.trueName == "slash" and #AimGroup:getAllTargets(data.tos) == 1 and ((event == fk.TargetSpecified and player:getSwitchSkillState(self.name) == 0) or (event == fk.TargetConfirmed and player:getSwitchSkillState(self.name) == 1))
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, self.name, "switch")
+    if event == fk.TargetSpecified then
+      room:broadcastSkillInvoke(self.name, math.random(1, 2))
+    else
+      room:broadcastSkillInvoke(self.name, math.random(3, 4))
+    end
+    local user = room:getPlayerById(data.from)
+    local target = room:getPlayerById(data.to)
+    room:doIndicate(player.id, {player == user and data.to or data.from})
+    if target:isNude() then return false end
+    local id = room:askForCard(target, 1, 1, true, self.name, false, nil, "#os__feifu-give:" .. data.from)
+    if #id > 0 then
+      room:obtainCard(user, id[1], false, fk.ReasonGive)
+      local card = Fk:getCardById(id[1])
+      if card.type == Card.TypeEquip then
+        local cardName = card.name
+        local use = room:askForUseCard(user, cardName, cardName .. "|.|.|.|.|.|" .. id[1], "#os__feifu-use:::" .. cardName, true)
+        if use then room:useCard(use) end
+      end
+    end
+  end,
+}
+
+caozhao:addSkill(os__fuzuan)
+caozhao:addSkill(os__chongqi)
+caozhao:addRelatedSkill(os__feifu)
+
+Fk:loadTranslationTable{
+  ["caozhao"] = "曹肇",
+  ["os__fuzuan"] = "复纂",
+  [":os__fuzuan"] = "你可于以下时机点选择一名有转换技的角色，调整其一个转换技的阴阳状态：出牌阶段限一次，你对其他角色造成伤害后，受到伤害后。",
+  ["os__chongqi"] = "宠齐",
+  [":os__chongqi"] = "锁定技，所有角色视为拥有〖非服〗。游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
+  ["os__feifu"] = "非服",
+  [":os__feifu"] = "锁定技，转换技，阳：当你使用【杀】指定唯一目标后；阴：当你成为【杀】的唯一目标后；目标角色A须交给此【杀】的使用者B一张牌，若此牌为装备牌，B可使用此牌。",
+
+  ["#os__fuzuan-ask"] = "复纂：你可选择 %src 的一个转换技，调整其阴阳状态",
+  ["#os__fuzuan_trg"] = "复纂",
+  ["#os__fuzuan-trg"] = "你可对一名有转换技的角色发动“复纂”",
+  ["#os__chongqi-ask"] = "宠齐：你可减1点体力上限，令一名其他角色获得〖复纂〗",
+  ["#os__feifu-give"] = "非服：请交给 %src 一张牌",
+  ["#os__feifu-use"] = "非服：你可使用【%arg】",
+
+  ["$os__fuzuan1"] = "望陛下听臣忠言，勿信资等无知之论。",
+  ["$os__fuzuan2"] = "前朝王莽之乱，可为今事之鉴。",
+  ["$os__chongqi1"] = "吾既身承宠遇，敢不为君分忧？",
+  ["$os__chongqi2"] = "臣得君上垂青，已是此生之幸。",
+  ["$os__feifu1"] = "此亦久矣，其能复几！",
+  ["$os__feifu2"] = "君既赌输，理当再脱一件。",
+  ["$os__feifu3"] = "以侯归第？终败于其！",
+  ["$os__feifu4"] = "君若如此，让我如何见人？",
+  ["~caozhao"] = "虽极荣宠，亦有尽时。",
+}
+
 local os__godlvmeng = General(extension, "os__godlvmeng", "god", 3)
 
 local os__shelie = fk.CreateTriggerSkill{
@@ -5465,7 +5655,7 @@ Fk:loadTranslationTable{
   [":os__wushen"] = "锁定技，你的红桃手牌视为【杀】。你使用红桃【杀】无距离和次数限制且额外选择所有有“梦魇”的角色为目标。你于每个阶段内使用的第一张【杀】不能被响应。",
   ["os__wuhun"] = "武魂",
   [":os__wuhun"] = "锁定技，当你受到1点伤害后，伤害来源获得1枚“梦魇”；当你对有“梦魇”的角色造成伤害后，其获得1枚“梦魇”；当你死亡时，你可判定：若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色，这些角色失去X点体力（X为其“梦魇”数）。",
-  
+
   ["@os__nightmare"] = "梦魇",
   ["os__wuhun_judge"] = "判定，若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色失去X点体力（X为其“梦魇”数）",
   ["#os__wuhun-targets"] = "武魂：选择至少一名有“梦魇”的角色，各失去X点体力（X为其“梦魇”数）",
@@ -5483,14 +5673,6 @@ Fk:loadTranslationTable{
   [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离为1的一名角色区域里的一张牌；防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
   ["os__juezhu"] = "决助",
   [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
-
-  ["caozhao"] = "曹肇",
-  ["os__fuzuan"] = "复纂",
-  [":os__fuzuan"] = "你可以于以下时机点选择一名有转换技的角色，调整其拥有的一个转换技的阴阳状态：出牌阶段（限一次），你对其他角色造成伤害后，受到伤害后。",
-  ["os__chongqi"] = "宠齐",
-  [":os__chongqi"] = "锁定技，所有角色拥有〖非服〗。游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
-  ["os__feifu"] = "非服",
-  [":os__feifu"] = "锁定技，转换技，阳：当你使用【杀】指定唯一目标后；阴：当你成为【杀】的唯一目标后；目标角色A须交给此【杀】的使用者B一张牌，若此牌为装备牌，B可使用此牌。",
 }
 
 return extension
