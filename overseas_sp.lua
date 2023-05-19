@@ -4957,7 +4957,9 @@ local os__kujian = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local tag = room:getTag("os__kujian") or {}
-    table.insertTable(tag, effect.cards)
+    table.forEach(effect.cards, function(cid)
+      table.insertIfNeed(tag, cid)
+    end)
     room:setTag("os__kujian", tag)
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(effect.cards)
