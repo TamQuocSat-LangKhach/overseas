@@ -355,9 +355,9 @@ local os__chayi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.TurnStart},
+  refresh_events = {fk.EventPhaseChanging},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:getMark("_os__chayi") > 0
+    return player == target and player:getMark("_os__chayi") > 0 and data.from == Player.NotActive
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -930,7 +930,7 @@ Fk:loadTranslationTable{
   ["yl_draw"] = "摸牌",
 
   ["beishui_os__yilie"] = "背水：你失去1点体力",
-  ["#os__fenming-ask"] = "你可对一名角色发动 “奋命”",
+  ["#os__fenming-ask"] = "你可对一名角色发动“奋命”",
   ["beishui_os__fenming"] = "背水：你进入连环状态",
   ["os__fenming_discard"] = "你弃置其牌",
   ["os__fenming_chained"] = "其进入连环状态",

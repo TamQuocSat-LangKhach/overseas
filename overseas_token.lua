@@ -29,7 +29,7 @@ local moonSpearSkill = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    --room:setEmotion(player, "./packages/overseas/image/anim/moon_spear")
+    room:setEmotion(player, "./packages/overseas/image/anim/moon_spear")
     room:useCard(self.cost_data)
   end,
 
