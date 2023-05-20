@@ -152,6 +152,12 @@ Fk:loadTranslationTable{
   ["#os__shezhong1-target"] = "慑众：你可令至多 %arg 名其他角色下个摸牌阶段的摸牌数-1",
   ["#os__shezhong2-target"] = "慑众：你可将手牌摸至与其中一名伤害来源的体力值相同（最多摸至5张）",
   ["#os__shezhong_draw"] = "慑众",
+
+  ["$os__liexi1"] = "短兵强击，贯汝心扉！",
+  ["$oos__liexi2"] = "性刚情烈，目不容奸！",
+  ["$os__shezhong1"] = "此乃吾之私怨，与汝等何干？！",
+  ["$os__shezhong2"] = "拦吾去路者，下场有如此贼！",
+  ["~os__xia__dianwei"] = "少智无谋，空负此身勇武……",
 }
 
 local xiahouzie = General(extension, "xiahouzie", "qun", 3, 4, General.Female)
@@ -258,6 +264,12 @@ Fk:loadTranslationTable{
 
   ["#os__xuechang_damage"] = "血偿",
   ["@os__duoren"] = "夺刃",
+
+  ["$os__xuechang1"] = "风尘难掩忠魂血，杀尽宦祸不得偿！",
+  ["$os__xuechang2"] = "霜刃绚练，血舞婆娑。",
+  ["$os__duoren1"] = "便以汝血，封汝之刀！",
+  ["$os__duoren2"] = "血婆娑之剑，从不会沾无辜之血。",
+  ["~xiahouzie"] = "祖父，紫萼不能为您昭雪了……",
 }
 
 local wangyue = General(extension, "wangyue", "qun", 4)
