@@ -4650,7 +4650,7 @@ local os__fuhan = fk.CreateTriggerSkill{
       local moonSpear = nil
       for _, id in ipairs(Fk:getAllCardIds()) do
         local card = Fk:getCardById(id)
-        if card.name == "&moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile}, room:getCardArea(card)) then
+        if card.name == "moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile}, room:getCardArea(card)) then
           moonSpear = card
           break
         end
@@ -4672,7 +4672,7 @@ local os__queshi = fk.CreateTriggerSkill{
     local moonSpear = nil
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if card.name == "&moon_spear" then
+      if card.name == "moon_spear" then
         moonSpear = card
         break
       end
@@ -4697,6 +4697,7 @@ Fk:loadTranslationTable{
 
   --["@meiying"] = "梅影",
   ["#os__fuhan-invoke"] = "扶汉：你可弃所有“梅影”，从5张蜀势力武将牌中选择一张获得其所有技能，将体力上限调整为%arg，回复1点体力",
+  ["#os__fanghun_gain"] = "芳魂",
 }
 
 local jianshuo = General(extension, "jianshuo", "qun", 6)
