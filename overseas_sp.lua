@@ -4650,7 +4650,7 @@ local os__fuhan = fk.CreateTriggerSkill{
       local moonSpear = nil
       for _, id in ipairs(Fk:getAllCardIds()) do
         local card = Fk:getCardById(id)
-        if card.name == "&moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile}, room:getCardArea(card)) then
+        if card.name == "moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile}, room:getCardArea(card)) then
           moonSpear = card
           break
         end
@@ -4672,7 +4672,7 @@ local os__queshi = fk.CreateTriggerSkill{
     local moonSpear = nil
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if card.name == "&moon_spear" then
+      if card.name == "moon_spear" then
         moonSpear = card
         break
       end

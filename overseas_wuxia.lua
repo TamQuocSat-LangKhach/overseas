@@ -465,7 +465,7 @@ local os__xiawang = fk.CreateTriggerSkill{
 
 os__xia__xushu:addSkill(os__jiange)
 os__xia__xushu:addSkill(os__xiawang)
-  
+
 Fk:loadTranslationTable{
   ["os__xia__xushu"] = "侠徐庶",
   ["os__jiange"] = "剑歌",
@@ -474,6 +474,20 @@ Fk:loadTranslationTable{
   [":os__xiawang"] = "当至你距离不大于1的角色受到黑色牌造成的伤害后，你可对伤害来源使用【杀】。若此【杀】造成了伤害，则在【杀】结算后结束当前阶段。",
 
   ["#os__xiawang-ask"] = "你可对 %src 使用【杀】。若此【杀】造成了伤害，则在结算后结束当前阶段",
+}
+
+Fk:loadTranslationTable{
+  ["os__tongyuan"] = "童渊",
+  ["os__chaofeng"] = "朝凤",
+  [":os__chaofeng"] = "你可将一张【杀】当【闪】、【闪】当任意【杀】使用或打出。出牌阶段开始时，你可与至多三名角色同时拼点共同拼点：赢的角色视为对所有没赢的角色使用一张火【杀】。",
+  ["os__chuanshu"] = "传术",
+  [":os__chuanshu"] = "限定技，准备阶段，你可选择一名角色：直到你下回合开始，该角色拼点牌点数+3且使用下一张【杀】对其他角色造成伤害+1；若该角色不为你，该【杀】造成伤害时你摸等同于伤害值张牌。",
+
+  ["liyan"] = "李彦",
+  ["os__zhenhu"] = "震虎",
+  [":os__zhenhu"] = "当你使用伤害牌指定目标时，你可以摸一张牌并与至多三名其他角色同时拼点共同拼点[1]：若你赢，此牌对没赢的角色造成伤害+1。若你没赢，你失去1点体力。",
+  ["os__lvren"] = "履刃",
+  [":os__lvren"] = "当你对其他角色造成伤害时，你令其获得1枚“刃”，你使用伤害牌可以额外指定一名有“刃”的角色为目标并移除其“刃”。你拼点时，每有一名角色，你的拼点牌点数+2。",
 }
 
 return extension
