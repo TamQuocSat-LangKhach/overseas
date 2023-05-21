@@ -3,7 +3,6 @@ extension.extensionName = "overseas"
 
 Fk:loadTranslationTable{
   ["overseas_wuxia"] = "国际服武侠篇",
-  --["os__xia"] = "国际界",
 }
 
 local os__xia__dianwei = General(extension, "os__xia__dianwei", "qun", 4)
@@ -479,7 +478,7 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["os__tongyuan"] = "童渊",
   ["os__chaofeng"] = "朝凤",
-  [":os__chaofeng"] = "你可将一张【杀】当【闪】、【闪】当任意【杀】使用或打出。出牌阶段开始时，你可与至多三名角色同时拼点共同拼点：赢的角色视为对所有没赢的角色使用一张火【杀】。",
+  [":os__chaofeng"] = "你可将【杀】当【闪】、【闪】当任意【杀】使用或打出。出牌阶段开始时，你可与至多三名角色同时拼点共同拼点：赢的角色视为对所有没赢的角色使用一张火【杀】。",
   ["os__chuanshu"] = "传术",
   [":os__chuanshu"] = "限定技，准备阶段，你可选择一名角色：直到你下回合开始，该角色拼点牌点数+3且使用下一张【杀】对其他角色造成伤害+1；若该角色不为你，该【杀】造成伤害时你摸等同于伤害值张牌。",
 
