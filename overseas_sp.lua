@@ -1284,10 +1284,10 @@ liwei:addSkill(os__jiaohua)
 Fk:loadTranslationTable{
   ["liwei"] = "李遗",
   ["os__jiaohua"] = "教化",
-  [":os__jiaohua"] = "当你或体力值最小的角色摸牌后，你可选择一种其本次摸牌未获得的类型（每种类型每回合限一次），令其从牌堆中或弃牌堆中获得一张该类型的牌。",
+  [":os__jiaohua"] = "当你或体力值最小的角色摸牌后，你可选择一种其本次摸牌未获得的类别（每种类别每回合限一次），令其从牌堆中或弃牌堆中获得一张该类别的牌。",
 
   ["#os__jiaohua"] = "你想对 %dest 发动技能“教化”吗？",
-  ["#os__jiaohua-ask"] = "教化：选择一种类型，令 %dest 从牌堆中或弃牌堆中获得一张该类型的牌",
+  ["#os__jiaohua-ask"] = "教化：选择一种类别，令 %dest 从牌堆中或弃牌堆中获得一张该类别的牌",
   ["basic"] = "基本牌",
   ["trick"] = "锦囊牌",
   ["equip"] = "装备牌", --这好吗
@@ -2319,7 +2319,7 @@ os_sp__caocao:addRelatedSkill(os__zhian)
 Fk:loadTranslationTable{
   ["os_sp__caocao"] = "曹操",
   ["os__lingfa"] = "令法",
-  [":os__lingfa"] = "每轮开始时，若当前轮数不大于2，你可令第X项效果对所有有牌的其他角色生效（X为当前轮数）：1. 当使用【杀】时，弃置一张牌，否则你对其造成1点伤害；2. 当使用【桃】结算完成后，交给你一张牌，否则你对其造成1点伤害。若当前轮数大于2，则你失去此技能，获得〖治暗〗。",
+  [":os__lingfa"] = "每轮开始时，若当前轮数不大于2，你可令第X项效果对所有有牌的其他角色生效（X为当前轮数）：1. 当使用【杀】时，弃置一张牌，否则你对其造成1点伤害；2. 当使用【桃】结算结束后，交给你一张牌，否则你对其造成1点伤害。若当前轮数大于2，则你失去此技能，获得〖治暗〗。",
   ["os__zhian"] = "治暗",
   [":os__zhian"] = "每回合限一次，当一名角色使用装备牌或延时锦囊牌结算结束后，你可选择一项：1. 从场上弃置此牌；2. 弃置一张手牌，获得此牌；3. 对其造成1点伤害。",
 
@@ -3275,7 +3275,7 @@ local os__zongkui = fk.CreateTriggerSkill{
     return false
   end,
   on_use = function(self, event, target, player, data)
-    player.room:setPlayerMark(player.room:getPlayerById(self.cost_data), "@@os__puppet", 1)
+    player.room:addPlayerMark(player.room:getPlayerById(self.cost_data), "@@os__puppet")
   end,
 }
 
@@ -3325,7 +3325,7 @@ local os__baijia = fk.CreateTriggerSkill{
     table.forEach(table.filter(room:getOtherPlayers(player), function(p)
       return p:getMark("@@os__puppet") == 0
     end), function(p)
-      room:setPlayerMark(p, "@@os__puppet", 1)
+      room:addPlayerMark(p, "@@os__puppet")
     end)
     room:handleAddLoseSkills(player, "os__canshi|-os__guju", nil)
   end,
@@ -3382,12 +3382,12 @@ local os__canshi = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.TargetConfirming then
       AimGroup:cancelTarget(data, data.to)
-      room:setPlayerMark(room:getPlayerById(data.from), "@@os__puppet", 0)
+      room:removePlayerMark(room:getPlayerById(data.from), "@@os__puppet")
     else
       room:doIndicate(player.id, self.cost_data)
       table.insert(data.tos, self.cost_data)
       table.forEach(self.cost_data, function(pid) 
-        room:setPlayerMark(room:getPlayerById(pid), "@@os__puppet", 0)
+        room:removePlayerMark(room:getPlayerById(pid), "@@os__puppet")
       end)
     end
   end,
@@ -3403,7 +3403,7 @@ os__himiko:addRelatedSkill(os__canshi)
 Fk:loadTranslationTable{
   ["os__himiko"] = "卑弥呼",
   ["os__zongkui"] = "纵傀",
-  [":os__zongkui"] = "回合开始后，你可指定一名没有“傀”的其他角色，令其获得一枚“傀”。每轮开始时，体力值最小且没有“傀”的一名其他角色获得一枚“傀”。", --关于轮次开始的问题……
+  [":os__zongkui"] = "回合开始后，你可指定一名没有“傀”的其他角色，令其获得1枚“傀”。每轮开始时，体力值最小且没有“傀”的一名其他角色获得1枚“傀”。", --关于轮次开始的问题……
   ["os__guju"] = "骨疽",
   [":os__guju"] = "锁定技，当有“傀”的角色受到伤害后，你摸一张牌。",
   ["os__baijia"] = "拜假",
@@ -3411,7 +3411,7 @@ Fk:loadTranslationTable{
   ["os__bingzhao"] = "秉诏",
   [":os__bingzhao"] = "主公技，游戏开始时，你选择一个其他势力，该势力有“傀”的角色受到伤害后，可令你因〖骨疽〗额外摸一张牌。",
   ["os__canshi"] = "蚕食",
-  [":os__canshi"] = "当一名角色使用基本牌或普通锦囊牌指定你为唯一目标时，若其有“傀”，你可取消之，然后其弃“傀”。你使用基本牌或普通锦囊牌仅选择一名角色为目标时，你可令任意名带有“傀”的角色也成为目标，然后这些角色弃“傀”。",
+  [":os__canshi"] = "①当一名角色使用基本牌或普通锦囊牌指定你为唯一目标时，若其有“傀”，你可取消之，然后其弃1枚“傀”。②你使用基本牌或普通锦囊牌仅选择一名角色为目标时，你可令任意名带有“傀”的角色也成为目标，然后这些角色弃1枚“傀”。",
 
   ["@@os__puppet"] = "傀",
   ["#os__zongkui-ask"] = "纵傀：选择一名其他角色，令其获得一枚“傀”",
@@ -3420,7 +3420,7 @@ Fk:loadTranslationTable{
   ["#os__bingzhao-choose"] = "秉诏：选择一个其他势力，该势力有“傀”的角色受到伤害后，可令你因〖骨疽〗额外摸一张牌",
   ["@os__bingzhao"] = "秉诏",
   ["#os__canshi"] = "蚕食：你可取消【%arg】的目标，然后 %dest 弃“傀”",
-  ["#os__canshi-targets"] = "蚕食：你可多指定任意名带有“傀”的角色为目标，然后这些角色弃“傀”",
+  ["#os__canshi-targets"] = "蚕食：你可令任意名有“傀”的角色也成为目标，然后这些角色弃“傀”",
 }
 
 local os__jiling = General(extension, "os__jiling", "qun", 4)
@@ -3432,7 +3432,7 @@ local os__shuangren = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and player.phase == Player.Play and not player:isKongcheng() and not table.every(player.room:getOtherPlayers(player), function(p)
       return p:isKongcheng()
-    end) and (event == fk.EventPhaseStart or (player:getMark("_os__shuangren_invalid-turn") == 0 and player:getMark("_os__shuangren-turn") == 0))
+    end) and (event == fk.EventPhaseStart or (player:getMark("_os__shuangren_invalid-turn") == 0 and player:usedSkillTimes(self.name) == 0))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -3458,7 +3458,6 @@ local os__shuangren = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "_os__shuangren-turn", 1)
     local target = room:getPlayerById(self.cost_data)
     local pindian = player:pindian({target}, self.name)
     if pindian.results[target.id].winner == player then
@@ -4465,7 +4464,10 @@ local os__fanghun = fk.CreateViewAsSkill{
     elseif _c.name == "jink" then
       c = Fk:cloneCard("slash")
     end
-    c.skillName = self.name
+    --c.skillName = self.name
+    c.skillNames = c.skillNames or {}
+    table.insert(c.skillNames, "os__fanghun")
+    table.insert(c.skillNames, "longdan")
     c:addSubcard(cards[1])
     return c
   end,
@@ -4815,7 +4817,7 @@ Fk:loadTranslationTable{
   ["#os__tanfeng-ask"] = "探锋：你可选择一名其他角色，弃置其区域内的一张牌",
   ["#os__tanfeng-react"] = "探锋：你可对 %src 选择一项",
   ["os__tanfeng_damaged"] = "受到其造成的1点火焰伤害，令其跳过一个阶段",
-  ["os__tanfeng_slash"] = "探锋：将一张牌当【杀】对其使用",
+  ["os__tanfeng_slash"] = "将一张牌当【杀】对其使用",
   ["#os__tanfeng-skip"] = "探锋：令 %src 跳过此回合的一个阶段",
   ["#os__tanfeng-slash"] = "探锋：将一张牌当【杀】对 %src 使用",
 }
@@ -5030,14 +5032,14 @@ Fk:loadTranslationTable{
   ["os__kujian"] = "苦谏",
   [":os__kujian"] = "出牌阶段限一次，你可将至多三张手牌标记为“谏”并交给一名其他角色。当其他角色使用或打出“谏”牌时，你与其各摸一张牌。当其他角色非因使用或打出从手牌区失去“谏”牌后，你与其各弃置一张牌。",
   ["os__ruilian"] = "睿敛",
-  [":os__ruilian"] = "每轮开始时，你可选择一名角色，其下个回合结束前，若其此回合弃置的牌数不小于2，你可选择其此回合弃置过的牌中的一种类型，你与其各从弃牌堆中获得一张此类型的牌。",
+  [":os__ruilian"] = "每轮开始时，你可选择一名角色，其下个回合结束前，若其此回合弃置的牌数不小于2，你可选择其此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌。",
 
   ["#os__kujian-discard"] = "苦谏：请弃置一张牌",
   ["#os__kujian_judge"] = "苦谏",
   ["#os__ruilian-ask"] = "你可对一名角色发动“睿敛”",
   ["@@os__ruilian"] = "睿敛",
   ["@os__ruilian-turn"] = "睿敛",
-  ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类型，你与其各从弃牌堆中获得一张此类型的牌",
+  ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌",
   ["@os__kujian"] = "苦谏",
 }
 
@@ -5351,7 +5353,7 @@ local os__jichou_give = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  min_card_num = 1,
+  card_num = 1,
   card_filter = function(self, to_select, selected)
     return table.contains(type(Self:getMark("@$os__jichou")) == "table" and Self:getMark("@$os__jichou") or {}, Fk:getCardById(to_select).name)
   end,
@@ -5462,7 +5464,7 @@ jiangji:addSkill(os__jilun)
 Fk:loadTranslationTable{
   ["jiangji"] = "蒋济",
   ["os__jichou"] = "急筹",
-  [":os__jichou"] = "①每回合限一次，你可视为使用一种普通锦囊牌，然后本局游戏你无法以此法或自手牌中使用此牌名的牌，且不可响应此牌名的牌。②出牌阶段限一次，你可将手牌中“急筹”使用过的其牌名的牌交给一名角色。",
+  [":os__jichou"] = "①每回合限一次，你可视为使用一种普通锦囊牌，然后本局游戏你无法以此法或自手牌中使用此牌名的牌，且不可响应此牌名的牌。②出牌阶段限一次，你可将手牌中“急筹”使用过的其牌名的一张牌交给一名角色。",
   ["os__jilun"] = "机论",
   [":os__jilun"] = "当你受到伤害后，你可选择一项：1. 摸X张牌（X为以“急筹”使用过的锦囊牌数，至少为1至多为5）；2. 视为使用一种以“急筹”使用过的牌（每牌名限一次）。",
 
