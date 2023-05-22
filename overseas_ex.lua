@@ -29,7 +29,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardUseDeclared, fk.AfterCardsMove, fk.Damage},
   can_refresh = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
-      return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+      return target == player and player:hasSkill(self.name, true) and player.phase == Player.Play
     elseif event == fk.AfterCardsMove then
       if player.phase == Player.Play then
         for _, move in ipairs(data) do

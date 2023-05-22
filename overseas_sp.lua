@@ -1114,6 +1114,7 @@ local os__xuewei = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     if room:askForChoice(target, {"os__xuewei_defence", "os__xuewei_duel"}, self.name, "#os__xuewei-target::" .. to.id) == "os__xuewei_defence" then
       room:addPlayerMark(target, "_os__xuewei_defence_from-turn", 1)
+      room:addPlayerMark(target, "MinusMaxCards-turn", 2)
       room:addPlayerMark(to, "_os__xuewei_defence_to-turn", 1)
       room:sendLog{
         type = "#os__xuewei_defence",
@@ -1139,13 +1140,6 @@ local os__xuewei_prohibit = fk.CreateProhibitSkill{
     if from:getMark("_os__xuewei_defence_from-turn") > 0 and to:getMark("_os__xuewei_defence_to-turn") > 0 then
       return card.trueName == "slash"
     end
-  end,
-}
-
-local os__xuewei_max =  fk.CreateMaxCardsSkill{
-  name = "#os__xuewei_max",
-  correct_func = function(self, player)
-    return - player:getMark("_os__xuewei_defence_from-turn") * 2
   end,
 }
 
@@ -1201,7 +1195,6 @@ local os__liechi = fk.CreateTriggerSkill{
   end,
 }
 os__xuewei:addRelatedSkill(os__xuewei_prohibit)
-os__xuewei:addRelatedSkill(os__xuewei_max)
 
 os__furong:addSkill(os__xuewei)
 os__furong:addSkill(os__liechi)
@@ -1385,6 +1378,7 @@ local os__xiafeng = fk.CreateTriggerSkill{
     local num = tonumber(self.cost_data)
     local room = player.room
     room:setPlayerMark(player, "_os__xiafeng-turn", num)
+    room:addPlayerMark(player, "AddMaxCards-turn", num)
     room:removePlayerMark(player, "@os__baonue", num)
     room:sendLog{
       type = "#os__xiafeng_log",
@@ -1393,7 +1387,7 @@ local os__xiafeng = fk.CreateTriggerSkill{
     }
   end,
 
-  refresh_events = {fk.PreCardUse},
+  refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
     return player == target
   end,
@@ -1426,15 +1420,9 @@ local os__xiafeng_buff = fk.CreateTargetModSkill{
     return (player:getMark("_os__xiafeng_count-turn") <= player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
   end,
 }
-local os__xiafeng_max =  fk.CreateMaxCardsSkill{
-  name = "#os__xiafeng_max",
-  correct_func = function(self, player)
-    return player:getMark("_os__xiafeng-turn")
-  end,
-}
+
 os__xiafeng:addRelatedSkill(os__xiafeng_disres)
 os__xiafeng:addRelatedSkill(os__xiafeng_buff)
-os__xiafeng:addRelatedSkill(os__xiafeng_max)
 
 local os__xiongjun = fk.CreateTriggerSkill{
   name = "os__xiongjun",
@@ -3170,7 +3158,8 @@ local os__yuejian = fk.CreateActiveSkill{
     room:askForGuanxing(player, room:getNCards(num), nil, nil, "os_yuejianPut", false) --不会更新牌堆牌数！
     room:doBroadcastNotify("UpdateDrawPile", #room.draw_pile) --手动……
     if num > 0 then
-      room:addPlayerMark(player, "@os__yuejian", 1)
+      room:addPlayerMark(player, "@os__yuejian")
+      room:addPlayerMark(player, "AddMaxCards")
     end
     if num > 1 then
       room:recover({
@@ -3185,13 +3174,6 @@ local os__yuejian = fk.CreateActiveSkill{
     end
   end,
 }
-local os__yuejian_max =  fk.CreateMaxCardsSkill{
-  name = "#os__yuejian_max",
-  correct_func = function(self, player)
-    return player:getMark("@os__yuejian")
-  end,
-}
-os__yuejian:addRelatedSkill(os__yuejian_max)
 
 os__bianfuren:addSkill(os__wanwei)
 os__bianfuren:addSkill(os__yuejian)
@@ -4505,6 +4487,7 @@ local os__fuhan = fk.CreateTriggerSkill{
     end)
     local generals = table.map(Fk:getGeneralsRandomly(5, Fk:getAllGenerals(), existingGenerals, (function(p) return (p.kingdom ~= "shu") end)), function(g) return g.name end)
     local general = Fk.generals[room:askForGeneral(player, generals, 1)]
+    room:setPlayerMark(player, "@os__fuhan", general.name)
     local skills = general:getSkillNameList(player.role == "lord" and #room.players > 4)
     room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, false)
     local maxHp = math.min(math.max(num, 2), 8)
@@ -4561,6 +4544,7 @@ Fk:loadTranslationTable{
 
   ["@meiying"] = "梅影",
   ["#os__fuhan-invoke"] = "扶汉：你可弃所有“梅影”，从5张蜀势力武将牌中选择一张获得其所有技能，将体力上限调整为%arg，回复1点体力",
+  ["@os__fuhan"] = "扶汉",
   ["#os__fanghun_gain"] = "芳魂",
 }
 
@@ -5566,7 +5550,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
+    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
   on_refresh = function(self, event, target, player, data)
     local suitsRecorded = type(player:getMark("@os__shelie-turn")) == "table" and player:getMark("@os__shelie-turn") or {}
@@ -5683,7 +5667,6 @@ local os__wushen = fk.CreateFilterSkill{
 }
 local os__wushen_buff = fk.CreateTargetModSkill{
   name = "#os__wushen_buff",
-  anim_type = "offensive",
   residue_func = function(self, player, skill, scope, card)
     return (player:hasSkill("os__wushen") and skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and card.suit == Card.Heart) and 999 or 0
   end,

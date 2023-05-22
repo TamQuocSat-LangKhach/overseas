@@ -282,8 +282,8 @@ local os__muyue = fk.CreateActiveSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and (card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)) then
-        table.insert(allCardNames, card.name)
+      if not table.contains(allCardNames, card.trueName) and (card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)) then
+        table.insert(allCardNames, card.trueName)
       end
     end
     return UI.ComboBox { choices = allCardNames }
