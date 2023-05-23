@@ -1229,13 +1229,19 @@ local os__jiaohua = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not (player:hasSkill(self.name) and player:getMark("_os__jiaohua") ~= 0) then return false end
+    if not player:hasSkill(self.name) then return false end
     for _, move in ipairs(data) do
       local target = move.to and player.room:getPlayerById(move.to) or nil --moveData没有target
       if target and (move.to == player.id or table.every(player.room:getAlivePlayers(), function(p)
           return p.hp >= target.hp
         end)) and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand then
-        local cardType = string.split(player:getMark("_os__jiaohua"), ",")
+        local cardType = {"basic", "trick", "equip"}
+        if type(player:getMark("_os__jiaohua-turn")) == "table" then
+          table.forEach(player:getMark("_os__jiaohua-turn"), function(name)
+            table.removeOne(cardType, name)
+          end)
+        end
+        if #cardType == 0 then return false end
         for _, info in ipairs(move.moveInfo) do
           table.removeOne(cardType, Fk:getCardById(info.cardId):getTypeString())
         end
@@ -1253,22 +1259,14 @@ local os__jiaohua = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local types = string.split(self.cost_data[2], ",")
-    local type = room:askForChoice(player, types, self.name, "#os__jiaohua-ask::" .. self.cost_data[1])
-    local id = room:getCardsFromPileByRule(".|.|.|.|.|" .. type, 1, "allPiles")
+    local choice = room:askForChoice(player, types, self.name, "#os__jiaohua-ask::" .. self.cost_data[1])
+    local id = room:getCardsFromPileByRule(".|.|.|.|.|" .. choice, 1, "allPiles")
     if #id > 0 then
       room:obtainCard(self.cost_data[1], id[1], false, fk.ReasonPrey)
-      local cardType = string.split(player:getMark("_os__jiaohua"), ",")
-      table.removeOne(cardType, Fk:getCardById(id[1]):getTypeString())
-      room:setPlayerMark(player, "_os__jiaohua", table.concat(cardType, ","))
+      local mark = type(player:getMark("_os__jiaohua-turn")) == "table" and player:getMark("_os__jiaohua-turn") or {}
+      table.insert(mark, Fk:getCardById(id[1]):getTypeString())
+      room:setPlayerMark(player, "_os__jiaohua-turn", mark)
     end
-  end,
-
-  refresh_events = {fk.EventPhaseChanging, fk.GameStart}, --错误的，但是先这样……
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and ((event == fk.EventPhaseChanging and data.from == Player.NotActive) or event == fk.GameStart)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "_os__jiaohua", "basic,trick,equip")
   end,
 }
 
@@ -3152,10 +3150,9 @@ local os__yuejian = fk.CreateActiveSkill{
   target_num = 0,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local cids = effect.cards
-    local num = #cids
-    room:moveCardTo(cids, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
-    room:askForGuanxing(player, room:getNCards(num), nil, nil, "os_yuejianPut", false) --不会更新牌堆牌数！
+    local num = #effect.cards
+    room:moveCardTo(effect.cards, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
+    room:askForGuanxing(player, room:getNCards(num), nil, nil, "os__yuejianPut", false) --不会更新牌堆牌数！
     room:doBroadcastNotify("UpdateDrawPile", #room.draw_pile) --手动……
     if num > 0 then
       room:addPlayerMark(player, "@os__yuejian")
@@ -3191,6 +3188,7 @@ Fk:loadTranslationTable{
   ["os__wanwei_both"] = "防止此伤害，并于本回合结束阶段开始时，获得牌堆底牌",
   ["#os__wanwei-use"] = "挽危：请使用获得的【%arg】",
   ["@os__yuejian"] = "约俭",
+  ["os__yuejianPut"] = "置于牌堆顶或牌堆底",
 }
 
 local os__himiko = General(extension, "os__himiko", "qun", 3, 3, General.Female)
@@ -5111,28 +5109,14 @@ local os__chongqi = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(room:getPlayerById(self.cost_data), "os__fuzuan", nil)
   end,
 
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  refresh_events = {fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    else
-      return target == player and player:hasSkill(self.name, true, true)
-    end
+    return player:hasSkill(self.name) and data == self  
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
-        for _, p in ipairs(room:getAlivePlayers()) do
-          room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
-        end
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      for _, p in ipairs(room:getAlivePlayers()) do
-        room:handleAddLoseSkills(p, "-os__feifu", nil, false, true) --不能把转换技标记去掉
-      end
+    for _, p in ipairs(room:getAlivePlayers()) do
+      room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
     end
   end,
 }
@@ -5181,7 +5165,7 @@ Fk:loadTranslationTable{
   ["os__fuzuan"] = "复纂",
   [":os__fuzuan"] = "你可于以下时机点选择一名有转换技的角色，调整其一个转换技的阴阳状态：出牌阶段限一次，你对其他角色造成伤害后，受到伤害后。",
   ["os__chongqi"] = "宠齐",
-  [":os__chongqi"] = "锁定技，所有角色视为拥有〖非服〗。游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
+  [":os__chongqi"] = "①锁定技，当你获得此技能后，所有角色获得〖非服〗。②游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
   ["os__feifu"] = "非服",
   [":os__feifu"] = "锁定技，转换技，阳：当你使用【杀】指定唯一目标后；阴：当你成为【杀】的唯一目标后；目标角色A须交给此【杀】的使用者B一张牌，若此牌为装备牌，B可使用此牌。",
 
@@ -5631,7 +5615,7 @@ os__godlvmeng:addSkill(os__gongxin)
 Fk:loadTranslationTable{
   ["os__godlvmeng"] = "神吕蒙",
   ["os__shelie"] = "涉猎",
-  [":os__shelie"] = "摸牌阶段，你可改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。每轮限一次，结束阶段开始时，若你本回合使用过四种花色的牌，你选择执行一个额外的摸牌阶段或出牌阶段且不能与上次选择相同。",
+  [":os__shelie"] = "①摸牌阶段，你可改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。②每轮限一次，结束阶段开始时，若你本回合使用过四种花色的牌，你选择执行一个额外的摸牌阶段或出牌阶段且不能与上次选择相同。",
   ["os__gongxin"] = "攻心",
   [":os__gongxin"] = "出牌阶段限一次，你可观看一名其他角色的手牌，然后你可展示其中一张牌，选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶，然后若其手牌中花色数因此减少，其不能响应你本回合使用的下一张牌。",
 
@@ -5779,9 +5763,9 @@ os__godguanyu:addSkill(os__wuhun)
 Fk:loadTranslationTable{
   ["os__godguanyu"] = "神关羽",
   ["os__wushen"] = "武神",
-  [":os__wushen"] = "锁定技，你的红桃手牌视为【杀】。你使用红桃【杀】无距离和次数限制且额外选择所有有“梦魇”的角色为目标。你于每个阶段内使用的第一张【杀】不能被响应。",
+  [":os__wushen"] = "锁定技，①你的红桃手牌视为【杀】。②你使用红桃【杀】无距离和次数限制且额外选择所有有“梦魇”的角色为目标。③你于每个阶段内使用的第一张【杀】不能被响应。",
   ["os__wuhun"] = "武魂",
-  [":os__wuhun"] = "锁定技，当你受到1点伤害后，伤害来源获得1枚“梦魇”；当你对有“梦魇”的角色造成伤害后，其获得1枚“梦魇”；当你死亡时，你可判定：若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色，这些角色失去X点体力（X为其“梦魇”数）。",
+  [":os__wuhun"] = "锁定技，①当你受到1点伤害后，伤害来源获得1枚“梦魇”。②当你对有“梦魇”的角色造成伤害后，其获得1枚“梦魇”。③当你死亡时，你可判定：若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色，这些角色失去X点体力（X为其“梦魇”数）。",
 
   ["@os__nightmare"] = "梦魇",
   ["os__wuhun_judge"] = "判定，若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色失去X点体力（X为其“梦魇”数）",

@@ -121,7 +121,6 @@ Fk:loadTranslationTable{
   [":os__shanghe"] = "限定技，当你进入濒死状态时，你可令所有其他角色各交给你一张牌，若其中没有【酒】，你将体力回复至1点。",
 }
 
-
 --[[local os__feiyi = General(extension, "os__feiyi", "shu", 3)
 
 local os__shengxi = fk.CreateTriggerSkill{
@@ -134,25 +133,24 @@ local os__shengxi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Start then
-      local pile = table.clone(Card.DrawPile)
-      table.insertTable(Card.DiscardPile)
-      table.insertTable(Card.Void)
-      local cids = {getCardByPattern(room, "redistribute", pile)}
-      if #cids > 0 then
-        room:moveCards({
-          ids = cids,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonPrey,
-          proposer = player.id,
-          skillName = self.name,
-        })
+      local id = nil
+      for _, cid in ipairs(Fk:getAllCardIds()) do
+        if Fk:getCardById(cid).name == "redistribute" and room:getCardArea(cid) == Card.Void then --优先拿游戏外的
+          id = cid
+          break
+        end
+      end
+      if not id then
+        local cids = room:getCardsFromPileByRule("redistribute", "allPiles")
+        if #cids > 0 then id = cids[1] end
+      end
+      if id then
+        room:obtainCard(player, id, false, fk.ReasonPrey)
       end
     else
-      local dummy = Fk:cloneCard("slash")
-      dummy:addSubcards(room:getCardsFromPileByRule("dismantlement,nullification,ex_nihilo"))
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      local id = room:getCardsFromPileByRule("dismantlement,nullification,ex_nihilo")
+      if #id > 0 then
+        room:obtainCard(player, id[1], false, fk.ReasonPrey)
       end
       player:drawCards(1, self.name)
     end
@@ -185,30 +183,6 @@ local os__shengxi = fk.CreateTriggerSkill{
   end,
 }
 
-local redistributeCardSkill = fk.CreateActiveSkill{
-  name = "redistribute_skill",
-  min_target_num = 1,
-  max_target_num = 2,
-  target_filter = function() return true end,
-  on_effect = function(self, room, cardEffectEvent)
-    local to = room:getPlayerById(cardEffectEvent.to)
-    
-  end,
-}
-
-local redistribute = fk.CreateTrickCard{
-  name = "redistribute",
-  skill = redistributeCardSkill,
-  special_skills = { "recast" },
-}
-
-extension_cards:addCards{
-  redistribute:clone(Card.Spade, 6),
-  redistribute:clone(Card.Club, 6),
-  redistribute:clone(Card.Heart, 6),
-  redistribute:clone(Card.Diamond, 6),
-}
-
 local os__kuanji = fk.CreateTriggerSkill{
   name = "os__kuanji",
   anim_type = "support",
@@ -217,7 +191,7 @@ local os__kuanji = fk.CreateTriggerSkill{
     if player.phase == Player.NotActive and player:hasSkill(self.name) and player:usedSkillTimes(self.name) == 0 then
       local cids = {}
       for _, move in ipairs(data) do
-        if move.from == player.id and move.toArea == Card.DiscardPile then
+        if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
           cids = table.insertTable(table.map(move.moveInfo, function(info)
           return info.cardId end))
         end
@@ -236,18 +210,18 @@ local os__kuanji = fk.CreateTriggerSkill{
         return p.id
       end), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
-      room:fillAG(player, self.cost_data)
-      --Not yet
-      room:closeAG(player)
-      self.cost_data = {target[1], self.cost_data}
-      return true
+      local cids = room:askForGuanxing(player, self.cost_data, nil, nil, "os__kuanjiGive", true).top
+      if #cids > 0 then
+        self.cost_data = {target[1], cids}
+        return true
+      end
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
     local dummy = Fk:cloneCard'slash'
     dummy:addSubcards(self.cost_data[2])
-    player.room:obtainCard(self.cost_data[1], dummy, false, fk.ReasonGive)
+    player.room:obtainCard(self.cost_data[1], dummy, false, fk.ReasonJustMove)
   end,
 }
 
@@ -258,12 +232,12 @@ Fk:loadTranslationTable{
   ["os__feiyi"] = "费祎",
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "准备阶段开始时，你可从游戏外、牌堆或弃牌堆中获得一张【调剂盐梅】。结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张智囊并摸一张牌。" ..
-  "<br></br><font color=\"grey\">#【<b>调剂盐梅</b>】（♠6/♣6/♥6/♦6）<br></br>出牌阶段，对两名手牌数不同的角色使用。手牌较多的目标角色弃置一张牌，手牌较少的目标角色摸一张牌。然后若这两名角色手牌数相同，你可将以此法弃置的牌交给一名角色。<br></br>重铸：出牌阶段，你可将此牌置入弃牌堆，摸一张牌。" ..
-  "<br></br>#\"<b>智囊</b>\"<br></br>过河拆桥、无懈可击、无中生有（线下可由面杀玩家自行约定选取三种锦囊）</font>",
+  "<br></br>#\"<b>智囊</b>\"<br></br>即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）</font>",
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
 
   ["#os__kuanji-ask"] = "宽济：你可令一名其他角色获得其中的任意张牌。",
+  ["os__kuanjiGive"] = "宽济：将要交给的牌放在上面一栏",
 }]]
 
 local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
@@ -423,6 +397,128 @@ Fk:loadTranslationTable{
   ["#os__chayi_using"] = "察异",
 }
 
+local os__xunchen = General(extension, "os__xunchen", "qun", 3)
+
+local os__weipo = fk.CreateActiveSkill{
+  name = "os__weipo",
+  anim_type = "control",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = function() return false end,
+  card_num = 0,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isNude()
+  end,
+  target_num = 1,
+  interaction = UI.ComboBox{choices = {"enemy_at_the_gates", "dismantlement", "nullification", "ex_nihilo"} },
+  on_use = function(self, room, effect)
+    local choice = self.interaction.data
+    if not choice then return false end
+    local target = room:getPlayerById(effect.tos[1])
+    room:askForDiscard(target, 1, 1, true, self.name, false, nil)
+    local id = nil
+    for _, cid in ipairs(Fk:getAllCardIds()) do
+      if Fk:getCardById(cid).name == choice and room:getCardArea(cid) == Card.Void then --优先拿游戏外的
+        id = cid
+        break
+      end
+    end
+    if not id then
+      local cids = room:getCardsFromPileByRule(choice, 1, "allPiles") --？
+      if #cids > 0 then id = cids[1] end
+    end
+    if id then
+      room:obtainCard(target, id, false, fk.ReasonPrey)
+    end
+  end,
+}
+
+local os__chenshi = fk.CreateTriggerSkill{
+  name = "os__chenshi",
+  anim_type = "control",
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.card.name == "enemy_at_the_gates" and player ~= target
+  end,
+  on_cost = function(self, event, target, player, data)
+    local id = player.room:askForCard(target, 1, 1, true, self.name, true, nil, event == fk.TargetSpecified and "#os__chenshi-give1:" .. player.id or "#os__chenshi-give2:" .. player.id)
+    if #id > 0 then
+      self.cost_data = id[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:moveCardTo(self.cost_data, Player.Hand, player, fk.ReasonGive, self.name, nil, false)
+    local cids = {}
+    for i = 1, math.min(3, #room.draw_pile), 1 do
+      table.insert(cids, room.draw_pile[i])
+      print(Fk:getCardById(room.draw_pile[i]).name, room.draw_pile[i])
+    end
+    local throw = {}
+    print(#room.draw_pile)
+    for i, id in ipairs(cids) do
+      if (event == fk.TargetSpecified and Fk:getCardById(id).trueName ~= "slash") or (event == fk.TargetConfirmed and Fk:getCardById(id).trueName == "slash") then
+        table.insert(throw, id)
+      end
+    end
+    if #throw > 0 then
+      room:moveCards({
+        ids = throw,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+        skillName = self.name,
+      })
+    end
+    room:delay(2000)
+    print(#room.draw_pile)
+  end,
+}
+
+local os__moushi = fk.CreateTriggerSkill{
+  name = "os__moushi",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self.name) and data.card and data.card.color == player:getMark("_os__moushi")
+  end,
+  on_use = function(self, event, target, player, data)
+    return true
+  end,
+
+  refresh_events = {fk.Damaged},
+  can_refresh = function(self, event, target, player, data)
+    return player == target --……
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "_os__moushi", data.card.color)
+    if player:hasSkill(self.name, true) then room:setPlayerMark(player, "@os__moushi", data.card:getColorString()) end
+  end,
+}
+
+os__xunchen:addSkill(os__weipo)
+os__xunchen:addSkill(os__chenshi)
+os__xunchen:addSkill(os__moushi)
+
+Fk:loadTranslationTable{
+  ["os__xunchen"] = "荀谌",
+  ["os__weipo"] = "危迫",
+  [":os__weipo"] = "出牌阶段限一次，你可令一名角色弃置一张牌，然后令其获得一张【兵临城下】或由你指定的智囊。" ..
+  "<font color='grey'><br></br>#\"<b>智囊</b>\"<br></br>即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）</font>",
+  ["os__chenshi"] = "陈势",
+  [":os__chenshi"] = "当其他角色使用【兵临城下】指定目标后，可交给你一张牌，然后将牌堆顶三张牌中不为【杀】的牌置入弃牌堆；当其他角色成为【兵临城下】的目标后，可交给你一张牌，然后将牌堆顶三张牌中的【杀】置入弃牌堆。",
+  ["os__moushi"] = "谋识",
+  [":os__moushi"] = "锁定技，当你受到伤害时，若造成伤害的牌与上次对你造成伤害的牌颜色相同，则你防止此伤害。",
+
+  ["#os__chenshi-give1"] = "陈势：你可交给 %src 一张牌，将牌堆顶三张牌中不为【杀】的牌置入弃牌堆",
+  ["#os__chenshi-give2"] = "陈势：你可交给 %src 一张牌，将牌堆顶三张牌中的【杀】置入弃牌堆",
+  ["@os__moushi"] = "谋识",
+}
+
 local os__huojun = General(extension, "os__huojun", "shu", 4)
 
 local os__sidai = fk.CreateViewAsSkill{
@@ -556,6 +652,108 @@ Fk:loadTranslationTable{
   ["#os__sidai_nojink"] = "伺怠：弃置一张基本牌，否则不能响应此【杀】",
 }
 
+local os__wujing = General(extension, "os__wujing", "wu", 4)
+
+local os__fenghan = fk.CreateTriggerSkill{
+  name = "os__fenghan",
+  anim_type = "drawcard",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return 
+      target == player and
+      player:hasSkill(self.name) and
+      data.firstTarget and player:usedSkillTimes(self.name) < 1 and data.card.is_damage_card
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local num = #AimGroup:getAllTargets(data.tos)
+    
+    local result = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
+        return p.id
+      end), 1, num, "#os__fenghan-ask:::" .. num, self.name, true)
+    if #result > 0 then
+      self.cost_data = result
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = self.cost_data
+    for _, id in ipairs(targets) do
+      room:getPlayerById(id):drawCards(1, self.name)
+    end
+  end,
+}
+
+local os__congji = fk.CreateTriggerSkill{
+  name = "os__congji",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player.phase == Player.NotActive and player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).color == Card.Red then
+              return true
+            end
+          end
+        end
+      end
+    end
+    return false
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local target = room:askForChoosePlayers(
+      player,
+      table.map(room:getOtherPlayers(player), function(p)
+        return p.id
+      end),
+      1,
+      1,
+      "#os__congji-ask",
+      self.name,
+      true
+    )
+
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local dummy = Fk:cloneCard'slash'
+    local cids = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).color == Card.Red then
+            table.insert(cids, info.cardId)
+          end
+        end
+      end
+    end
+    dummy:addSubcards(cids)
+    player.room:obtainCard(self.cost_data, dummy, false, fk.ReasonGive)
+  end,
+}
+
+os__wujing:addSkill(os__fenghan)
+os__wujing:addSkill(os__congji)
+
+Fk:loadTranslationTable{
+  ["os__wujing"] = "吴景",
+  ["os__fenghan"] = "锋悍",
+  [":os__fenghan"] = "每回合限一次，当你使用【杀】或伤害锦囊牌指定第一个目标后，你可令至多X名角色摸一张牌（X为目标数）。",
+  ["os__congji"] = "从击",
+  [":os__congji"] = "当你于回合外弃置牌后，你可将其中的所有红色牌交给一名其他角色。",
+
+  ["#os__fenghan-ask"] = "锋悍：你可令至多 %arg 名角色各摸一张牌",
+  ["#os__congji-ask"] = "从击：你可将弃置的牌中所有的红色牌交给一名其他角色",
+}
 
 local os__xujing = General(extension, "os__xujing", "shu", 3)
 
@@ -679,109 +877,6 @@ Fk:loadTranslationTable{
   ["#os__boming_draw"] = "博名",
   ["os__ejian_discard"] = "弃置除获得的牌外和获得的牌类别相同的牌",
   ["os__ejian_damage"] = "受到1点伤害",
-}
-
-local os__wujing = General(extension, "os__wujing", "wu", 4)
-
-local os__fenghan = fk.CreateTriggerSkill{
-  name = "os__fenghan",
-  anim_type = "drawcard",
-  events = {fk.TargetSpecified},
-  can_trigger = function(self, event, target, player, data)
-    return 
-      target == player and
-      player:hasSkill(self.name) and
-      data.firstTarget and player:usedSkillTimes(self.name) < 1 and data.card.is_damage_card
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local num = #AimGroup:getAllTargets(data.tos)
-    
-    local result = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
-        return p.id
-      end), 1, num, "#os__fenghan-ask:::" .. num, self.name, true)
-    if #result > 0 then
-      self.cost_data = result
-      return true
-    end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local targets = self.cost_data
-    for _, id in ipairs(targets) do
-      room:getPlayerById(id):drawCards(1, self.name)
-    end
-  end,
-}
-
-local os__congji = fk.CreateTriggerSkill{
-  name = "os__congji",
-  anim_type = "support",
-  events = {fk.AfterCardsMove},
-  can_trigger = function(self, event, target, player, data)
-    if player.phase == Player.NotActive and player:hasSkill(self.name) then
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId).color == Card.Red then
-              return true
-            end
-          end
-        end
-      end
-    end
-    return false
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local target = room:askForChoosePlayers(
-      player,
-      table.map(room:getOtherPlayers(player), function(p)
-        return p.id
-      end),
-      1,
-      1,
-      "#os__congji-ask",
-      self.name,
-      true
-    )
-
-    if #target > 0 then
-      self.cost_data = target[1]
-      return true
-    end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local dummy = Fk:cloneCard'slash'
-    local cids = {}
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-        for _, info in ipairs(move.moveInfo) do
-          if Fk:getCardById(info.cardId).color == Card.Red then
-            table.insert(cids, info.cardId)
-          end
-        end
-      end
-    end
-    dummy:addSubcards(cids)
-    player.room:obtainCard(self.cost_data, dummy, false, fk.ReasonGive)
-  end,
-}
-
-os__wujing:addSkill(os__fenghan)
-os__wujing:addSkill(os__congji)
-
-Fk:loadTranslationTable{
-  ["os__wujing"] = "吴景",
-  ["os__fenghan"] = "锋悍",
-  [":os__fenghan"] = "每回合限一次，当你使用【杀】或伤害锦囊牌指定第一个目标后，你可令至多X名角色摸一张牌（X为目标数）。",
-  ["os__congji"] = "从击",
-  [":os__congji"] = "当你于回合外弃置牌后，你可将其中的所有红色牌交给一名其他角色。",
-
-  ["#os__fenghan-ask"] = "锋悍：你可令至多 %arg 名角色各摸一张牌",
-  ["#os__congji-ask"] = "从击：你可将弃置的牌中所有的红色牌交给一名其他角色",
 }
 
 local os__chenwudongxi = General(extension, "os__chenwudongxi", "wu", 4)
