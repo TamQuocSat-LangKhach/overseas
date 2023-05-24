@@ -88,10 +88,7 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
     table.forEach(self.cost_data, function(pid) pdNum[pid] = pd.results[pid].toCard.number end)
     local winner, num = nil, nil
     for k, v in pairs(pdNum) do
-      if num == nil then
-        num = v
-        winner = k
-      elseif num < v then
+      if num == nil or num < v then
         num = v
         winner = k
       elseif num == v then
@@ -459,10 +456,7 @@ local os__zhenhu = fk.CreateTriggerSkill{
     table.forEach(targets, function(pid) pdNum[pid] = pd.results[pid].toCard.number end)
     local winner, num = nil, nil
     for k, v in pairs(pdNum) do
-      if num == nil then
-        num = v
-        winner = k
-      elseif num < v then
+      if num == nil or num < v then
         num = v
         winner = k
       elseif num == v then
