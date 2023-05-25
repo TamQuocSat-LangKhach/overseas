@@ -432,7 +432,7 @@ local os__zhenhu = fk.CreateTriggerSkill{
   events = {fk.TargetSpecifying},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name) and data.card.is_damage_card and data.firstTarget
+    return player == target and player:hasSkill(self.name) and data.card.is_damage_card and data.firstTarget and not table.every(player.room:getOtherPlayers(player), function(p) return p:isKongcheng() end)
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)

@@ -91,7 +91,7 @@ local talismanSkill = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and data.card and type(player:getMark("@$talisman")) == "table" and table.contains(player:getMark("@$talisman"), data.card.trueName)
+    return target == player and player:hasSkill(self.name) and data.card and type(player:getMark("@$talisman")) == "table" and table.contains(player:getMark("@$talisman"), data.card.trueName)
   end,
   on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, self.name, "defensive")
@@ -114,6 +114,10 @@ local talisman = fk.CreateArmor{
   suit = Card.Heart,
   number = 1,
   equip_skill = talismanSkill,
+  on_uninstall = function(self, room, player)
+    Armor.onUninstall(self, room, player)
+    room:setPlayerMark(player, "@$talisman", 0)
+  end,
 }
 extension:addCard(talisman)
 Fk:loadTranslationTable{
@@ -289,6 +293,7 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
           from = player.id,
           tos = { {to.id} },
           skillName = self.name,
+          extraUse = true,
         })
       end
     end
@@ -299,6 +304,7 @@ local enemyAtTheGates = fk.CreateTrickCard{
   suit = Card.Spade,
   number = 7,
   skill = enemyAtTheGatesSkill,
+  is_damage_card = true,
 }
 extension:addCards{
   enemyAtTheGates,
