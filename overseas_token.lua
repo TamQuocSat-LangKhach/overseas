@@ -231,7 +231,7 @@ local redistributeAction = fk.CreateTriggerSkill{
   priority = 10,
   events = { fk.CardUseFinished },
   can_trigger = function(self, event, target, player, data)
-    return data.card.name == "redistribute" and data.extra_data and data.extra_data.redistributeCids and target:isAlive()
+    return data.card and data.card.name == "redistribute" and data.extra_data and data.extra_data.redistributeCids and target:isAlive()
   end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
