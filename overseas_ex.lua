@@ -13,7 +13,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getMark("_os_ex__jingce_use-phase") == player.hp
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and (data.card.extra_data or {}).os_ex__jingce == player.hp
   end,
   on_use = function(self, event, target, player, data)
     local invoke = false
@@ -29,7 +29,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardUseDeclared, fk.AfterCardsMove, fk.Damage},
   can_refresh = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
-      return target == player and player:hasSkill(self.name, true) and player.phase == Player.Play
+      return target == player and player.phase == Player.Play --and player:hasSkill(self.name, true) 
     elseif event == fk.AfterCardsMove then
       if player.phase == Player.Play then
         for _, move in ipairs(data) do
@@ -47,6 +47,8 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
       player.room:addPlayerMark(player, "_os_ex__jingce_use-phase", 1)
+      data.card.extra_data = data.card.extra_data or {}
+      data.card.extra_data.os_ex__jingce = player:getMark("_os_ex__jingce_use-phase")
     elseif event == fk.AfterCardsMove then
       player.room:addPlayerMark(player, "_os_ex__jingce_draw-phase", 1)
     else
@@ -115,10 +117,10 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
 local os_ex__yuzhang_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__yuzhang_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0
+    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 --and card.area == Card.PlayerHand
+    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
 }
 
@@ -462,7 +464,7 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
       local chengpu = room:getPlayerById(self.cost_data[1])
       room:notifySkillInvoked(chengpu, "os_ex__chunlao")
       local cid = self.cost_data[2]
-      room:obtainCard(chengpu, cid, false, fk.ReasonGive)
+      room:moveCardTo(cid, Player.Hand, chengpu, fk.ReasonGive, self.name, nil, false)
       data.additionalDamage = (data.additionalDamage or 0) + 1
     else
       room:notifySkillInvoked(player, "os_ex__chunlao")

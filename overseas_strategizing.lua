@@ -92,7 +92,7 @@ local os__shanghe = fk.CreateTriggerSkill{
         if not_include and Fk:getCardById(id).name == "analeptic" then
           not_include = false
         end
-        room:obtainCard(player, id, false, fk.ReasonGive)
+        room:moveCardTo(id, Player.Hand, player, fk.ReasonGive, self.name, nil, false)
       end
     end
 
@@ -713,6 +713,7 @@ local os__congji = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local dummy = Fk:cloneCard'slash'
+    local room = player.room
     local cids = {}
     for _, move in ipairs(data) do
       if move.from == player.id and move.moveReason == fk.ReasonDiscard then
@@ -724,7 +725,7 @@ local os__congji = fk.CreateTriggerSkill{
       end
     end
     dummy:addSubcards(cids)
-    player.room:obtainCard(self.cost_data, dummy, false, fk.ReasonGive)
+    room:moveCardTo(dummy, Player.Hand, room:getPlayerById(self.cost_data), fk.ReasonGive, self.name, nil, false)
   end,
 }
 

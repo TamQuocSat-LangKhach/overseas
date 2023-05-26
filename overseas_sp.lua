@@ -409,7 +409,7 @@ local os__jimeng = fk.CreateActiveSkill{
     room:obtainCard(effect.from, card, false)
 
     local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#os__jimeng-card::" .. target.id)[1]
-    room:obtainCard(target, c, false, fk.ReasonGive)
+    room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
 
     if target.hp >= player.hp then
       player:drawCards(1, self.name)
@@ -458,7 +458,7 @@ local os__shuaiyan = fk.CreateTriggerSkill{
     local target = room:getPlayerById(self.cost_data)
     if not target:isNude() then
       local c = room:askForCard(target, 1, 1, true, self.name, false, "", "#os__shuaiyan-card::" .. player.id)[1]
-      room:obtainCard(player, c, false, fk.ReasonGive)
+      room:moveCardTo(c, Player.Hand, player, fk.ReasonGive, self.name, nil, false)
     end
   end,
 }
@@ -776,8 +776,8 @@ local os__zhenjun = fk.CreateTriggerSkill{
     local room = player.room
     local to = self.cost_data[1]
     room:doIndicate(player.id, { to })
-    room:obtainCard(to, self.cost_data[2], false, fk.ReasonGive)
     local target = room:getPlayerById(to)
+    room:moveCardTo(self.cost_data[2], Player.Hand, target, fk.ReasonGive, self.name, nil, false)
     local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond,nosuit", "#os__zhenjun_slash", true)
     if use then
       use.extra_data = use.extra_data or {}
@@ -1494,7 +1494,7 @@ local os__mutao = fk.CreateActiveSkill{
       to = to:getNextAlive()
       if to == target then to = to:getNextAlive() end
       local id = cids[math.random(1, #cids)]
-      room:obtainCard(to, id, false, fk.ReasonGive)
+      room:moveCardTo(id, Player.Hand, to, fk.ReasonGive, self.name, nil, false)
     end
     room:damage{
       from = target,
