@@ -132,16 +132,20 @@ local os__chuanshu = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__chuanshu", {target.id, player.general})
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused},
+  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseChanging then
-      return target == player and data.from == Player.NotActive and player:getMark("_os__chuanshu") ~= 0
-    elseif event == fk.PindianCardsDisplayed then
+    if event == fk.PindianCardsDisplayed then
       return player:getMark("@os__chuanshu") ~= 0 and (data.from == player or table.contains(data.tos, player))
+    end
+    if target ~= player then return false end
+    if event == fk.EventPhaseChanging then
+      return data.from == Player.NotActive and player:getMark("_os__chuanshu") ~= 0
+    elseif event == fk.Deathed then
+      return player:hasSkill(self.name, true, true)
     elseif event == fk.PreCardUse then
-      return target == player and player:getMark("_os__chuanshu_slash") ~= 0
+      return player:getMark("_os__chuanshu_slash") ~= 0
     else
-      if target ~= player or player:getMark("@os__chuanshu") == 0 then return false end
+      if player:getMark("@os__chuanshu") == 0 then return false end
       local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       return parentUseData and (parentUseData.data[1].extra_data or {}).os__chuanshuUser == player.id
     end
@@ -149,7 +153,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging then
+    if event == fk.EventPhaseChanging or event == fk.Deathed then
       local target = room:getPlayerById(player:getMark("_os__chuanshu")[1])
       if target:isAlive() then
         local os__chuanshuRecord = type(target:getMark("@os__chuanshu")) == "table" and target:getMark("@os__chuanshu") or {}
