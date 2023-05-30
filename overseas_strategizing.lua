@@ -69,7 +69,7 @@ local os__yingji = fk.CreateViewAsSkill{
     player:drawCards(1, self.name)
   end,
   enabled_at_play = function(self, player)
-    return player.phase == Player.NotActive and player:isKongcheng() --回合外出牌阶段……会有吗@废案曹睿
+    return player.phase == Player.NotActive and player:isKongcheng()
   end,
   enabled_at_response = function(self, player)
     return player.phase == Player.NotActive and player:isKongcheng()
@@ -505,6 +505,173 @@ Fk:loadTranslationTable{
   ["#os__chenshi-give2"] = "陈势：你可交给 %src 一张牌，将牌堆顶三张牌中的【杀】置入弃牌堆",
   ["@os__moushi"] = "谋识",
 }
+
+--[[local os__wangling = General(extension, "os__wangling", "wei", 4)
+
+local os__mibei = fk.CreateTriggerSkill{
+  name = "os__mibei",
+  frequency = Skill.Quest,
+  refresh_events = {fk.AfterCardUseDeclared, fk.EventPhaseEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:getQuestSkillState(self.name) ~= "succeed" and (event == fk.AfterCardUseDeclared or (player.phase == Player.Play and player:getMark("_os__mibei_use-turn") == 0)) --and player:getMark("@@os__mibei_done") == 0 
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardUseDeclared then
+      local typesRecorded = type(player:getMark("@os__mibei")) == "table" and player:getMark("@os__mibei") or {0, 0, 0}
+      typesRecorded[data.card.type] = typesRecorded[data.card.type] + 1
+      room:setPlayerMark(player, "@os__mibei", typesRecorded)
+      if typesRecorded[1] > 1 and typesRecorded[2] > 1 and typesRecorded[3] > 1 then
+        room:updateQuestSkillState(player, self.name, true) -- 为了有那个白底……
+        room:updateQuestSkillState(player, self.name, false)
+        room:handleAddLoseSkills(player, "os__mouli", nil)
+        room:setPlayerMark(player, "@os__mibei", 0)
+      end
+      room:addPlayerMark(player, "_os__mibei_use-turn")
+    else
+      room:addPlayerMark(player, MarkEnum.MinusMaxCardsInTurn, 1)
+      room:setPlayerMark(player, "@os__mibei", 0)
+      room:updateQuestSkillState(player, self.name, true)
+    end
+  end,
+}
+
+local os__xingqi = fk.CreateTriggerSkill{
+  name = "os__xingqi",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Wake,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    local num = 0
+    for _, p in ipairs(player.room.alive_players) do
+      num = num + #p:getCardIds({Player.Equip, Player.Judge})
+    end
+    return num > player.hp
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:recover({
+      who = player,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name,
+    })
+    if player:getQuestSkillState("os__mibei") ~= "succeed" then
+      local dummy = Fk:cloneCard("slash")
+      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|basic"))
+      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|trick"))
+      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|equip"))
+      if #dummy.subcards > 0 then
+        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      end
+    else
+      room:setPlayerMark(player, "@os__xingqi_nodistance", 1)
+    end
+  end,
+}
+local os__xingqi_nodistance = fk.CreateTargetModSkill{
+  name = "#os__xingqi_nodistance",
+  distance_limit_func = function(self, player, skill)
+    return player:getMark("@os__xingqi_nodistance") > 0 and 999 or 0
+  end,
+}
+os__xingqi:addRelatedSkill(os__xingqi_nodistance)
+
+local os__mouli = fk.CreateViewAsSkill{
+  name = "os__mouli",
+  card_filter = function() return false end,
+  card_num = 0,
+  pattern = ".|.|.|.|.|basic",
+  interaction = function(self)
+    local allCardNames = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+      local card = Fk:getCardById(id)
+      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        table.insert(allCardNames, card.name)
+      end
+    end
+    return UI.ComboBox { choices = allCardNames }
+  end,
+  view_as = function(self)
+    local choice = self.interaction.data
+    if not choice then return end
+    local c = Fk:cloneCard(choice)
+    c.skillName = self.name
+    return c
+  end,
+  enabled_at_play = function(self, player)
+    if player:usedSkillTimes(self.name) > 0 then return false end
+    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        return true
+      end
+    end
+    return false
+  end,
+  enabled_at_response = function(self, player, cardResponsing)
+    if player:usedSkillTimes(self.name) > 0 or cardResponsing then return false end
+    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        return true
+      end
+    end
+    return false
+  end,
+  before_use = function(self, player, use)
+    local cids = player.room:getCardsFromPileByRule(".|.|.|.|" .. use.card.name)
+    if #cids > 0 then
+      use.card:addSubcards(cids)
+    --else
+      --use = nil
+    end
+  end,
+}
+local os__mouli_subcard = fk.CreateTriggerSkill{ --恃才问题
+  name = "#os__mouli_subcard",
+  events = {fk.PreCardUse, fk.PreCardRespond},
+  mute = true,
+  priority = 10,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true) and table.contains(data.card.skillNames, "os__mouli")
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    if #data.card.subcards == 0 then return true end
+  end,
+}
+os__mouli:addRelatedSkill(os__mouli_subcard)
+
+os__wangling:addSkill(os__mibei)
+os__wangling:addSkill(os__xingqi)
+os__wangling:addRelatedSkill(os__mouli)
+
+Fk:loadTranslationTable{
+  ["os__wangling"] = "王凌",
+  ["os__mibei"] = "秘备",
+  [":os__mibei"] = "使命技，使用每种类别的牌各至少两张。成功：你获得〖谋立〗。失败：出牌阶段结束时，若你本回合未使用过牌，则你本回合手牌上限-1并重置〖秘备〗。" .. 
+  "<br></br><font color='grey'>◆<b>重置〖秘备〗</b>，即清空〖秘备〗所记录的所使用过的牌的类别和数量。<br></br><b>使命技(国际服)</b>在成功后失效，在失败且执行完相应效果后仍视为使命未失败。</font>",
+  ["os__xingqi"] = "星启",
+  [":os__xingqi"] = "觉醒技，准备阶段开始时，若场上的牌数大于你的体力值，则你回复1点体力，然后若〖秘备〗未完成，你从牌堆中获得每种类别的牌各一张；若〖秘备〗已完成，本局游戏你使用牌无距离限制。",
+  ["os__mouli"] = "谋立",
+  [":os__mouli"] = "每回合限一次，当你需要使用基本牌时，你可使用牌堆中（系统选择）的基本牌。",
+
+  ["@os__mibei"] = "秘备",
+  ["@os__xingqi_nodistance"] = "星启无距离限制",
+
+  ["$os__mibei1"] = "密为之备，不可有失。",
+  ["$os__mibei2"] = "事以密成，语以泄败！",
+  ["$os__xingqi1"] = "司马氏虽权尊势重，吾等徐图亦无不可！",
+  ["$os__xingqi2"] = "先谋后事者昌，先事后谋者亡！",
+  ["$os__mouli1"] = "澄汰王室，迎立宗子！",
+  ["$os__mouli1"] = "僣孽为害，吾岂可谋而不行？",
+  ["~os__wangling"] = "一生尽忠事魏，不料，今日晚节尽毁啊！",
+}]]
 
 local os__huojun = General(extension, "os__huojun", "shu", 4)
 

@@ -132,7 +132,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__chuanshu", {target.id, player.general})
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Deathed},
+  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.PindianCardsDisplayed then
       return player:getMark("@os__chuanshu") ~= 0 and (data.from == player or table.contains(data.tos, player))
@@ -140,7 +140,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
     if target ~= player then return false end
     if event == fk.EventPhaseChanging then
       return data.from == Player.NotActive and player:getMark("_os__chuanshu") ~= 0
-    elseif event == fk.Deathed then
+    elseif event == fk.Death then
       return player:hasSkill(self.name, true, true)
     elseif event == fk.PreCardUse then
       return player:getMark("_os__chuanshu_slash") ~= 0
@@ -153,7 +153,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging or event == fk.Deathed then
+    if event == fk.EventPhaseChanging or event == fk.Death then
       local target = room:getPlayerById(player:getMark("_os__chuanshu")[1])
       if target:isAlive() then
         local os__chuanshuRecord = type(target:getMark("@os__chuanshu")) == "table" and target:getMark("@os__chuanshu") or {}
@@ -350,11 +350,9 @@ local os__jiange = fk.CreateViewAsSkill{
     c:addSubcard(cards[1])
     return c
   end,
-  before_use = function(self, player)
+  before_use = function(self, player, use)
     if player.phase == Player.NotActive then player:drawCards(1, self.name) end
-  end,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    use.extraUse = true
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name) == 0 --权宜
@@ -395,18 +393,25 @@ local os__xiawang = fk.CreateTriggerSkill{
     use.extra_data.os__xiawangUser = player.id
     room:useCard(use)
     if player:getMark("_os__xiawang-phase") > 0 then
-      local event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
-      event:shutdown()
+      data.os__xiawang = true
     end
   end,
 
-  refresh_events = {fk.Damage},
+  refresh_events = {fk.Damage, fk.DamageFinished},
   can_refresh = function(self, event, target, player, data)
-    local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-    return parentUseData and (parentUseData.data[1].extra_data or {}).os__xiawangUser == player.id
+    if event == fk.Damage then
+      local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      return parentUseData and (parentUseData.data[1].extra_data or {}).os__xiawangUser == player.id
+    else
+      return data.os__xiawang == true
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__xiawang-phase")
+    if event == fk.Damage then
+      player.room:addPlayerMark(player, "_os__xiawang-phase")
+    else
+      player.room.logic:getCurrentEvent():findParent(GameEvent.Phase):shutdown()
+    end
   end,
 }
 
@@ -418,9 +423,9 @@ Fk:loadTranslationTable{
   ["os__jiange"] = "剑歌",
   [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。",
   ["os__xiawang"] = "侠望",
-  [":os__xiawang"] = "当至你距离不大于1的角色受到黑色牌造成的伤害后，你可对伤害来源使用【杀】。若此【杀】造成了伤害，则在【杀】结算后结束当前阶段。",
+  [":os__xiawang"] = "当至你距离不大于1的角色受到黑色牌造成的伤害后，你可对伤害来源使用【杀】。若此【杀】造成了伤害，则在当前伤害结束结算后结束当前阶段。",
 
-  ["#os__xiawang-ask"] = "你可对 %src 使用【杀】。若此【杀】造成了伤害，则在结算后结束当前阶段",
+  ["#os__xiawang-ask"] = "你可对 %src 使用【杀】。若此【杀】造成了伤害，则在当前伤害事件结束结算后结束当前阶段",
 
   ["$os__jiange1"] = "纵剑为舞，击缶而歌！",
   ["$os__jiange2"] = "辞亲历山野，仗剑唱大风！",
@@ -572,7 +577,7 @@ local os__xuechang = fk.CreateActiveSkill{
   end,
   card_filter = function() return false end,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng() and to_select ~= Self.id
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -798,18 +803,18 @@ local os__kaizeng = fk.CreateTriggerSkill{
     if event == fk.GameStart or event == fk.EventAcquireSkill then
       if player:hasSkill(self.name, true) then
         for _, p in ipairs(room:getOtherPlayers(player)) do
-          room:handleAddLoseSkills(p, "&os__kaizeng_others", nil, false, true)
+          room:handleAddLoseSkills(p, "os__kaizeng_others&", nil, false, true)
         end
       end
     elseif event == fk.EventLoseSkill or event == fk.Deathed then
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        room:handleAddLoseSkills(p, "-&os__kaizeng_others", nil, false, true)
+        room:handleAddLoseSkills(p, "-os__kaizeng_others&", nil, false, true)
       end
     end
   end,
 }
 local os__kaizeng_others = fk.CreateActiveSkill{
-  name = "&os__kaizeng_others",
+  name = "os__kaizeng_others&",
   card_num = 0,
   target_num = 0,
   can_use = function(self, player)
@@ -825,7 +830,7 @@ local os__kaizeng_others = fk.CreateActiveSkill{
         table.insertIfNeed(choiceList, card.trueName)
       end
     end
-    table.insertTable(choiceList, {"trick", "equip"}) --只要三国杀还只有三个类别，就不想写得效率更低但更稳妥……
+    table.insertTable(choiceList, {"trick", "equip"})
     return UI.ComboBox { choices = choiceList }
   end,
   on_use = function(self, room, effect)
@@ -874,7 +879,7 @@ local os__yangming = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local num = #player:getMark("@os__yangming-phase")
     player:drawCards(num, self.name)
-    player.room:addPlayerMark(player, "AddMaxCards-turn", num)
+    player.room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, num)
   end,
 
   refresh_events = {fk.AfterCardUseDeclared},
@@ -902,8 +907,8 @@ Fk:loadTranslationTable{
   ["os__yangming"] = "扬名",
   [":os__yangming"] = "出牌阶段结束时，你可摸X张牌，且此回合手牌上限+X（X为你此阶段使用牌的类别数）。",
 
-  ["&os__kaizeng_others"] = "慨赠",
-  [":&os__kaizeng_others"] = "出牌阶段限一次，你可指定一种基本牌牌名或非基本牌类别，令侠鲁肃选择是否交给你任意张手牌。若其交给你多于一张牌，其摸一张牌；若其中包含你指定的牌名/类别的牌，其从牌堆中获得一张不同牌名/类别的牌。",
+  ["os__kaizeng_others&"] = "慨赠",
+  [":os__kaizeng_others&"] = "出牌阶段限一次，你可指定一种基本牌牌名或非基本牌类别，令侠鲁肃选择是否交给你任意张手牌。若其交给你多于一张牌，其摸一张牌；若其中包含你指定的牌名/类别的牌，其从牌堆中获得一张不同牌名/类别的牌。",
   ["#os__kaizeng-give"] = "慨赠：你可交给 %src 任意张手牌",--，其指定了 %arg",
   ["@os__yangming-phase"] = "扬名",
 

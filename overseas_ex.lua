@@ -82,12 +82,7 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
       }
       return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__yuzhang:::" .. phase_name_table[data.to])
     else
-      local choices = {"os_ex__yuzhang_disable", "Cancel"}
-      local target = data.from
-      if #target:getCardIds(Player.Hand) + #target:getCardIds(Player.Equip) > 1 then
-        table.insert(choices, 2, "os_ex__yuzhang_discard")
-      end
-      local choice = player.room:askForChoice(player, choices, self.name, "#os_ex__yuzhang-ask::" .. target.id)
+      local choice = player.room:askForChoice(player, {"os_ex__yuzhang_disable", "os_ex__yuzhang_discard", "Cancel"}, self.name, "#os_ex__yuzhang-ask::" .. data.from.id)
       if choice ~= "Cancel" then
         self.cost_data = choice
         return true
@@ -107,7 +102,11 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
       local choice = self.cost_data
       local target = data.from
       if choice == "os_ex__yuzhang_discard" then
-        room:askForDiscard(target, 2, 2, true, self.name, false)
+        if #target:getCardIds({Player.Hand, Player.Equip}) <= 2 then
+          target:throwAllCards("he")
+        else
+          room:askForDiscard(target, 2, 2, true, self.name, false)
+        end
       else
         room:addPlayerMark(target, "_os_ex__yuzhang_pro-turn", 1)
       end
@@ -187,10 +186,12 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
 local os_ex__qianxi_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__qianxi_prohibit",
   prohibit_use = function(self, player, card)
+    if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
     if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
   end,
   prohibit_response = function(self, player, card)
+    if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
     if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
   end,
