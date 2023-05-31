@@ -2232,6 +2232,9 @@ local os__gongsun = fk.CreateTriggerSkill{
     end)
     if #availableTargets == 0 then return false end
     local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__gongsun-target", self.name, false)
+    if #target == 0 then
+      target = {table.random(availableTargets)}
+    end
     if #target > 0 then
       local choice = room:askForChoice(player, {"log_spade", "log_club", "log_heart", "log_diamond"}, self.name, "#os__gongsun-suit:" .. target[1])
       self.cost_data = {target[1], choice}

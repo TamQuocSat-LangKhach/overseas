@@ -2339,7 +2339,7 @@ os__xiongzheng:addRelatedSkill(os__xiongzheng_judge)
 local os__luannian = fk.CreateTriggerSkill{
   name = "os__luannian$",
   mute = true,
-  frequency = fk.Compulsory,
+  frequency = Skill.Compulsory,
   events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
     if event == fk.GameStart then
