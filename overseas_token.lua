@@ -63,7 +63,7 @@ local horsetailWhiskSkill = fk.CreateTriggerSkill{
     local cids = room:askForDiscard(target, 1, 1, true, self.name, true, nil, "#horsetail_whisk-ask:" .. player.id .. "::" .. "log_" .. data.card:getSuitString())
     if #cids == 0 then
       data.disresponsive = true
-    elseif data.card.suit == Fk:getCardById(cids[1]).suit then
+    elseif data.card:compareSuitWith(Fk:getCardById(cids[1])) then
       room:obtainCard(player, cids[1], true, fk.ReasonJustMove)
     end
   end,

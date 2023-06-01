@@ -224,9 +224,8 @@ local os__yulong = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local alivePlayers = room:getAlivePlayers()
     local availableTargets = {}
-    for _, p in ipairs(alivePlayers) do
+    for _, p in ipairs(room.alive_players) do
       if table.contains(AimGroup:getAllTargets(data.tos), p.id) and not p:isKongcheng() then
         table.insert(availableTargets, p.id)
       end
@@ -499,7 +498,7 @@ local os__lvren = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name) and data.card.is_damage_card
   end,
   on_cost = function(self, event, target, player, data)
-    local availableTargets = table.map(table.filter(player.room:getAlivePlayers(), function(p)
+    local availableTargets = table.map(table.filter(player.room.alive_players, function(p)
       return p:getMark("@@os__blade") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id)
     end), function(p)
       return p.id 
@@ -984,7 +983,7 @@ local os__shezhong = fk.CreateTriggerSkill{
     if target ~= player or not player:hasSkill(self.name) or player.phase ~= Player.Finish then return false end
     if player:getMark("_os__shezhong_damage_others-turn") > 0 then return true end
     local room = player.room
-    local targets = table.map(table.filter(room:getAlivePlayers(), function(p)
+    local targets = table.map(table.filter(room.alive_players, function(p)
       return p:getMark("_os__shezhong_damaged-turn") > 0
     end), function(p)
     return p.id end)

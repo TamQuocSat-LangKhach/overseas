@@ -132,7 +132,7 @@ Fk:loadTranslationTable{
   ["os_ex__jingce"] = "精策",
   [":os_ex__jingce"] = "当你出牌阶段使用的第X张牌结算结束后（X为你的体力值），你可摸两张牌，然后若这不是你本阶段第一次摸牌或本回合你已造成过伤害，你获得1枚“策”。",
   ["os_ex__yuzhang"] = "御嶂",
-  [":os_ex__yuzhang"] = "①你可弃1枚“策”，跳过一个阶段。②当你受到伤害后，你可弃1枚“策”并选择一项，令伤害来源执行：1.本回合不能使用或打出手牌；2.弃置两张牌。", 
+  [":os_ex__yuzhang"] = "①你可弃1枚“策”，跳过一个阶段。②当你受到伤害后，你可弃1枚“策”并选择一项，令伤害来源执行：1.本回合不能使用或打出手牌；2.弃置两张牌（不足全弃）。", 
 
   ["@os_ex__strategy"] = "策",
   ["#os_ex__yuzhang"] = "御嶂：你可弃1枚“策”，跳过 %arg",
@@ -388,14 +388,14 @@ local os_ex__chunlao = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and
-      player.phase == Player.Start and table.every(player.room:getAlivePlayers(), function(p)
+      player.phase == Player.Start and table.every(player.room.alive_players, function(p)
         return #p:getPile("os__dense_alcohol") == 0
       end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local availableTargets = table.map(
-      table.filter(room:getAlivePlayers(), function(p)
+      table.filter(room.alive_players, function(p)
         return not p:isAllNude()
       end),
       function(p)
@@ -431,7 +431,7 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       local availableTargets = table.map(
-        table.filter(room:getAlivePlayers(), function(p)
+        table.filter(room.alive_players, function(p)
           return p:hasSkill("os_ex__chunlao")
         end),
         function(p)

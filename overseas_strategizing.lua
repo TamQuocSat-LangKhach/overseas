@@ -469,7 +469,7 @@ local os__moushi = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name) and data.card and data.card.color == player:getMark("_os__moushi")
+    return player == target and player:hasSkill(self.name) and data.card and data.card.color ~= Card.NoColor and data.card.color == player:getMark("_os__moushi")
   end,
   on_use = function(self, event, target, player, data)
     return true
@@ -822,7 +822,7 @@ local os__fenghan = fk.CreateTriggerSkill{
     local room = player.room
     local num = #AimGroup:getAllTargets(data.tos)
     
-    local result = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
+    local result = room:askForChoosePlayers(player, table.map(room.alive_players, function(p)
         return p.id
       end), 1, num, "#os__fenghan-ask:::" .. num, self.name, true)
     if #result > 0 then
@@ -1218,13 +1218,13 @@ local os__fenming = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self.name) and
-      player.phase == Player.Start and not table.every(player.room:getAlivePlayers(), function(p)
+      player.phase == Player.Start and not table.every(player.room.alive_players, function(p)
         return (p:isNude() and p.chained)
       end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local target = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end), 1, 1, "#os__fenming-ask", self.name)
+    local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#os__fenming-ask", self.name)
     if #target > 0 then
       self.cost_data = target[1]
       return true
