@@ -792,26 +792,48 @@ local os__waishi = fk.CreateActiveSkill{
     
     local n = #effect.cards
     local cids = room:askForCardsChosen(player, target, n, n, "h", self.name)
-    room:moveCards(
-      {
-        ids = effect.cards,
-        from = effect.from,
-        to = effect.tos[1],
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      },
-      {
-        ids = cids,
-        from = effect.tos[1],
-        to = effect.from,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-    )
+    local cards1 = effect.cards
+    local cards2 = cids
+    local move1 = {
+      from = player.id,
+      ids = cards1,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonExchange,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = false,  --FIXME: this is still visible! same problem with dimeng!
+    }
+    local move2 = {
+      from = target.id,
+      ids = cards2,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonExchange,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = false,
+    }
+    room:moveCards(move1, move2)
+    local move3 = {
+      ids = cards1,
+      fromArea = Card.Processing,
+      to = target.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonExchange,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = false,
+    }
+    local move4 = {
+      ids = cards2,
+      fromArea = Card.Processing,
+      to = player.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonExchange,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = false,
+    }
+    room:moveCards(move3, move4)
     if target.kingdom == player.kingdom or target:getHandcardNum() > player:getHandcardNum() then
       player:drawCards(1, self.name)
     end

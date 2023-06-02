@@ -1316,24 +1316,48 @@ local os__shangyi = fk.CreateActiveSkill{
       if card.color == Card.Black then player:drawCards(1, self.name) end
     else
       local cids = room:askForCard(player, 1, 1, false, self.name, false, nil, "#os__shangyi-exchange:" .. target.id .. "::" .. card.name)
-      room:moveCards({
-        ids = {id},
-        from = target.id,
-        to = player.id,
-        toArea = Card.PlayerHand,
+      local cards1 = cids
+      local cards2 = {id}
+      local move1 = {
+        from = player.id,
+        ids = cards1,
+        toArea = Card.Processing,
         moveReason = fk.ReasonExchange,
         proposer = player.id,
         skillName = self.name,
-      },
-      {
-        ids = cids,
-        from = player.id,
+        moveVisible = false,  --FIXME: this is still visible! same problem with dimeng!
+      }
+      local move2 = {
+        from = target.id,
+        ids = cards2,
+        toArea = Card.Processing,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+        moveVisible = false,
+      }
+      room:moveCards(move1, move2)
+      local move3 = {
+        ids = cards1,
+        fromArea = Card.Processing,
         to = target.id,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonExchange,
         proposer = player.id,
         skillName = self.name,
-      })
+        moveVisible = false,
+      }
+      local move4 = {
+        ids = cards2,
+        fromArea = Card.Processing,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+        moveVisible = false,
+      }
+      room:moveCards(move3, move4)
       if card.color == Card.Red and Fk:getCardById(cids[1]).color == Card.Red then player:drawCards(1, self.name) end
     end
   end,
