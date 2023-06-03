@@ -348,7 +348,8 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
       fireSlash.skillName = self.name
       fireSlash:addSubcard(data.card)
       data.card = fireSlash
-      player.room:setPlayerMark(player, "_os_ex__lihuo", tostring(data.card.id)) --0!
+      data.extra_data = data.extra_data or {}
+      data.extra_data.os_ex__lihuoUser = player.id
     else
       --TargetGroup:pushTargets(data.targetGroup, self.cost_data)
       table.insert(data.tos, self.cost_data)
@@ -361,23 +362,22 @@ local os_ex__lihuo_judge = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("_os_ex__lihuo") == tostring(data.card.id)
+    return target == player and (data.extra_data or {}).os_ex__lihuoUser == player.id and data.extra_data and data.extra_data.os_ex__lihuoDying == true
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    if player:getMark("_os_ex__lihuo_dying") > 0 then
-      room:loseHp(player, 1, self.name)
-      room:setPlayerMark(player, "_os_ex__lihuo_dying", 0)
-    end
-    room:setPlayerMark(player, "_os_ex__lihuo",0)
+    player.room:loseHp(player, 1, self.name)
   end,
 
   refresh_events = {fk.EnterDying},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("_os_ex__lihuo") ~= 0 and target ~= player and data.damage and data.damage.card and player:getMark("_os_ex__lihuo") == tostring(data.damage.card.id)
+    if target == player or not data.damage or not data.damage.card then return false end
+    local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    return parentUseData and (parentUseData.data[1].extra_data or {}).os_ex__lihuoUser == player.id
   end,
   on_refresh = function(elf, event, target, player, data)
-    player.room:addPlayerMark(player, "_os_ex__lihuo_dying")
+    local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    parentUseData.data[1].extra_data = parentUseData.data[1].extra_data or {}
+    parentUseData.data[1].extra_data.os_ex__lihuoDying = true
   end,
 }
 os_ex__lihuo:addRelatedSkill(os_ex__lihuo_judge)
