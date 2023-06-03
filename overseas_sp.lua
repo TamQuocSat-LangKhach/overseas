@@ -2896,7 +2896,7 @@ local os__wanwei = fk.CreateTriggerSkill{
       local card = Fk:getCardById(cids[1])
       if card.skill:canUse(player) and not player:prohibitUse(card) then
         local cardName = card.name
-        local use = room:askForUseCard(player, cardName, cardName .. "|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. cardName, false) --八卦阵的pattern……
+        local use = room:askForUseCard(player, cardName, ".|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. cardName, false) --toLogString太丑了
         if use then
           room:useCard(use)
         end
@@ -3301,7 +3301,7 @@ local os__bingde = fk.CreateActiveSkill{
   end,
   target_num = 0,
   interaction = function(self)
-    local all = Self:getMark("_os__bingde_done-turn") ~= 0 and Self:getMark("_os__bingde_done-turn") or {}
+    local all = Self:getMark("_os__bingde_done-phase") ~= 0 and Self:getMark("_os__bingde_done-phase") or {}
     return UI.ComboBox { choices = table.filter({"log_spade", "log_club", "log_heart", "log_diamond"}, function(s)
       return not table.contains(all, s)
     end) }
@@ -3318,35 +3318,35 @@ local os__bingde = fk.CreateActiveSkill{
     local suit = card_suits_reverse_table[suit_log]
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player)
-    player:drawCards(player:getMark("_os__bingde_" .. suit .. "-turn"), self.name)
+    player:drawCards(player:getMark("_os__bingde_" .. suit .. "-phase"), self.name)
     if Fk:getCardById(effect.cards[1]).suit == suit then
       player:addSkillUseHistory(self.name, -1)
-      local os__bingde_done = player:getMark("_os__bingde_done-turn") ~= 0 and player:getMark("_os__bingde_done-turn") or {}
+      local os__bingde_done = player:getMark("_os__bingde_done-phase") ~= 0 and player:getMark("_os__bingde_done-phase") or {}
       table.insert(os__bingde_done, suit_log)
-      room:setPlayerMark(player, "_os__bingde_done-turn", os__bingde_done)
-      room:setPlayerMark(player, "_os__bingde_" .. suit .. "-turn", "x")
-      room:setPlayerMark(player, "@os__bingde-turn", string.format("%s-%s-%s-%s",
-        player:getMark("_os__bingde_1-turn"),
-        player:getMark("_os__bingde_2-turn"),
-        player:getMark("_os__bingde_3-turn"),
-        player:getMark("_os__bingde_4-turn")))
+      room:setPlayerMark(player, "_os__bingde_done-phase", os__bingde_done)
+      room:setPlayerMark(player, "_os__bingde_" .. suit .. "-phase", "x")
+      room:setPlayerMark(player, "@os__bingde-phase", string.format("%s-%s-%s-%s",
+        player:getMark("_os__bingde_1-phase"),
+        player:getMark("_os__bingde_2-phase"),
+        player:getMark("_os__bingde_3-phase"),
+        player:getMark("_os__bingde_4-phase")))
     end
   end,
 }
 local os__bingde_record = fk.CreateTriggerSkill{
   name = "#os__bingde_record",
-  refresh_events = {fk.PreCardUse},
+  refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.card.suit ~= Card.NoSuit and player:getMark("_os__bingde_" .. data.card.suit .. "-turn") ~= "x"
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.card.suit ~= Card.NoSuit and player:getMark("_os__bingde_" .. data.card.suit .. "-phase") ~= "x"
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "_os__bingde_" .. data.card.suit .. "-turn")
-    room:setPlayerMark(player, "@os__bingde-turn", string.format("%s-%s-%s-%s",
-      player:getMark("_os__bingde_1-turn"),
-      player:getMark("_os__bingde_2-turn"),
-      player:getMark("_os__bingde_3-turn"),
-      player:getMark("_os__bingde_4-turn")))
+    room:addPlayerMark(player, "_os__bingde_" .. data.card.suit .. "-phase")
+    room:setPlayerMark(player, "@os__bingde-phase", string.format("%s-%s-%s-%s",
+      player:getMark("_os__bingde_1-phase"),
+      player:getMark("_os__bingde_2-phase"),
+      player:getMark("_os__bingde_3-phase"),
+      player:getMark("_os__bingde_4-phase")))
   end,
 }
 os__bingde:addRelatedSkill(os__bingde_record)
