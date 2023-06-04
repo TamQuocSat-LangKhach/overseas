@@ -206,7 +206,7 @@ local os__kuanji = fk.CreateTriggerSkill{
         return p.id
       end), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
-      local cids = room:askForGuanxing(player, self.cost_data, nil, nil, "os__kuanjiGive", true).top
+      local cids = room:askForGuanxing(player, self.cost_data, nil, nil, "os__kuanjiGive", true, {"os__kuanjiGet", "os__kuanjiNoGet"}).top
       if #cids > 0 then
         self.cost_data = {target[1], cids}
         return true
@@ -233,9 +233,11 @@ Fk:loadTranslationTable{
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
 
+  ["#os__shengxi-ask"] = "生息：你可选择一种智囊，从牌堆中获得之并摸一张牌",
   ["#os__kuanji-ask"] = "宽济：你可令一名其他角色获得其中的任意张牌",
   ["os__kuanjiGive"] = "宽济",
-  ["#os__shengxi-ask"] = "生息：你可选择一种智囊，从牌堆中获得之并摸一张牌",
+  ["os__kuanjiGet"] = "其获得",
+  ["os__kuanjiNoGet"] = "不获得",
 }
 
 local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
