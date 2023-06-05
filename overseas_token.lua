@@ -5,6 +5,39 @@ Fk:loadTranslationTable{
   ["overseas_token"] = "国际服衍生牌",
 }
 
+local autoDesctructCards = {"celestial_calabash", "horsetail_whisk", "talisman", "moon_spear", "redistribute", "enemy_at_the_gates"}
+
+local autoDesctruct = fk.CreateTriggerSkill{
+  name = "#auto_destruct",
+  priority = 1.1,
+  global = true,
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          if table.contains(autoDesctructCards, Fk:getCardById(info.cardId).name) then
+            table.insert(ids, info.cardId)
+          end
+        end
+      end
+    end
+    if #ids > 0 then
+      self.cost_data = ids
+      return true
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(self.cost_data) do
+      table.insert(room.void, id)
+      room:setCardArea(id, Card.Void, nil)
+    end
+  end,
+}
+Fk:addSkill(autoDesctruct)
+
 local celestialCalabashSkill = fk.CreateTriggerSkill{
   name = "#celestial_calabash_skill",
   attached_equip = "celestial_calabash",
@@ -252,7 +285,6 @@ local redistributeAction = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(redistributeAction)
-
 local redistribute = fk.CreateTrickCard{
   name = "&redistribute",
   skill = redistributeSkill,

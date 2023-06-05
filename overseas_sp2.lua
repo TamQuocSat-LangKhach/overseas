@@ -2373,7 +2373,7 @@ local os__jiexun = fk.CreateTriggerSkill{
     end), 1, 1, "#os__jiexun-target", self.name, false)
     if #target > 0 then
       local card_suits = {"log_spade", "log_club", "log_heart", "log_diamond"}
-      local num = player:getMark("@os__jiexun_update") == 0 and player:getMark("@os__jiexun") + 1 or player:getMark("@os__jiexun_update")
+      local num = player:getMark("@os__jiexun_update") == 0 and player:getMark("@os__jiexun") or player:getMark("@os__jiexun_update")
       local choice = room:askForChoice(player, card_suits, self.name, "#os__jiexun-suit:" .. target[1] .. "::" .. tostring(num))
       self.cost_data = {target[1], table.indexOf(card_suits, choice)}
       return true
@@ -2382,7 +2382,6 @@ local os__jiexun = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player:getMark("@os__jiexun_update") == 0 then room:addPlayerMark(player, "@os__jiexun") end
     local target = room:getPlayerById(self.cost_data[1])
     local suit = self.cost_data[2]
     local num = 0
@@ -2393,32 +2392,37 @@ local os__jiexun = fk.CreateTriggerSkill{
     end
     room:drawCards(target, num, self.name)
     num = player:getMark("@os__jiexun_update") == 0 and player:getMark("@os__jiexun") or player:getMark("@os__jiexun_update")
-    if num == 0 then return false end
-    local canDiscards = table.filter( --试水
-      target:getCardIds{ Player.Hand, Player.Equip }, function(id)
-        local card = Fk:getCardById(id)
-        local status_skills = room.status_skills[ProhibitSkill] or {}
-        for _, skill in ipairs(status_skills) do
-          if skill:prohibitDiscard(target, card) then
-            return false
+    local canDiscards = {}
+    if num> 0 then
+      canDiscards = table.filter( --试水
+        target:getCardIds{ Player.Hand, Player.Equip }, function(id)
+          local card = Fk:getCardById(id)
+          local status_skills = room.status_skills[ProhibitSkill] or {}
+          for _, skill in ipairs(status_skills) do
+            if skill:prohibitDiscard(target, card) then
+              return false
+            end
           end
+          return true
         end
-        return true
-      end
-    )
-    if #canDiscards <= num then
-      room:throwCard(canDiscards, self.name, target, target)
-    else
-      room:askForDiscard(target, num, num, true, self.name, false)
-    end
-    if player:getMark("@os__jiexun_update") == 0 and #canDiscards > 0 and target:isNude() then
-      if room:askForChoice(player, {"os__jiexun_draw:::" .. num, "os__jiexun_update"}, self.name) == "os__jiexun_update" then
-        room:setPlayerMark(player, "@@os__funan_update", 1)
-        room:setPlayerMark(player, "@os__jiexun_update", num)
-        room:setPlayerMark(player, "@os__jiexun", 0)
+      )
+      if #canDiscards <= num then
+        room:throwCard(canDiscards, self.name, target, target)
       else
-        player:drawCards(num, self.name)
-        room:setPlayerMark(player, "@os__jiexun", 0)
+        room:askForDiscard(target, num, num, true, self.name, false)
+      end
+    end
+    if player:getMark("@os__jiexun_update") == 0 then
+      room:addPlayerMark(player, "@os__jiexun")
+      if #canDiscards > 0 and target:isNude() then
+        if room:askForChoice(player, {"os__jiexun_draw:::" .. num, "os__jiexun_update"}, self.name) == "os__jiexun_update" then
+          room:setPlayerMark(player, "@@os__funan_update", 1)
+          room:setPlayerMark(player, "@os__jiexun_update", num)
+          room:setPlayerMark(player, "@os__jiexun", 0)
+        else
+          player:drawCards(num, self.name)
+          room:setPlayerMark(player, "@os__jiexun", 0)
+        end
       end
     end
   end,
