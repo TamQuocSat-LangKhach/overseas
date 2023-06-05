@@ -33,7 +33,7 @@ local os__qingkou = fk.CreateTriggerSkill{
         end
       )
       if #availableTargets == 0 then return false end
-      local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__qingkou-ask", self.name)
+      local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__qingkou-ask", self.name, true)
       if #target > 0 then
         self.cost_data = target[1]
         return true
@@ -102,7 +102,7 @@ local os__fenwu = fk.CreateTriggerSkill{
       end
     )
     if #availableTargets == 0 then return false end
-    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__fenwu-ask", self.name)
+    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__fenwu-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -237,7 +237,7 @@ local os__cuorui = fk.CreateTriggerSkill{
     if player:getMark("_os__cuorui_invoked") > 0 then
       local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id
-      end), 1, 1, "#os__cuorui-target", self.name)
+      end), 1, 1, "#os__cuorui-target", self.name, true)
       if #victim > 0 then victim = room:getPlayerById(victim[1]) end
       room:damage{
         from = player,
@@ -435,7 +435,8 @@ local os__shuaiyan = fk.CreateTriggerSkill{
       1,
       1,
       "#os__shuaiyan-ask",
-      self.name
+      self.name,
+      true
     )
 
     if #target > 0 then
@@ -527,7 +528,7 @@ local os__dingfa = fk.CreateTriggerSkill{
     else
       local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id
-      end), 1, 1, "#os__dingfa-target", self.name)
+      end), 1, 1, "#os__dingfa-target", self.name, true)
       if #victim > 0 then
         victim = room:getPlayerById(victim[1]) 
         room:damage{
@@ -791,7 +792,8 @@ local os__zhenjun = fk.CreateTriggerSkill{
         1,
         1,
         "#os__zhenjun-damage::" .. to,
-        self.name
+        self.name,
+        true
       )
       if #victim > 0 then 
         victim = room:getPlayerById(victim[1]) 
@@ -1040,7 +1042,8 @@ local os__xuewei = fk.CreateTriggerSkill{
       1,
       1,
       "#os__xuewei-ask::" .. target.id,
-      self.name
+      self.name,
+      true
     )
 
     if #to > 0 then
@@ -1244,7 +1247,7 @@ local os__juntun = fk.CreateTriggerSkill{
       end
     )
     if #targets == 0 then return false end
-    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__juntun-ask", self.name)
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__juntun-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1395,8 +1398,8 @@ niufudongxie:addRelatedSkill(os__xiongjun)
 Fk:loadTranslationTable{
   ["niufudongxie"] = "牛辅董翓",
   ["os__juntun"] = "军屯",
-  [":os__juntun"] = "游戏开始时或当其他角色死亡后，你可令一名没有〖凶军〗的角色获得〖凶军〗。当拥有〖凶军〗的其他角色造成伤害后，你获得等量暴虐值。<br></br>" .. 
-    "<font color='grey'>#\"<b>暴虐值</b>\"<br></br>当你造成或受到伤害后，你获得等量暴虐值。暴虐值上限为5。</font>",
+  [":os__juntun"] = "游戏开始时或当其他角色死亡后，你可令一名没有〖凶军〗的角色获得〖凶军〗。当拥有〖凶军〗的其他角色造成伤害后，你获得等量暴虐值。<br/>" .. 
+    "<font color='grey'>#\"<b>暴虐值</b>\"<br/>当你造成或受到伤害后，你获得等量暴虐值。暴虐值上限为5。</font>",
   ["os__xiongxi"] = "凶袭",
   [":os__xiongxi"] = "出牌阶段限一次，你可弃置X张牌对一名其他角色造成1点伤害。（X=5-暴虐值，且可为0）",
   ["os__xiafeng"] = "黠凤",
@@ -1699,7 +1702,7 @@ Fk:loadTranslationTable{
   ["os__zhengrong"] = "征荣",
   [":os__zhengrong"] = "当你于你的出牌阶段对其他角色使用（此局游戏）累计偶数张牌结算结束后，或当你于出牌阶段第一次造成伤害后，你可选择一名其他角色，将其一张牌扣置于你的武将牌上，称为“荣”。",
   ["os__hongju"] = "鸿举",
-  [":os__hongju"] = "觉醒技，准备阶段，若“荣”的数量不小于3，则你摸等于“荣”数量的牌，然后用任意张手牌替换等量的“荣”，然后获得〖清侧〗并选择是否减1点体力上限获得技能〖扫讨〗。",
+  [":os__hongju"] = "觉醒技，准备阶段开始时，若“荣”的数量不小于3，则你摸等于“荣”数量的牌，然后用任意张手牌替换等量的“荣”，然后获得〖清侧〗并选择是否减1点体力上限获得技能〖扫讨〗。",
   ["os__qingce"] = "清侧",
   [":os__qingce"] = "出牌阶段，你可将一张“荣”置入弃牌堆，然后弃置其他角色区域内的一张牌。",
   ["os__saotao"] = "扫讨",
@@ -2200,7 +2203,7 @@ Fk:loadTranslationTable{
   ["os__zhangning"] = "张宁",
   ["os__xingzhui"] = "星坠",
   [":os__xingzhui"] = "出牌阶段限一次，你可以失去1点体力并施法X=1~3回合：亮出牌堆顶2X张牌，若其中有黑色牌，则你可令一名其他角色获得这些黑色牌，若这些牌的数量不小于X ，则你对其造成X点雷电伤害。" .. 
-    "<br></br><font color='grey'>#\"<b>施法</b>\"<br></br>一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
+    "<br/><font color='grey'>#\"<b>施法</b>\"<br/>一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
   ["os__juchen"] = "聚尘",
   [":os__juchen"] = "结束阶段开始时，若你的手牌数和体力值均非全场最大，你可令所有角色弃置一张牌，然后你获得其中处于弃牌堆中的红色牌。",
 
@@ -2590,7 +2593,7 @@ local os__zhongzuo = fk.CreateTriggerSkill{
     local room = player.room
     local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p)
         return p.id
-      end), 1, 1, "#os__zhongzuo-ask", self.name)
+      end), 1, 1, "#os__zhongzuo-ask", self.name, true)
 
     if #target > 0 then
       self.cost_data = target[1]
@@ -2828,7 +2831,7 @@ duosidawang:addSkill(os__manji)
 Fk:loadTranslationTable{
   ["duosidawang"] = "朵思大王",
   ["os__equan"] = "恶泉",
-  [":os__equan"] = "锁定技，当一名角色于你回合内受到伤害后，其获得等同于伤害值的“毒”。准备阶段，所有有“毒”的角色失去X点体力并弃所有“毒”（X为其拥有的“毒”数)，以此法进入濒死状态的角色本回合技能失效。",
+  [":os__equan"] = "锁定技，当一名角色于你回合内受到伤害后，其获得等同于伤害值的“毒”。准备阶段开始时，所有有“毒”的角色失去X点体力并弃所有“毒”（X为其拥有的“毒”数)，以此法进入濒死状态的角色本回合技能失效。",
   ["os__manji"] = "蛮汲",
   [":os__manji"] = "锁定技，当其他角色失去体力后，若你的体力值不大于其，你回复1点体力；若你的体力值不小于其，你摸一张牌。",
 
@@ -3274,7 +3277,7 @@ Fk:loadTranslationTable{
   ["os__zhiming"] = "知命",
   [":os__zhiming"] = "准备阶段开始时或弃牌阶段结束时，你摸一张牌，然后你可将一张牌置于牌堆顶。",
   ["os__xingbu"] = "星卜",
-  [":os__xingbu"] = "结束阶段开始时，你可亮出牌堆顶的三张牌，然后你可选择一名其他角色，令其根据其中红色牌的数量获得以下效果之一：<br></br>为3：<font color='#CC3131'>«五星连珠»</font>，其下个回合摸牌阶段额定摸牌数+2、使用【杀】的次数上限+1、跳过弃牌阶段；<br></br>为2：«白虹贯日»，其下个回合出牌阶段使用第一张牌结算结束后，弃置一张牌，摸两张牌；<br></br>不大于1：<font color='grey'>«荧惑守心»</font>，其下个回合使用【杀】的次数上限-1。",
+  [":os__xingbu"] = "结束阶段开始时，你可亮出牌堆顶的三张牌，然后你可选择一名其他角色，令其根据其中红色牌的数量获得以下效果之一：<br/>为3：<font color='#CC3131'>«五星连珠»</font>，其下个回合摸牌阶段额定摸牌数+2、使用【杀】的次数上限+1、跳过弃牌阶段；<br/>为2：«白虹贯日»，其下个回合出牌阶段使用第一张牌结算结束后，弃置一张牌，摸两张牌；<br/>不大于1：<font color='grey'>«荧惑守心»</font>，其下个回合使用【杀】的次数上限-1。",
 
   ["#os__zhiming-ask"] = "知命：你可将一张牌置于牌堆顶",
   ["#os__xingbu-target"] = "星卜：你可选择一名其他角色，令其获得“%arg”",
@@ -3994,7 +3997,7 @@ local os__tanfeng = fk.CreateTriggerSkill{
       end
     )
     if #availableTargets == 0 then return false end
-    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__tanfeng-ask", self.name)
+    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__tanfeng-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true

@@ -229,7 +229,7 @@ local os_ex__gongqi = fk.CreateActiveSkill{
     room:setPlayerMark(player, "_os_ex__gongqi-turn", Fk:getCardById(effect.cards[1]).suit)
     if Fk:getCardById(effect.cards[1]).type == Card.TypeEquip then
       local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-        return not p:isNude() end), function(p) return p.id end), 1, 1, "#os_ex__gongqi-ask", self.name)
+        return not p:isNude() end), function(p) return p.id end), 1, 1, "#os_ex__gongqi-ask", self.name, true)
       if #to > 0 then
         local target = room:getPlayerById(to[1])
         local id = room:askForCardChosen(player, target, "he", self.name)
@@ -403,7 +403,7 @@ local os_ex__chunlao = fk.CreateTriggerSkill{
       end
     )
     if #availableTargets == 0 then return false end
-    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os_ex__chunlao-ask", self.name)
+    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os_ex__chunlao-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true

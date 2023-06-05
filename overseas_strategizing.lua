@@ -121,6 +121,18 @@ Fk:loadTranslationTable{
   [":os__shanghe"] = "限定技，当你进入濒死状态时，你可令所有其他角色各交给你一张牌，若其中没有【酒】，你将体力回复至1点。",
 }
 
+
+
+Fk:loadTranslationTable{
+  ["os__dongzhao"] = "董昭",
+  ["os__miaolue"] = "妙略",
+  [":os__miaolue"] = "游戏开始时，你获得两张【瞒天过海】；当你受到1点伤害后，你可选择：1. 获得一张【瞒天过海】并摸一张牌；2. 获得一张智囊。" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
+  "【<b>瞒天过海</b>】 锦囊牌  出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。</font>",
+  ["os__yingjia"] = "迎驾",
+  [":os__yingjia"] = "一名角色的回合结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
+}
+
 local os__feiyi = General(extension, "os__feiyi", "shu", 3)
 
 local os__shengxi = fk.CreateTriggerSkill{
@@ -228,7 +240,7 @@ Fk:loadTranslationTable{
   ["os__feiyi"] = "费祎",
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "①准备阶段开始时，你可从游戏外、牌堆或弃牌堆中获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
-  "<font color='grey'><br></br>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br></br>" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
   "【<b>调剂盐梅</b>】 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。</font>",
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
@@ -496,7 +508,7 @@ Fk:loadTranslationTable{
   ["os__xunchen"] = "荀谌",
   ["os__weipo"] = "危迫",
   [":os__weipo"] = "出牌阶段限一次，你可令一名角色弃置一张牌，然后令其获得一张【兵临城下】或由你指定的一种智囊。" ..
-  "<font color='grey'><br></br>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br></br>" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
   "【<b>兵临城下</b>】 锦囊牌  出牌阶段，对一名其他角色使用。你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。</font>",
   ["os__chenshi"] = "陈势",
   [":os__chenshi"] = "当其他角色使用【兵临城下】指定目标后，可交给你一张牌，然后将牌堆顶三张牌中不为【杀】的牌置入弃牌堆；当其他角色成为【兵临城下】的目标后，可交给你一张牌，然后将牌堆顶三张牌中的【杀】置入弃牌堆。",
@@ -657,7 +669,7 @@ Fk:loadTranslationTable{
   ["os__wangling"] = "王凌",
   ["os__mibei"] = "秘备",
   [":os__mibei"] = "使命技，使用每种类别的牌各至少两张。成功：你获得〖谋立〗。失败：出牌阶段结束时，若你本回合未使用过牌，则你本回合手牌上限-1并重置〖秘备〗。" .. 
-  "<br></br><font color='grey'>◆<b>重置〖秘备〗</b>，即清空〖秘备〗所记录的所使用过的牌的类别和数量。<br></br><b>使命技(国际服)</b>在成功后失效，在失败且执行完相应效果后仍视为使命未失败。</font>",
+  "<br/><font color='grey'>◆<b>重置〖秘备〗</b>，即清空〖秘备〗所记录的所使用过的牌的类别和数量。<br/><b>使命技(国际服)</b>在成功后失效，在失败且执行完相应效果后仍视为使命未失败。</font>",
   ["os__xingqi"] = "星启",
   [":os__xingqi"] = "觉醒技，准备阶段开始时，若场上的牌数大于你的体力值，则你回复1点体力，然后若〖秘备〗未完成，你从牌堆中获得每种类别的牌各一张；若〖秘备〗已完成，本局游戏你使用牌无距离限制。",
   ["os__mouli"] = "谋立",
@@ -1226,7 +1238,7 @@ local os__fenming = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#os__fenming-ask", self.name)
+    local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#os__fenming-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1262,7 +1274,7 @@ Fk:loadTranslationTable{
   ["os__yilie"] = "毅烈",
   [":os__yilie"] = "出牌阶段开始时，你可选择此阶段内：1.使用【杀】的次数上限+1；2.当你使用的【杀】指定处于连环状态的角色为目标后，或被【闪】抵消后，摸一张牌；背水：你失去1点体力。",
   ["os__fenming"] = "奋命",
-  [":os__fenming"] = "准备阶段，你可选择一名角色并选择一项：1.你弃置其一张牌；2. 其进入连环状态；背水：你进入连环状态。",
+  [":os__fenming"] = "准备阶段开始时，你可选择一名角色并选择一项：1.你弃置其一张牌；2. 其进入连环状态；背水：你进入连环状态。",
 
   ["os__yilie_times"] = "使用【杀】的次数上限+1", 
   ["os__yilie_draw"] = "当你使用的【杀】指定处于连环状态的角色为目标后，或被【闪】抵消后，摸一张牌", 
