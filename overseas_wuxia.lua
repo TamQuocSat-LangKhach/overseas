@@ -981,7 +981,6 @@ local os__shezhong = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self.name) or player.phase ~= Player.Finish then return false end
-    if player:getMark("_os__shezhong_damage_others-turn") > 0 then return true end
     local room = player.room
     local targets = table.map(table.filter(room.alive_players, function(p)
       return p:getMark("_os__shezhong_damaged-turn") > 0
@@ -991,6 +990,7 @@ local os__shezhong = fk.CreateTriggerSkill{
       self.cost_data = targets
       return true
     end
+    if player:getMark("_os__shezhong_damage_others-turn") > 0 then return true end
     return false
   end,
   on_use = function(self, event, target, player, data)
