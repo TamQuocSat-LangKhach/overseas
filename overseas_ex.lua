@@ -187,13 +187,13 @@ local os_ex__qianxi_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__qianxi_prohibit",
   prohibit_use = function(self, player, card)
     if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
-    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
+    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
   end,
   prohibit_response = function(self, player, card)
     if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
-    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
+    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
   end,
 }
 os_ex__qianxi:addRelatedSkill(os_ex__qianxi_prohibit)
@@ -614,5 +614,131 @@ Fk:loadTranslationTable{
   ["#os_ex__xuhe-ask"] = "%src 对你发动“虚吓”，请选择一项",
   ["@@os_ex__xuhe-turn"] = "虚吓 伤害+2",
 }
+
+local fazheng = General(extension, "os_ex__fazheng", "shu", 3)
+local os_ex__enyuan = fk.CreateTriggerSkill{
+  name = "os_ex__enyuan",
+  mute = true,
+  anim_type = "masochism",
+  events = {fk.AfterCardsMove ,fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.AfterCardsMove then
+      self.cost_data = nil
+      for _, move in ipairs(data) do
+        if move.from ~= nil and move.from ~= player.id and move.to == player.id and move.toArea == Card.PlayerHand and #move.moveInfo > 1 then
+          self.cost_data = move.from
+          return true
+        end
+      end
+    else
+      return target == player and data.from and data.from ~= player and not data.from.dead and not player.dead
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event ==  fk.AfterCardsMove then
+      room:broadcastSkillInvoke(self.name, 1)
+      room:notifySkillInvoked(player, self.name, "support")
+      local target = room:getPlayerById(self.cost_data)
+      if (#target.player_cards[Player.Hand] == 0 or #target.player_cards[Player.Equip] == 0) and target:isWounded() then
+        if room:askForChoice(player, {"os_ex__enyuan_draw", "os_ex__enyuan_recover"}, self.name, "#os_ex__enyuan-ask:" .. target.id) == "os_ex__enyuan_recover" then
+          room:recover({ who = target, num = 1, recoverBy = player, skillName = self.name})
+        else
+          target:drawCards(1, self.name)
+        end
+      else
+        target:drawCards(1, self.name)
+      end
+    else
+      room:broadcastSkillInvoke(self.name, 2)
+      room:notifySkillInvoked(player, self.name)
+      local cids = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#os_ex__enyuan-give:"..player.id)
+      if #cids > 0 then
+        room:moveCardTo(cids, Player.Hand, player, fk.ReasonGive, self.name, nil, false)
+        if Fk:getCardById(cids[1]).suit ~= Card.Heart then
+          player:drawCards(1, self.name)
+        end
+      else
+        room:loseHp(data.from, 1, self.name)
+      end
+    end
+  end,
+}
+local os_ex__xuanhuo = fk.CreateTriggerSkill{
+  name = "os_ex__xuanhuo",
+  anim_type = "control",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Draw and #player:getCardIds{ Player.Hand, Player.Equip } > 1
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function(p)
+      return p.id end), 1, 1, "#os_ex__xuanhuo-target", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local cids = room:askForCard(player, 2, 2, true, self.name, false, nil, "#os_ex__xuanhuo-give:" .. to.id)
+    room:moveCardTo(cids, Player.Hand, to, fk.ReasonGive, self.name, nil, false)
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(to), function(p) return p.id end), 1, 1, "#os_ex__xuanhuo-choose::"..to.id, self.name, false)
+    local victim = tos[1]
+    room:doIndicate(to.id, {victim})
+    victim = room:getPlayerById(victim)
+    local name = victim.general
+    local choice = room:askForChoice(to, {"os_ex__xuanhuo_slash:::" .. name, "os_ex__xuanhuo_duel:::" .. name, "os_ex__xuanhuo_extract:::" .. player.general}, self.name)
+    if choice:startsWith("os_ex__xuanhuo_extract") then
+      local cards = room:askForCardsChosen(player, to, 2, 2, "he", self.name)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(cards)
+      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+    elseif choice:startsWith("os_ex__xuanhuo_slash") then
+      room:useVirtualCard("slash", nil, to, {victim}, self.name, true)
+    else
+      room:useVirtualCard("duel", nil, to, {victim}, self.name, true)
+    end
+  end,
+}
+fazheng:addSkill(os_ex__enyuan)
+fazheng:addSkill(os_ex__xuanhuo)
+Fk:loadTranslationTable{
+  ["os_ex__fazheng"] = "界法正",
+  ["os_ex__enyuan"] = "恩怨",
+  [":os_ex__enyuan"] = "当你获得一名其他角色至少两张牌后，你可令其摸一张牌；若其手牌区或装备区没有牌，你可改为令其回复1点体力。当你受到1点伤害后，你可令伤害来源交给你一张手牌，否则失去1点体力；若其交给你的牌不是红桃，则你摸一张牌。",
+  ["os_ex__xuanhuo"] = "眩惑",
+  [":os_ex__xuanhuo"] = "摸牌阶段结束时，你可交给一名其他角色A两张牌并选择另一名角色B，然后A选择一项：1. 视为对B使用一张【杀】或【决斗】；2. 你获得其两张牌。",
+
+  ["#os_ex__enyuan-ask"] = "恩怨：选择一项，令%src执行",
+  ["os_ex__enyuan_draw"] = "摸一张牌",
+  ["os_ex__enyuan_recover"] = "回复1点体力",
+  ["#os_ex__enyuan-give"] = "恩怨：你需交给 %src 一张手牌，否则失去1点体力",
+  ["#os_ex__xuanhuo-target"] = "你可对一名其他角色发动“眩惑”",
+  ["#os_ex__xuanhuo-give"] = "眩惑：交给 %src 两张牌",
+  ["#os_ex__xuanhuo-choose"] = "眩惑：选择令 %dest 视为使用【杀】或【决斗】的目标",
+  ["os_ex__xuanhuo_slash"] = "视为对%arg使用【杀】",
+  ["os_ex__xuanhuo_duel"] = "视为对%arg使用【决斗】",
+  ["os_ex__xuanhuo_extract"] = "%arg获得你两张牌",
+
+  ["$os_ex__enyuan1"] = "报之以李，还之以桃。",
+  ["$os_ex__enyuan2"] = "伤了我，休想全身而退！",
+  ["$os_ex__xuanhuo1"] = "收人钱财，替人消灾。",
+  ["$os_ex__xuanhuo2"] = "哼，叫你十倍奉还！",
+  ["~os_ex__fazheng"] = "汉室复兴，我，是看不到了……",
+}
+
+Fk:loadTranslationTable{
+  ["os_ex__guyong"] = "界顾雍",
+  ["os_ex__shenxing"] = "慎行",
+  [":os_ex__shenxing"] = "出牌阶段，你可弃置X张牌，摸一张牌（X为你发动过〖慎行〗的次数且至多为2）。",
+  ["os_ex__bingyi"] = "秉壹",
+  [":os_ex__bingyi"] = "结束阶段开始时，你可展示所有手牌，若颜色均相同或类型均相同，你令至多X名角色各摸一张牌（X为你的手牌数）。若你展示的牌数大于1且这些牌颜色类型均相同，则〖慎行〗的X修改为0。",
+
+}
+
+
 
 return extension

@@ -213,7 +213,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local choices = {"phase_draw", "phase_play"}
     if player:getMark("_os__shelie") ~= 0 then
-      table.remove(choices, player:getMark("_os__shelie"))
+      table.removeOne(choices, player:getMark("_os__shelie"))
     end
     self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#os__shelie_extra-ask")
     return true
@@ -226,7 +226,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
       arg = self.name,
       arg2 = self.cost_data,
     }
-    room:setPlayerMark(player, "_os__shelie", self.cost_data == "phase_draw" and 1 or 2)
+    room:setPlayerMark(player, "_os__shelie", self.cost_data)
     player:gainAnExtraPhase(self.cost_data == "phase_draw" and Player.Draw or Player.Play)
   end,
 
@@ -2445,6 +2445,213 @@ Fk:loadTranslationTable{
   ["@os__jiexun"] = "诫训",
   ["os__jiexun_draw"] = "摸%arg张牌，重置〖诫训〗次数",
   ["os__jiexun_update"] = "升级〖复难〗和〖诫训〗",
+}
+
+---@param player ServerPlayer @ 执行的玩家
+---@param targets ServerPlayer[] @ 可选的目标范围
+---@param num integer @ 可选的目标数
+---@param can_minus boolean @ 是否可减少
+---@param prompt string @ 提示信息
+---@param skillName string @ 技能名
+---@param data CardUseStruct @ 使用数据
+--枚举法为使用牌增减目标（无距离限制） 抄自r神
+local function AskForAddTarget(player, targets, num, can_minus, prompt, skillName, data)
+  num = num or 1
+  can_minus = can_minus or false
+  prompt = prompt or ""
+  skillName = skillName or ""
+  local room = player.room
+  local tos = {}
+  if can_minus and #AimGroup:getAllTargets(data.tos) > 1 then  --默认不允许减目标至0
+    tos = table.map(table.filter(targets, function(p)
+      return table.contains(AimGroup:getAllTargets(data.tos), p.id) end), function(p) return p.id end)
+  end
+  for _, p in ipairs(targets) do
+    if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.name == "jink" or data.card.trueName == "nullification" or data.card.name == "adaptation" or
+        (data.card.name == "peach" and not p:isWounded()) then
+        --continue
+      else
+        if data.from ~= p.id then
+          if (data.card.trueName == "slash") or
+            ((table.contains({"dismantlement", "snatch", "chasing_near"}, data.card.name)) and not p:isAllNude()) or
+            (table.contains({"fire_attack", "unexpectation"}, data.card.name) and not p:isKongcheng()) or
+            (table.contains({"peach", "analeptic", "ex_nihilo", "duel", "savage_assault", "archery_attack", "amazing_grace", "god_salvation", 
+              "iron_chain", "foresight", "redistribute", "enemy_at_the_gates", "raid_and_frontal_attack"}, data.card.name)) or
+            (data.card.name == "collateral" and p:getEquipment(Card.SubtypeWeapon) and
+              #table.filter(room:getOtherPlayers(p), function(v) return p:inMyAttackRange(v) end) > 0)then
+            table.insertIfNeed(tos, p.id)
+          end
+        else
+          if (data.card.name == "analeptic") or
+            (table.contains({"ex_nihilo", "foresight", "iron_chain", "amazing_grace", "god_salvation", "redistribute"}, data.card.name)) or
+            (data.card.name == "fire_attack" and not p:isKongcheng()) then
+            table.insertIfNeed(tos, p.id)
+          end
+        end
+      end
+    end
+  end
+  if #tos > 0 then
+    tos = room:askForChoosePlayers(player, tos, 1, num, prompt, skillName, true)
+    if data.card.name ~= "collateral" then
+      return tos
+    else
+      local result = {}
+      for _, id in ipairs(tos) do
+        local to = room:getPlayerById(id)
+        local target = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(v)
+          return to:inMyAttackRange(v) end), function(p) return p.id end), 1, 1,
+          "#collateral-choose::"..to.id..":"..data.card:toLogString(), "collateral_skill", true)
+        if #target > 0 then
+          table.insert(result, {id, target[1]})
+        end
+      end
+      if #result > 0 then
+        return result
+      else
+        return {}
+      end
+    end
+  end
+  return {}
+end
+
+local os__zhugeguo =  General(extension, "os__zhugeguo", "shu", 3, 3, General.Female)
+
+local os__qirang = fk.CreateTriggerSkill{
+  name = "os__qirang",
+  events = {fk.AfterCardsMove},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    for _, move in ipairs(data) do
+      if move.to and move.to == player.id and move.toArea == Player.Equip then
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cids = room:getCardsFromPileByRule(".|.|.|.|.|trick")
+    if #cids > 0 then
+      local cid = cids[1]
+      local cidsRecorded = type(player:getMark("_os__qirangTrick-phase")) == "table" and player:getMark("_os__qirangTrick-phase") or {}
+      table.insert(cidsRecorded, cid)
+      room:setPlayerMark(player, "_os__qirangTrick-phase", cidsRecorded)
+      room:obtainCard(player, cid, false, fk.ReasonPrey)
+    end
+  end,
+}
+
+local os__qirang_trick = fk.CreateTriggerSkill{
+  name = "#os__qirang_trick",
+  events = {fk.TargetSpecifying, fk.CardUsing}, --时机……？
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and type(player:getMark("_os__qirangTrick-phase")) == "table" and data.card.type == Card.TypeTrick and table.contains(player:getMark("_os__qirangTrick-phase"), data.card.id) and data.firstTarget
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.TargetSpecifying then
+      local room = player.room
+      local targets = AskForAddTarget(player, room.alive_players, 1, true, "#os__qirang-target:::"..data.card:toLogString(), self.name, data)
+      if #targets > 0 then
+        self.cost_data = targets[1]
+        return true
+      end
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.TargetSpecifying then
+      local room = player.room
+      room:notifySkillInvoked(player, "os__yuhua", "special")
+      room:broadcastSkillInvoke("os__yuhua")
+      if table.contains(AimGroup:getAllTargets(data.tos), self.cost_data) then
+        TargetGroup:removeTarget(data.targetGroup, self.cost_data)
+      else
+        TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+      end
+    else
+      data.disresponsiveList = data.disresponsiveList or {}
+      for _, target in ipairs(player.room.alive_players) do
+        table.insertIfNeed(data.disresponsiveList, target.id)
+      end
+    end
+  end,
+}
+local os__qirang_buff = fk.CreateTargetModSkill{
+  name = "#os__qirang_buff",
+  anim_type = "offensive",
+  distance_limit_func = function(self, player, skill, card)
+    return (type(player:getMark("_os__qirangTrick-phase")) == "table" and table.contains(player:getMark("_os__qirangTrick-phase"), card.id)) and 999 or 0
+  end,
+}
+os__qirang:addRelatedSkill(os__qirang_buff)
+os__qirang:addRelatedSkill(os__qirang_trick)
+
+local os__yuhuaMax = fk.CreateMaxCardsSkill{
+  name = "#os__yuhuaMax",
+  exclude_from = function(self, player, card)
+    return player:hasSkill(self.name) and card.type ~= Card.TypeBasic
+  end,
+}
+local os__yuhua = fk.CreateTriggerSkill{
+  name = "os__yuhua",
+  events = {fk.AfterCardsMove},
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or player.phase ~= Player.NotActive then return false end
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        if table.find(move.moveInfo, function(info)
+          return (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and Fk:getCardById(info.cardId).type ~= Card.TypeBasic
+        end) then return true end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local num = 0
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        num = num + #table.filter(move.moveInfo, function(info)
+          return (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip)
+        end)
+      end
+    end
+    num = math.min(5, num)
+    local room = player.room
+    room:askForGuanxing(player, room:getNCards(num))
+    if room:askForChoice(player, {"os__yuhuaDraw:::" .. num, "Cancel"}, self.name) ~= "Cancel" then
+      player:drawCards(num, self.name)
+    end
+  end,
+}
+os__yuhua:addRelatedSkill(os__yuhuaMax)
+
+os__zhugeguo:addSkill(os__qirang)
+os__zhugeguo:addSkill(os__yuhua)
+
+Fk:loadTranslationTable{
+  ["os__zhugeguo"] = "诸葛果",
+  ["os__qirang"] = "祈禳",
+  [":os__qirang"] = "当装备牌移至你的装备区后，你可获得牌堆里的一张锦囊牌，然后你此阶段使用此牌无距离限制、不可被响应且可增加或减少一个目标。",
+  ["os__yuhua"] = "羽化",
+  [":os__yuhua"] = "锁定技，弃牌阶段，你的非基本牌不计入手牌上限。当你于回合外失去非基本牌后，你可观看牌堆顶的X张牌并将其置于牌堆顶或牌堆底，然后你可摸X张牌（X为你此次失去牌的数量且至多为5）。",
+
+  ["#os__qirang-target"] = "祈禳：你可为 %arg 增加或减少一个目标",
+  ["os__yuhuaDraw"] = "摸%arg张牌",
+
+  ["$os__qirang1"] = "仙甲既来，岂无仙术乎。",
+  ["$os__qirang2"] = "集母亲之智，效父亲之法，祈以七星。",
+  ["$os__yuhua1"] = "凤羽飞烟，乘化仙尘。",
+  ["$os__yuhua2"] = "此乃仙人之物，不可轻弃。",
+  ["~os__zhugeguo"] = "飘飘乎如遗世独立，羽化而登仙。", --按并非如此
 }
 
 return extension
