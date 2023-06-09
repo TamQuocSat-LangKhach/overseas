@@ -547,19 +547,24 @@ local os__dingfa = fk.CreateTriggerSkill{
     local x = 0
     for _, move in ipairs(data) do
       if move.from == player.id then
+        if table.find(move.moveInfo, function(info)
+          return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+        end) then return true end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local x = 0
+    for _, move in ipairs(data) do
+      if move.from == player.id then
         x = x + #table.filter(move.moveInfo, function(info)
           return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
         end)
       end
     end
     if x > 0 then 
-      self.cost_data = x
-      return true
+      player.room:addPlayerMark(player, "@os__dingfa-turn", x)
     end
-    return false
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "@os__dingfa-turn", self.cost_data)
   end,
 }
 
@@ -1189,7 +1194,7 @@ local os__jiaohua = fk.CreateTriggerSkill{
           table.removeOne(cardType, Fk:getCardById(info.cardId):getTypeString())
         end
         if #cardType > 0 then
-          self.cost_data = {target.id, table.concat(cardType, ",")}
+          --self.cost_data = {target.id, table.concat(cardType, ",")}
           return true
         end
       end
@@ -1197,7 +1202,27 @@ local os__jiaohua = fk.CreateTriggerSkill{
     return false
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, data, "#os__jiaohua::" .. self.cost_data[1])
+    for _, move in ipairs(data) do
+      local target = move.to and player.room:getPlayerById(move.to) or nil --moveData没有target
+      if target and (move.to == player.id or table.every(player.room.alive_players, function(p)
+          return p.hp >= target.hp
+        end)) and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand then
+        local cardType = {"basic", "trick", "equip"}
+        if type(player:getMark("_os__jiaohua-turn")) == "table" then
+          table.forEach(player:getMark("_os__jiaohua-turn"), function(name)
+            table.removeOne(cardType, name)
+          end)
+        end
+        if #cardType == 0 then return false end
+        for _, info in ipairs(move.moveInfo) do
+          table.removeOne(cardType, Fk:getCardById(info.cardId):getTypeString())
+        end
+        if #cardType > 0 then
+          self.cost_data = {target.id, table.concat(cardType, ",")}
+          return player.room:askForSkillInvoke(player, self.name, data, "#os__jiaohua::" .. target.id)
+        end
+      end
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1951,7 +1976,6 @@ local os__lingfa = fk.CreateTriggerSkill{
         end
       )
       if #targets == 0 then return false end
-      self.cost_data = targets
       return true
     elseif num > 2 then
       if #table.filter(room:getOtherPlayers(player), function(p)
@@ -1968,8 +1992,10 @@ local os__lingfa = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = room:getTag("RoundCount") == 1 and "slash" or "peach"
-    table.forEach(self.cost_data, function(pid)
-      room:setPlayerMark(room:getPlayerById(pid), "@os__lingfa", mark)
+    table.forEach(table.filter(room:getOtherPlayers(player), function(p)
+      return (not p:isNude())
+    end), function(p)
+      room:setPlayerMark(p, "@os__lingfa", mark)
     end)
   end,
 }
@@ -2231,13 +2257,19 @@ local os__xiongzheng = fk.CreateTriggerSkill{
       end
     )
     if #targets > 0 then
-      self.cost_data = targets
       return true
     end
     return false
   end,
   on_cost = function(self, event, target, player, data)
-    local target = player.room:askForChoosePlayers(player, self.cost_data, 1, 1, "#os__xiongzheng-ask", self.name, true)
+    local target = player.room:askForChoosePlayers(player, table.map(
+      table.filter(player.room.alive_players, function(p)
+        return (p:getMark("_os__xiongzheng") == 0)
+      end),
+      function(p)
+        return p.id
+      end
+    ), 1, 1, "#os__xiongzheng-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -3411,7 +3443,6 @@ local os__dingzhen = fk.CreateTriggerSkill{
       end
     )
     if #targets > 0 then
-      self.cost_data = targets
       return true
     end
     return false
@@ -3419,9 +3450,16 @@ local os__dingzhen = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local targets = player.room:askForChoosePlayers(
       player,
-      self.cost_data,
+      table.map(
+        table.filter(player.room.alive_players, function(p)
+          return (p:distanceTo(player) <= num)
+        end),
+        function(p)
+          return p.id
+        end
+      ),
       1,
-      #self.cost_data,
+      99,
       "#os__dingzhen-ask:::" .. tostring(player.hp),
       self.name,
       true
@@ -4116,7 +4154,6 @@ local os__kujian_judge = fk.CreateTriggerSkill{
         end
       end
       if #targets > 0 then
-        self.cost_data = targets
         return true
       end
     end
@@ -4132,12 +4169,11 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       player:drawCards(1, self.name)
       target:drawCards(1, self.name)
     else
-      for _, pid in ipairs(self.cost_data) do
-        local to = room:getPlayerById(pid)
+      local targets = table.filter(room:getAlivePlayers(true), function(p) return p:getMark("_os__kujian") > 0 end)
+      for _, to in ipairs(targets) do
         for i = 1, to:getMark("_os__kujian"), 1 do
-          room:doIndicate(player.id, {pid})
+          room:doIndicate(player.id, {to.id})
           if not player:isNude() and player:isAlive() then room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
-          
           if not to:isNude() and to:isAlive() then room:askForDiscard(to, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
         end
         room:setPlayerMark(to, "_os__kujian", 0)

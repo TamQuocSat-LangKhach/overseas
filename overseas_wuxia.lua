@@ -982,12 +982,9 @@ local os__shezhong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self.name) or player.phase ~= Player.Finish then return false end
     local room = player.room
-    local targets = table.map(table.filter(room.alive_players, function(p)
+    if table.find(room.alive_players, function(p)
       return p:getMark("_os__shezhong_damaged-turn") > 0
-    end), function(p)
-    return p.id end)
-    if #targets > 0 then
-      self.cost_data = targets
+    end) then
       return true
     end
     if player:getMark("_os__shezhong_damage_others-turn") > 0 then return true end
@@ -1008,8 +1005,12 @@ local os__shezhong = fk.CreateTriggerSkill{
         end
       end
     end
-    if self.cost_data ~= nil then
-      local target = room:askForChoosePlayers(player, self.cost_data, 1, 1, "#os__shezhong2-target", self.name, true)
+    local availableTargets = table.map(table.filter(room.alive_players, function(p)
+      return p:getMark("_os__shezhong_damaged-turn") > 0
+    end), function(p)
+    return p.id end)
+    if #availableTargets > 0 then
+      local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__shezhong2-target", self.name, true)
       if #target > 0 then
         local to = room:getPlayerById(target[1])
         local num = math.min(to.hp, 5) - player:getHandcardNum()

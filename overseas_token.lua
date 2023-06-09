@@ -13,6 +13,18 @@ local autoDesctruct = fk.CreateTriggerSkill{
   global = true,
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          if table.contains(autoDesctructCards, Fk:getCardById(info.cardId).name) then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
     local ids = {}
     for _, move in ipairs(data) do
       if move.toArea == Card.DiscardPile then
@@ -23,14 +35,7 @@ local autoDesctruct = fk.CreateTriggerSkill{
         end
       end
     end
-    if #ids > 0 then
-      self.cost_data = ids
-      return true
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(ids) do
       table.insert(room.void, id)
       room:setCardArea(id, Card.Void, nil)
     end

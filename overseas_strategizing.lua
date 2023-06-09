@@ -198,18 +198,11 @@ local os__kuanji = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) or player:usedSkillTimes(self.name) > 0 then return false end
-    local cids = {}
     for _, move in ipairs(data) do
       if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
-        table.insertTable(cids, table.map(move.moveInfo, function(info)
-        return info.cardId end))
+        return true
       end
     end
-    if #cids > 0 then
-      self.cost_data = cids
-      return true
-    end
-    return false
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -218,7 +211,14 @@ local os__kuanji = fk.CreateTriggerSkill{
         return p.id
       end), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
-      local cids = room:askForGuanxing(player, self.cost_data, nil, nil, "os__kuanjiGive", true, {"os__kuanjiGet", "os__kuanjiNoGet"}).top
+      local cards = {}
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+          table.insertTable(cards, table.map(move.moveInfo, function(info)
+          return info.cardId end))
+        end
+      end
+      local cids = room:askForGuanxing(player, cards, nil, nil, "os__kuanjiGive", true, {"os__kuanjiGet", "os__kuanjiNoGet"}).top
       if #cids > 0 then
         self.cost_data = {target[1], cids}
         return true
@@ -964,22 +964,23 @@ local os__boming_draw = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if player.phase ~= Player.NotActive then
-      local num = 0
-      for _, move in ipairs(data) do
-        local target = move.to and player.room:getPlayerById(move.to) or nil
-        if target and move.to ~= player.id and move.toArea == Card.PlayerHand then
-          num = num + #move.moveInfo
-        end
-      end
-      if num > 0 then
-        self.cost_data = num
+    if player.phase == Player.NotActive then return false end
+    for _, move in ipairs(data) do
+      local target = move.to and player.room:getPlayerById(move.to) or nil
+      if target and move.to ~= player.id and move.toArea == Card.PlayerHand then
         return true
       end
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__boming_card-turn", self.cost_data)
+    local num = 0
+    for _, move in ipairs(data) do
+      local target = move.to and player.room:getPlayerById(move.to) or nil
+      if target and move.to ~= player.id and move.toArea == Card.PlayerHand then
+        num = num + #move.moveInfo
+      end
+    end
+    player.room:addPlayerMark(player, "_os__boming_card-turn", num)
   end,
 }
 os__boming:addRelatedSkill(os__boming_draw)
@@ -989,6 +990,29 @@ local os__ejian = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      local target = move.to and player.room:getPlayerById(move.to) or nil
+      local from = move.from and player.room:getPlayerById(move.from) or nil
+      if from and from == player and from:hasSkill(self.name) and target and move.to ~= player.id and move.toArea == Card.PlayerHand then
+        local cardType = {}
+        local fromCard = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          table.insertIfNeed(cardType, Fk:getCardById(id):getTypeString())
+          table.insert(fromCard, id)
+        end
+        local cids = target:getCardIds{Player.Hand, Player.Equip}
+        for _, id in ipairs(cids) do
+          if table.contains(cardType, Fk:getCardById(id):getTypeString()) and not table.contains(fromCard, id) then
+            return true
+          end
+        end
+      end
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
     for _, move in ipairs(data) do
       local target = move.to and player.room:getPlayerById(move.to) or nil
       local from = move.from and player.room:getPlayerById(move.from) or nil
@@ -1010,14 +1034,10 @@ local os__ejian = fk.CreateTriggerSkill{
         end
         if #cards > 0 then
           self.cost_data = {move.to, cards}
-          return true --同时移动牌中同时给两名其他角色就有问题，怎么解决
+          break --同时移动牌中同时给两名其他角色就有问题，怎么解决
         end
       end
     end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
     local target = room:getPlayerById(self.cost_data[1])
     local cards = self.cost_data[2]
     if room:askForChoice(target, {"os__ejian_discard", "os__ejian_damage"}, self.name) == "os__ejian_damage" then
@@ -1394,27 +1414,30 @@ local os__xiangyu = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if player.phase == Player.NotActive then return false end
     local room = player.room
+    for _, move in ipairs(data) do
+      if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and 
+        table.find(move.moveInfo, function(info)
+          return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+        end) then
+        return true
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
     local target = {}
     for _, move in ipairs(data) do
       if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and 
         table.find(move.moveInfo, function(info)
           return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
         end) then
-        table.insert(target, move.from)
+        table.insertIfNeed(target, move.from)
       end
     end
-    if #target > 0 then 
-      self.cost_data = target
-      return true
-    end
-    return false
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    table.forEach(self.cost_data, function(pid)
+    table.forEach(target, function(pid)
       room:addPlayerMark(room:getPlayerById(pid), "_os__xiangyu-turn")
     end)
-    local num = math.min(5, player:getMark("_os__xiangyu_num-turn") + #self.cost_data)
+    local num = math.min(5, player:getMark("_os__xiangyu_num-turn") + #target)
     room:setPlayerMark(player, "_os__xiangyu_num-turn", num)
     if player:hasSkill(self.name, true) then room:setPlayerMark(player, "@os__xiangyu-turn", num) end
   end,
