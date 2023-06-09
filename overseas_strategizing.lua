@@ -483,7 +483,7 @@ local os__moushi = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name) and data.card and data.card.color ~= Card.NoColor and data.card.color == player:getMark("_os__moushi")
+    return player == target and player:hasSkill(self.name) and data.card and data.card.color == player:getMark("_os__moushi")
   end,
   on_use = function(self, event, target, player, data)
     return true
@@ -491,7 +491,7 @@ local os__moushi = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name, true) --有问题的
+    return player == target and player:hasSkill(self.name, true) and data.card.color ~= Card.NoColor --有问题的
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

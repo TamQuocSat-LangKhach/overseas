@@ -730,13 +730,80 @@ Fk:loadTranslationTable{
   ["~os_ex__fazheng"] = "汉室复兴，我，是看不到了……",
 }
 
+local guyong = General(extension, "os_ex__guyong", "wu", 3)
+local os_ex__shenxing = fk.CreateActiveSkill{
+  name = "os_ex__shenxing",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return true
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < math.min(Self:getMark("@os_ex__shenxing"), 2)
+  end,
+  target_num = 0,
+  card_num = function(self)
+    return math.min(Self:getMark("@os_ex__shenxing"), 2)
+  end,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    room:addPlayerMark(from, "@os_ex__shenxing")
+    room:throwCard(effect.cards, self.name, from)
+    room:drawCards(from, 1, self.name)
+  end
+}
+local os_ex__bingyi = fk.CreateTriggerSkill{
+  name = "os_ex__bingyi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and not player:isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player.player_cards[Player.Hand]
+    player:showCards(cards)
+    local card = Fk:getCardById(cards[1])
+    local color, cardType = true, true
+    for _, id in ipairs(cards) do
+      local c = Fk:getCardById(id)
+      if c:compareColorWith(card, true) then
+        color = false
+        break
+      end
+    end
+    for _, id in ipairs(cards) do
+      local c = Fk:getCardById(id)
+      if c.type ~= card.type then
+        cardType = false
+        break
+      end
+    end
+    if not color and not cardType then return false end
+    local tos = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end), 1, #cards, "#bingyi-choose:::"..#cards, self.name, false)
+    room:sortPlayersByAction(tos)
+    table.forEach(tos, function(p) room:getPlayerById(p):drawCards(1, self.name) end)
+    if #cards > 1 and color and cardType then
+      room:setPlayerMark(player, "@os_ex__shenxing", 0)
+    end
+  end,
+}
+guyong:addSkill(os_ex__shenxing)
+guyong:addSkill(os_ex__bingyi)
+
+
 Fk:loadTranslationTable{
   ["os_ex__guyong"] = "界顾雍",
   ["os_ex__shenxing"] = "慎行",
   [":os_ex__shenxing"] = "出牌阶段，你可弃置X张牌，摸一张牌（X为你发动过〖慎行〗的次数且至多为2）。",
   ["os_ex__bingyi"] = "秉壹",
-  [":os_ex__bingyi"] = "结束阶段开始时，你可展示所有手牌，若颜色均相同或类型均相同，你令至多X名角色各摸一张牌（X为你的手牌数）。若你展示的牌数大于1且这些牌颜色类型均相同，则〖慎行〗的X修改为0。",
+  [":os_ex__bingyi"] = "结束阶段开始时，你可展示所有手牌，若颜色均相同或类型均相同，你令至多X名角色各摸一张牌（X为你的手牌数）。若你展示的牌数大于1且这些牌颜色和类型均相同，则〖慎行〗的X修改为0。",
 
+  ["@os_ex__shenxing"] = "慎行",
+  ["$os_ex__shenxing1"] = "事前多思，事后少悔。",
+  ["$os_ex__shenxing2"] = "权衡斟酌，再虑一番。",
+  ["$os_ex__bingyi1"] = "秉持吾志，一心为公。",
+  ["$os_ex__bingyi2"] = "志爱公利，道德纯备。",
+  ["~os__zhugeguo"] = "陛下厚爱，雍……",
 }
 
 

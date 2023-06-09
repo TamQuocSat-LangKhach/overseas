@@ -1574,17 +1574,20 @@ local os__guimen = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
-    self.cost_data = {}
+    local cids = {}
     for _, move in ipairs(data) do
       if move.from == player.id and move.moveReason == fk.ReasonDiscard then
         for _, info in ipairs(move.moveInfo) do
           if Fk:getCardById(info.cardId).suit == Card.Spade then
-            table.insert(self.cost_data, Fk:getCardById(info.cardId).number)
+            table.insert(cids, Fk:getCardById(info.cardId).number)
           end
         end
       end
     end
-    return #self.cost_data > 0
+    if #cids > 0 then
+      self.cost_data = cids
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2651,7 +2654,7 @@ Fk:loadTranslationTable{
   ["$os__qirang2"] = "集母亲之智，效父亲之法，祈以七星。",
   ["$os__yuhua1"] = "凤羽飞烟，乘化仙尘。",
   ["$os__yuhua2"] = "此乃仙人之物，不可轻弃。",
-  ["~os__zhugeguo"] = "飘飘乎如遗世独立，羽化而登仙。", --按并非如此
+  ["~os__zhugeguo"] = "方生方死，方死方生。",
 }
 
 return extension
