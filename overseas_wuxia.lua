@@ -238,7 +238,7 @@ local os__yulong = fk.CreateTriggerSkill{
       self.cost_data = availableTargets[1]
       return room:askForSkillInvoke(player, self.name)
     else
-      local result = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__yulong-ask", self.name)
+      local result = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__yulong-ask", self.name, true)
       if #result > 0 then
         self.cost_data = result[1]
         return true

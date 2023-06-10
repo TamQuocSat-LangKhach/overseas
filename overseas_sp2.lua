@@ -540,8 +540,8 @@ local os__zongkui = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     if event == fk.EventPhaseChanging and (target ~= player or data.from ~= Player.NotActive)then return false end
-    local targets = table.filter(player.room:getOtherPlayers(player), function(p)
-      return p:getMark("@@os__puppet") == 0
+    local targets = table.filter(player.room.alive_players, function(p)
+      return p:getMark("@@os__puppet") == 0 and p ~= player
     end)
     if #targets > 0 then
       return true
@@ -551,8 +551,8 @@ local os__zongkui = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseChanging then
-      local target = room:askForChoosePlayers(player, table.map(table.filter(player.room:getOtherPlayers(player), function(p)
-        return p:getMark("@@os__puppet") == 0
+      local target = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function(p)
+        return p:getMark("@@os__puppet") == 0 and p ~= player
       end), function(p)
         return p.id
       end), 1, 1, "#os__zongkui-ask", self.name,true)
@@ -567,8 +567,8 @@ local os__zongkui = fk.CreateTriggerSkill{
           n = p.hp
         end
       end
-      local availableTargets = table.map(table.filter(self.cost_data, function(p)
-        return p:getMark("@@os__puppet") == 0 and p.hp == n
+      local availableTargets = table.map(table.filter(room.alive_players, function(p)
+        return p:getMark("@@os__puppet") == 0 and p.hp == n and p ~= player
       end), function(p)
         return p.id
       end)

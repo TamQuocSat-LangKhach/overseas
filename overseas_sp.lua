@@ -1194,7 +1194,6 @@ local os__jiaohua = fk.CreateTriggerSkill{
           table.removeOne(cardType, Fk:getCardById(info.cardId):getTypeString())
         end
         if #cardType > 0 then
-          --self.cost_data = {target.id, table.concat(cardType, ",")}
           return true
         end
       end
@@ -4192,7 +4191,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       end))
     end
     if #cids > 0 then
-      self.cost_data = cids
+      self.cost_data = cids --待改
       return true
     end
   end,
@@ -4273,7 +4272,7 @@ local os__ruilian = fk.CreateTriggerSkill{
         end
       end
       if #cids > 0 then
-        self.cost_data = cids
+        self.cost_data = cids --待改
         return true
       end
       return false

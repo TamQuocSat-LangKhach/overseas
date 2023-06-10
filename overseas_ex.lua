@@ -624,10 +624,8 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     if event == fk.AfterCardsMove then
-      self.cost_data = nil
       for _, move in ipairs(data) do
         if move.from ~= nil and move.from ~= player.id and move.to == player.id and move.toArea == Card.PlayerHand and #move.moveInfo > 1 then
-          self.cost_data = move.from
           return true
         end
       end
@@ -640,7 +638,13 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
     if event ==  fk.AfterCardsMove then
       room:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "support")
-      local target = room:getPlayerById(self.cost_data)
+      local target
+      for _, move in ipairs(data) do
+        if move.from ~= nil and move.from ~= player.id and move.to == player.id and move.toArea == Card.PlayerHand and #move.moveInfo > 1 then
+          target = room:getPlayerById(move.from)
+          break
+        end
+      end
       if (#target.player_cards[Player.Hand] == 0 or #target.player_cards[Player.Equip] == 0) and target:isWounded() then
         if room:askForChoice(player, {"os_ex__enyuan_draw", "os_ex__enyuan_recover"}, self.name, "#os_ex__enyuan-ask:" .. target.id) == "os_ex__enyuan_recover" then
           room:recover({ who = target, num = 1, recoverBy = player, skillName = self.name})
