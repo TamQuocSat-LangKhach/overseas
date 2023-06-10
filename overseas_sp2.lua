@@ -2163,7 +2163,7 @@ Fk:loadTranslationTable{
   ["~os__zhugeguo"] = "方生方死，方死方生。",
 }
 
---[[local zhangmancheng = General(extension, "zhangmancheng", "qun", 4)
+local zhangmancheng = General(extension, "zhangmancheng", "qun", 4)
 
 local os__fengji = fk.CreateTriggerSkill{
   name = "os__fengji",
@@ -2259,8 +2259,8 @@ local os__budao = fk.CreateTriggerSkill{
     local room = player.room
     room:changeMaxHp(player, -1)
     room:recover({ who = player, num = 1, recoverBy = player, skillName = self.name})
-    local os__budaoSkills = table.random({"os__zhouhu", "os__zuhuo", "os__fengqi", "os__huangjin", "os__guimen", "os__zhouzu", "os__didao"}, 3) --
-    local skillName = room:askForChoice(player, os__budaoSkills, self.name, "#os__budao-ask")
+    local os__budaoSkills = table.random({"os__zhouhu", "os__zuhuo", "os__fengqi", "os__huangjin", "os__zhouzu", "os__didao"}, 3) --
+    local skillName = room:askForChoice(player, os__budaoSkills, self.name, "#os__budao-ask", true)
     room:handleAddLoseSkills(player, skillName, nil, true, false)
     local pid = room:askForChoosePlayers(player, table.map(
       table.filter(room:getOtherPlayers(player), function(p)
@@ -2322,7 +2322,7 @@ local os__zhouhu_conjure = fk.CreateTriggerSkill{
     else
       room:notifySkillInvoked(player, "os__zhouhu")
       room:broadcastSkillInvoke("os__zhouhu")
-      room:recover({ who = player, num = num, recoverBy = player, skillName = self.name})
+      if player:isWounded() then room:recover({ who = player, num = num, recoverBy = player, skillName = self.name}) end
       room:setPlayerMark(player, "@os__zhouhu", 0)
     end
   end,
@@ -2357,7 +2357,7 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
   events = {fk.EventPhaseChanging, fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventPhaseChanging then
-      return player:getMark("@os__zhouhu") ~= 0 and data.to == Player.NotActive
+      return player:getMark("@os__zuhuo") ~= 0 and data.to == Player.NotActive
     else
       return target == player and player:getMark("@os__zuhuo_defend") ~= 0
     end
@@ -2375,7 +2375,7 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
       else
         room:notifySkillInvoked(player, "os__zuhuo")
         room:broadcastSkillInvoke("os__zuhuo")
-        room:setPlayerMark(player, "@os__zuhuo_defend", num)
+        room:addPlayerMark(player, "@os__zuhuo_defend", num)
         room:setPlayerMark(player, "@os__zuhuo", 0)
       end
     else
@@ -2460,7 +2460,7 @@ local os__huangjin = fk.CreateTriggerSkill{
   end,
 }
 
-local os__guimen = fk.CreateTriggerSkill{ --未完成！
+--[[local os__guimen = fk.CreateTriggerSkill{ --有毛病的东西
   name = "os__guimen",
   anim_type = "offensive",
   events = {fk.AfterCardsMove},
@@ -2484,7 +2484,7 @@ local os__guimen = fk.CreateTriggerSkill{ --未完成！
       if move.from == player.id and move.moveReason == fk.ReasonDiscard then
         for _, info in ipairs(move.moveInfo) do
           if Fk:getCardById(info.cardId).suit == Card.Spade then
-            table.insert(cids, Fk:getCardById(info.cardId).number)
+            table.insertIfNeed(cids, Fk:getCardById(info.cardId).number)
           end
         end
       end
@@ -2509,7 +2509,7 @@ local os__guimen = fk.CreateTriggerSkill{ --未完成！
       end
     end
   end,
-}
+}]]
 
 local os__zhouzu = fk.CreateActiveSkill{
   name = "os__zhouzu",
@@ -2557,7 +2557,7 @@ local os__zhouzu_conjure = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, "os__zhouzu")
       room:broadcastSkillInvoke("os__zhouzu")
       local target = room:getPlayerById(player:getMark("_os__zhouzu"))
-      if #target:getCardIds(Player.Equip) + #target:getCardIds(Player.Hand) < num then
+      if #target:getCardIds{Player.Equip, Player.Hand} < num then
         target:throwAllCards("he")
         room:damage{
           from = player,
@@ -2591,23 +2591,23 @@ local os__didao = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
+    local invoke = false
+    if self.cost_data:compareColorWith(data.card) then invoke = true end
     player.room:retrial(self.cost_data, player, data, self.name, true)
-    if self.cost_data:compareColorWith(data.card) then
-      player:drawCards(1, self.name)
-    end
+    if invoke then player:drawCards(1, self.name) end
   end,
 }
 
 zhangmancheng:addSkill(os__fengji)
 zhangmancheng:addSkill(os__yiju)
 zhangmancheng:addSkill(os__budao)
-zhangmancheng:addSkill(os__zhouhu) --
-zhangmancheng:addSkill(os__zuhuo)
-zhangmancheng:addSkill(os__fengqi)
-zhangmancheng:addSkill(os__huangjin)
-zhangmancheng:addSkill(os__guimen)
-zhangmancheng:addSkill(os__zhouzu)
-zhangmancheng:addSkill(os__didao)
+zhangmancheng:addRelatedSkill(os__zhouhu) --
+zhangmancheng:addRelatedSkill(os__zuhuo)
+zhangmancheng:addRelatedSkill(os__fengqi)
+zhangmancheng:addRelatedSkill(os__huangjin)
+--zhangmancheng:addRelatedSkill(os__guimen)
+zhangmancheng:addRelatedSkill(os__zhouzu)
+zhangmancheng:addRelatedSkill(os__didao)
 
 Fk:loadTranslationTable{
   ["zhangmancheng"] = "张曼成",
@@ -2617,7 +2617,15 @@ Fk:loadTranslationTable{
   ["os__yiju"] = "蚁聚",
   [":os__yiju"] = "若你有“示”，①你于出牌阶段使用【杀】的次数上限和攻击范围均为你的体力值。②当你受到伤害时，你将“示”置入弃牌堆，令此伤害+1。",
   ["os__budao"] = "布道",
-  [":os__budao"] = "限定技，准备阶段开始时，你可减1点体力上限，回复1点体力，从布道技能库的随机三个技能中选择一个获得，然后你可令一名其他角色获得相同技能并交给你一张牌。",
+  [":os__budao"] = "限定技，准备阶段开始时，你可减1点体力上限，回复1点体力，从布道技能库的随机三个技能中选择一个获得，然后你可令一名其他角色获得相同技能并交给你一张牌。<br/>" .. 
+  "<font color='grey'>#\"<b>布道技能库</b>\"<br/><b>咒护</b>: 出牌阶段限一次，你可弃置一张红色手牌并施法：回复X点体力。<br/>" .. 
+  "<b>咒护</b>: 出牌阶段限一次，你可弃置一张红色手牌并施法：回复X点体力。<br/>" ..
+  "<b>阻祸</b>: 出牌阶段限一次，你可弃置一张非基本牌并施法：防止你受到的下X次伤害。<br/>" ..
+  "<b>丰祈</b>: 出牌阶段结束时，你可弃置一张黑色手牌并施法：摸2X张牌。<br/>" ..
+  "<b>黄巾</b>: 锁定技，当你成为【杀】的目标时，你判定：若结果点数与此【杀】点数差值不大于1，则此【杀】对你无效。<br/>" ..
+  "（暂无）<b>鬼门</b>: 锁定技，当你因弃置而失去黑桃牌后，你判定：若结果点数与你弃置的其中一张黑桃牌点数差值不大于1，则对一名其他角色造成2点雷电伤害。<br/>" ..
+  "<b>咒诅</b>: 出牌阶段限一次，你可选择一名其他角色并施法：令其弃置X张牌，若牌数不足则全部弃置并对其造成1点雷电伤害。<br/>" ..
+  "<b>地道</b>: 当一名角色的判定牌生效前，你可打出一张牌替换之，若与原判定牌颜色相同，你摸一张牌。</font>",
   
   ["os__zhouhu"] = "咒护",
   [":os__zhouhu"] = "出牌阶段限一次，你可弃置一张红色手牌并施法：回复X点体力。",
@@ -2655,6 +2663,6 @@ Fk:loadTranslationTable{
   ["@os__zhouzu"] = "咒诅",
   ["#os__zhouzu_conjure"] = "咒诅",
   ["#os__didao-ask"] = "地道：你可打出一张牌替换 %src 的判定，若与原判定牌颜色相同，你摸一张牌",
-}]]
+}
 
 return extension
