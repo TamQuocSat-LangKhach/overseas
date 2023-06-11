@@ -773,6 +773,8 @@ local os_ex__bingyi = fk.CreateTriggerSkill{
     local room = player.room
     local cards = player.player_cards[Player.Hand]
     player:showCards(cards)
+    local invoke = false
+    if #cards > 1 then invoke = true end
     local card = Fk:getCardById(cards[1])
     local color, cardType = true, true
     for _, id in ipairs(cards) do
@@ -793,7 +795,7 @@ local os_ex__bingyi = fk.CreateTriggerSkill{
     local tos = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end), 1, #cards, "#bingyi-choose:::"..#cards, self.name, false)
     room:sortPlayersByAction(tos)
     table.forEach(tos, function(p) room:getPlayerById(p):drawCards(1, self.name) end)
-    if #cards > 1 and color and cardType then
+    if invoke and color and cardType then
       room:setPlayerMark(player, "@os_ex__shenxing", 0)
     end
   end,

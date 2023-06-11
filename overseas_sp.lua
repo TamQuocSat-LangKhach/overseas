@@ -1631,11 +1631,12 @@ local os__hongju = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:drawCards(#player:getPile("os__glory"), self.name)
-    local cids = room:AskForExchange(player, {player:getCardIds(Player.Hand), player:getPile("os__glory")}, {"$Hand", "os__glory"}, self.name)
+    if #player:getPile("os__glory") > 0 then
+      player:drawCards(#player:getPile("os__glory"), self.name)
+      local cids = room:askForExchange(player, {player:getPile("os__glory"), player:getCardIds(Player.Hand)}, {"os__glory", "$Hand"}, self.name)
       room:moveCards( 
         {
-        ids = cids[1],
+        ids = cids[2],
           from = player.id,
           to = player.id,
           toArea = Card.PlayerHand,
@@ -1644,16 +1645,17 @@ local os__hongju = fk.CreateTriggerSkill{
           skillName = self.name,
         },
         {
-        ids = cids[2],
+        ids = cids[1],
           from = player.id,
           to = player.id,
           toArea = Card.PlayerSpecial,
-        moveReason = fk.ReasonExchange,
+          moveReason = fk.ReasonExchange,
           proposer = player.id,
           specialName = "os__glory",
           skillName = self.name,
         }
       )
+    end
     room:handleAddLoseSkills(player, "os__qingce", nil)
     local choices = {"os__hongju_saotao", "Cancel"}
     if room:askForChoice(player, choices, self.name) == "os__hongju_saotao" then
@@ -1678,14 +1680,7 @@ local os__qingce = fk.CreateActiveSkill{
   on_use = function(self, room, use)
     local player = room:getPlayerById(use.from)
     local target = room:getPlayerById(use.tos[1])
-    room:moveCards({
-      ids = use.cards,
-      from = player.id,
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonPutIntoDiscardPile,
-      proposer = player.id,
-      skillName = self.name,
-    })
+    room:moveCardTo(use.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__glory")
     local card = room:askForCardChosen(player, target, "hej", self.name)
     room:throwCard(card, self.name, target, player)
   end,
@@ -3869,7 +3864,7 @@ local os__fanghun_gain = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, "os__fanghun")
     if not table.contains(data.card.skillNames, "os__fanghun") or event == fk.TargetConfirmed then --避免重叠
-    room:broadcastSkillInvoke("os__fanghun")
+      room:broadcastSkillInvoke("os__fanghun")
     end
     room:addPlayerMark(player, "@meiying")
   end,

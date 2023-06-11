@@ -132,7 +132,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__chuanshu", {target.id, player.general})
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death},
+  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death}, --要改
   can_refresh = function(self, event, target, player, data)
     if event == fk.PindianCardsDisplayed then
       return player:getMark("@os__chuanshu") ~= 0 and (data.from == player or table.contains(data.tos, player))
@@ -929,7 +929,7 @@ local os__liexi = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local ids = room:askForCard(player, 1, #player:getCardIds(Player.Hand) + #player:getCardIds(Player.Equip), true, self.name, true, nil, "#os__liexi-ask")
+    local ids = room:askForDiscard(player, 1, #player:getCardIds(Player.Hand) + #player:getCardIds(Player.Equip), true, self.name, true, nil, "#os__liexi-ask", true)
     if #ids > 0 then
       local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id

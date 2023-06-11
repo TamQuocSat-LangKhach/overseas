@@ -532,10 +532,10 @@ local os__mibei = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardUseDeclared then
-      local typesRecorded = type(player:getMark("@os__mibei")) == "table" and player:getMark("@os__mibei") or {0, 0, 0}
-      typesRecorded[data.card.type] = typesRecorded[data.card.type] + 1
-      room:setPlayerMark(player, "@os__mibei", typesRecorded)
-      if typesRecorded[1] > 1 and typesRecorded[2] > 1 and typesRecorded[3] > 1 then
+      local typesRecorded = player:getMark("@os__mibei") ~= 0 and string.split(player:getMark("@os__mibei"), "-") or {0, 0, 0}
+      typesRecorded[data.card.type] = tonumber(typesRecorded[data.card.type]) + 1
+      room:setPlayerMark(player, "@os__mibei", table.concat(typesRecorded, "-"))
+      if tonumber(typesRecorded[1]) > 1 and tonumber(typesRecorded[2]) > 1 and tonumber(typesRecorded[3]) > 1 then
         room:updateQuestSkillState(player, self.name, true) -- 为了有那个白底……
         room:updateQuestSkillState(player, self.name, false)
         room:handleAddLoseSkills(player, "os__mouli", nil)
@@ -544,7 +544,7 @@ local os__mibei = fk.CreateTriggerSkill{
       room:addPlayerMark(player, "_os__mibei_use-turn")
     else
       room:addPlayerMark(player, MarkEnum.MinusMaxCardsInTurn, 1)
-      room:setPlayerMark(player, "@os__mibei", 0)
+      room:setPlayerMark(player, "@os__mibei", "0-0-0")
       room:updateQuestSkillState(player, self.name, true)
     end
   end,
@@ -600,7 +600,7 @@ local os__mouli = fk.CreateViewAsSkill{
   pattern = ".|.|.|.|.|basic",
   interaction = function(self)
     local allCardNames = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+    for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
       if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         table.insert(allCardNames, card.name)
@@ -617,7 +617,7 @@ local os__mouli = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name) > 0 then return false end
-    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+    for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
       if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         return true
@@ -627,7 +627,7 @@ local os__mouli = fk.CreateViewAsSkill{
   end,
   enabled_at_response = function(self, player, cardResponsing)
     if player:usedSkillTimes(self.name) > 0 or cardResponsing then return false end
-    for _, id in ipairs(Fk:getAllCardIds()) do --需要返回摸牌堆
+    for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
       if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         return true
