@@ -277,6 +277,18 @@ local redistributeAction = fk.CreateTriggerSkill{
   end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
+    if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
+      local num = nil
+      for _, p in ipairs(TargetGroup:getRealTargets(data.tos)) do
+        local hand_num = room:getPlayerById(p):getHandcardNum()
+        if num == nil then
+          num = hand_num
+        elseif num ~= hand_num then
+          data.extra_data.redistributeCids = nil
+          return false
+        end
+      end
+    end
     local cids = table.filter(data.extra_data.redistributeCids, function(id)
       return room:getCardArea(id) == Card.DiscardPile
     end)
@@ -305,7 +317,7 @@ extension:addCards{
 }
 Fk:loadTranslationTable{
   ["redistribute"] = "调剂盐梅",
-  [":redistribute"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：两名手牌数不同的角色<br /><b>效果</b>：若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。",
+  [":redistribute"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：两名手牌数不同的角色<br /><b>效果</b>：若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。",
   ["redistribute_skill"] = "调剂盐梅",
   ["redistribute_action"] = "调剂盐梅",
   ["#redistribute-give"] = "你可将因【调剂盐梅】弃置的牌交给一名角色",

@@ -670,7 +670,8 @@ local os__canshi = fk.CreateTriggerSkill{
   name = "os__canshi",
   events = {fk.TargetConfirming, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)  and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0) or (event == fk.AfterCardTargetDeclared and #data.tos == 1)) 
+    return target == player and player:hasSkill(self.name) and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0)
+    or (event == fk.AfterCardTargetDeclared and data.tos and #data.tos == 1)) 
     and (data.card.type == Card.TypeBasic or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick))
   end,
   on_cost = function(self, event, target, player, data)
@@ -2663,6 +2664,14 @@ Fk:loadTranslationTable{
   ["@os__zhouzu"] = "咒诅",
   ["#os__zhouzu_conjure"] = "咒诅",
   ["#os__didao-ask"] = "地道：你可打出一张牌替换 %src 的判定，若与原判定牌颜色相同，你摸一张牌",
+  
+  ["$os__fengji1"] = "蜂趋蚁附，皆为道来。",
+  ["$os__fengji2"] = "蜂攒蚁集，皆为道往！",
+  ["$os__yiju1"] = "鸱张蚁聚，为从天道！",
+  ["$os__yiju2"] = "黄天之道，苍天之示。",
+  ["$os__budao1"] = "得天之力，从天之道。	",
+  ["$os__budao2"] = "黄天大道，泽及苍生。",
+  ["~zhangmancheng"] = "天师，曼成尽力了。",
 }
 
 return extension

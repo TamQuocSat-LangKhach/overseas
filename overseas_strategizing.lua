@@ -241,7 +241,7 @@ Fk:loadTranslationTable{
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "①准备阶段开始时，你可从游戏外、牌堆或弃牌堆中获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
-  "【<b>调剂盐梅</b>】 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。</font>",
+  "【<b>调剂盐梅</b>】 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。重铸：出牌阶段，你可将此牌置入弃牌堆，然后摸一张牌。</font>",
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
 
@@ -520,7 +520,7 @@ Fk:loadTranslationTable{
   ["@os__moushi"] = "谋识",
 }
 
---[[local os__wangling = General(extension, "os__wangling", "wei", 4)
+local os__wangling = General(extension, "os__wangling", "wei", 4)
 
 local os__mibei = fk.CreateTriggerSkill{
   name = "os__mibei",
@@ -685,7 +685,7 @@ Fk:loadTranslationTable{
   ["$os__mouli1"] = "澄汰王室，迎立宗子！",
   ["$os__mouli1"] = "僣孽为害，吾岂可谋而不行？",
   ["~os__wangling"] = "一生尽忠事魏，不料，今日晚节尽毁啊！",
-}]]
+}
 
 local os__huojun = General(extension, "os__huojun", "shu", 4)
 

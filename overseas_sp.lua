@@ -1545,6 +1545,10 @@ local os__zhengrong = fk.CreateTriggerSkill{
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
       if event == fk.Damage then
         return player:getMark("_os__zhengrong_damage") == 1
+        --[[local searchedEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+          return e.data[1].from == player --local damage = e.data[1]
+        end, Player.HistoryPhase)
+        return #searchedEvents == 1 and searchedEvents[1].id == player.room.logic:getCurrentEvent().id]]
       else
         if player:getMark("_os__zhengrong_card_able") > 0 then
           player.room:setPlayerMark(player, "_os__zhengrong_card_able", 0)
@@ -1565,15 +1569,7 @@ local os__zhengrong = fk.CreateTriggerSkill{
       end
     )
     if #targets == 0 then return false end
-    local target = room:askForChoosePlayers(
-      player,
-      targets,
-      1,
-      1,
-      "#os__zhengrong-ask",
-      self.name
-    )
-
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__zhengrong-ask", self.name)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1636,13 +1632,10 @@ local os__hongju = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(#player:getPile("os__glory"), self.name)
-    local os__glory = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, ".|.|.|os__glory", "#os__hongju_card1", "os__glory")
-    local num = #os__glory
-    if num > 0 then
-      local cids = room:askForCard(player, num, num, false, self.name, false, ".|.|.|hand", "#os__hongju_card2:::" .. tostring(num), nil)
+    local cids = room:AskForExchange(player, {player:getCardIds(Player.Hand), player:getPile("os__glory")}, {"$Hand", "os__glory"}, self.name)
       room:moveCards( 
         {
-          ids = os__glory,
+        ids = cids[1],
           from = player.id,
           to = player.id,
           toArea = Card.PlayerHand,
@@ -1651,17 +1644,16 @@ local os__hongju = fk.CreateTriggerSkill{
           skillName = self.name,
         },
         {
-          ids = cids,
+        ids = cids[2],
           from = player.id,
           to = player.id,
           toArea = Card.PlayerSpecial,
-          moveReason = fk.ReasonJustMove,
+        moveReason = fk.ReasonExchange,
           proposer = player.id,
           specialName = "os__glory",
           skillName = self.name,
         }
       )
-    end
     room:handleAddLoseSkills(player, "os__qingce", nil)
     local choices = {"os__hongju_saotao", "Cancel"}
     if room:askForChoice(player, choices, self.name) == "os__hongju_saotao" then
@@ -1734,8 +1726,6 @@ Fk:loadTranslationTable{
 
   ["#os__zhengrong-ask"] = "征荣：你可选择一名其他角色，将其一张牌置于你的武将牌上",
   ["os__glory"] = "荣",
-  ["#os__hongju_card1"] = "鸿举：你可选择任意张“荣”，点“确定”后选择等量张手牌与之交换",
-  ["#os__hongju_card2"] = "鸿举：选择 %arg 张手牌与选择过的“荣”交换",
   ["os__hongju_saotao"] = "减1点体力上限，获得〖扫讨〗（锁定技，你使用的【杀】和普通锦囊牌不能被响应）",
 }
 

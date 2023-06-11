@@ -307,7 +307,7 @@ Fk:loadTranslationTable{
   ["os_ex__gongqi"] = "弓骑",
   [":os_ex__gongqi"] = "①你的攻击范围无限。②出牌阶段限一次，你可弃置一张牌，你于此阶段内使用与弃置的牌花色相同的【杀】无次数限制。若弃置的为装备牌，你可弃置一名其他角色的一张牌。",
   ["os_ex__jiefan"] = "解烦",
-  [":os_ex__jiefan"] = "限定技，出牌阶段，你可选择一名角色，令能攻击到其的所有角色选择一项：1.弃置一张武器牌；2.令其摸一张牌。当你上一次发动〖解烦〗指定的角色进入濒死状态时，此技能视为未发动过。",
+  [":os_ex__jiefan"] = "限定技，出牌阶段，你可选择一名角色，令攻击范围内有其的所有角色选择一项：1.弃置一张武器牌；2.令其摸一张牌。当你上一次发动〖解烦〗指定的角色进入濒死状态时，此技能视为未发动过。",
   
   ["#os_ex__gongqi-ask"] = "弓骑：你可弃置一名其他角色的一张牌",
   ["#os_ex__jiefan-discard"] = "解烦：弃置一张武器牌，否则 %dest 摸一张牌",
@@ -620,7 +620,7 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
   name = "os_ex__enyuan",
   mute = true,
   anim_type = "masochism",
-  events = {fk.AfterCardsMove ,fk.Damaged},
+  events = {fk.AfterCardsMove, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     if event == fk.AfterCardsMove then
@@ -631,6 +631,13 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
       end
     else
       return target == player and data.from and data.from ~= player and not data.from.dead and not player.dead
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.Damaged then
+      return true
+    else
+      return player.room:askForSkillInvoke(player, self.name, data)
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -712,7 +719,7 @@ fazheng:addSkill(os_ex__xuanhuo)
 Fk:loadTranslationTable{
   ["os_ex__fazheng"] = "界法正",
   ["os_ex__enyuan"] = "恩怨",
-  [":os_ex__enyuan"] = "当你获得一名其他角色至少两张牌后，你可令其摸一张牌；若其手牌区或装备区没有牌，你可改为令其回复1点体力。当你受到1点伤害后，你可令伤害来源交给你一张手牌，否则失去1点体力；若其交给你的牌不是红桃，则你摸一张牌。",
+  [":os_ex__enyuan"] = "当你获得一名其他角色至少两张牌后，你可令其摸一张牌；若其手牌区或装备区没有牌，你可改为令其回复1点体力。当你受到1点伤害后，你令伤害来源交给你一张手牌，否则失去1点体力；若其交给你的牌不是红桃，则你摸一张牌。",
   ["os_ex__xuanhuo"] = "眩惑",
   [":os_ex__xuanhuo"] = "摸牌阶段结束时，你可交给一名其他角色A两张牌并选择另一名角色B，然后A选择一项：1. 视为对B使用一张【杀】或【决斗】；2. 你获得其两张牌。",
 
