@@ -136,7 +136,7 @@ local os__miaolue = fk.CreateTriggerSkill{
   anim_type = "masochism",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
-    return event == fk.GameStart or target == player
+    return event == fk.GameStart or (target == player and not player.dead)
   end,
   on_trigger = function(self, event, target, player, data)
     if event == fk.Damaged then
