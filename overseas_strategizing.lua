@@ -222,7 +222,7 @@ local os__yingjia = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local plist, cid = player.room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, function(p)
       return p.id
-    end), 1, 1, nil, "#os__yingjia-target", self.name, true) --但是没判断可不可以弃置
+    end), 1, 1, ".|.|.|hand", "#os__yingjia-target", self.name, true) --但是没判断可不可以弃置
     if #plist > 0 then
       self.cost_data = {plist[1], cid}
       return true
