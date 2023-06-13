@@ -1544,11 +1544,10 @@ local os__zhengrong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
       if event == fk.Damage then
-        return player:getMark("_os__zhengrong_damage") == 1
-        --[[local searchedEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
-          return e.data[1].from == player --local damage = e.data[1]
+        local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+          return e.data[1].from == player  --local damage = e.data[1]
         end, Player.HistoryPhase)
-        return #searchedEvents == 1 and searchedEvents[1].id == player.room.logic:getCurrentEvent().id]]
+        return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
       else
         if player:getMark("_os__zhengrong_card_able") > 0 then
           player.room:setPlayerMark(player, "_os__zhengrong_card_able", 0)
@@ -1578,38 +1577,24 @@ local os__zhengrong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    
     local target = room:getPlayerById(self.cost_data)
     local card = room:askForCardChosen(player, target, "he", self.name)
     player:addToPile("os__glory", card, false, self.name)
   end,
 
-  refresh_events = {fk.TargetSpecified, fk.Damage, fk.EventPhaseChanging},
+  refresh_events = {fk.TargetSpecified},
   can_refresh = function(self, event, target, player, data)
     if target ~= player then return false end
-    if event == fk.EventPhaseChanging then
-      return data.from == Player.Play
-    elseif event == fk.TargetSpecified then
-      local playerId = player.id
-      return target == player and player.phase == Player.Play and data.firstTarget and #table.filter(AimGroup:getUndoneOrDoneTargets(data.tos), function(id)
-        return id ~= playerId end --?
-      ) > 0
-    else
-      return target == player and player.phase == Player.Play
-    end
-    return false
+    local playerId = player.id
+    return target == player and player.phase == Player.Play and data.firstTarget and #table.filter(AimGroup:getUndoneOrDoneTargets(data.tos), function(id)
+      return id ~= playerId end --?
+    ) > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.Damage then
-      room:addPlayerMark(player, "_os__zhengrong_damage", 1)
-    elseif event == fk.TargetSpecified then
-      room:addPlayerMark(player, "_os__zhengrong_card_count", 1)
-      if player:getMark("_os__zhengrong_card_count") % 2 == 0 then
-        room:setPlayerMark(player, "_os__zhengrong_card_able", 1)
-      end
-    else
-      room:setPlayerMark(player, "_os__zhengrong_damage", 0)
+    room:addPlayerMark(player, "_os__zhengrong_card_count", 1)
+    if player:getMark("_os__zhengrong_card_count") % 2 == 0 then
+      room:setPlayerMark(player, "_os__zhengrong_card_able", 1)
     end
   end,
 }

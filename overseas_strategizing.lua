@@ -119,18 +119,144 @@ Fk:loadTranslationTable{
   [":os__yingji"] = "当你于回合外需要使用/打出一张基本牌或普通锦囊牌时，若你没有手牌，你可摸一张牌并视为使用/打出此牌。",
   ["os__shanghe"] = "觞贺",
   [":os__shanghe"] = "限定技，当你进入濒死状态时，你可令所有其他角色各交给你一张牌，若其中没有【酒】，你将体力回复至1点。",
+
+  ["$os__dianyi1"] = "旧仪废弛，兴造制度。",
+  ["$os__dianyi2"] = "礼仪卒度，笑语卒获。",
+  ["$os__yingji1"] = "辩适于世，论合于时。",
+  ["$os__yingji2"] = "辩言出于口，不失思忖心。",
+  ["$os__shanghe1"] = "今使海内回心，望风而愿治，皆明公之功也。",
+  ["$os__shanghe2"] = "明公平定兵乱，使百姓可安，粲当奉觞以贺之。",
+  ["~os__wangcan"] = "虽无铅刀用，庶几奋薄身。",
 }
 
-
+local os__dongzhao = General(extension, "os__dongzhao", "wei", 3)
+local os__miaolue = fk.CreateTriggerSkill{
+  name = "os__miaolue",
+  events = {fk.GameStart, fk.Damaged},
+  anim_type = "masochism",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    return event == fk.GameStart or target == player
+  end,
+  on_trigger = function(self, event, target, player, data)
+    if event == fk.Damaged then
+      self.cancel_cost = false
+      for i = 1, data.damage do
+        if self.cancel_cost then break end
+        self:doCost(event, target, player, data)
+      end
+    else
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return true
+    else
+      local choice = player.room:askForChoice(player, {"os__miaolue_underhanding", "os__miaolue_zhinang", "Cancel"}, self.name)
+      if choice ~= "Cancel" then
+        self.cost_data = choice
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local cids = {}
+      for _, cid in ipairs(Fk:getAllCardIds()) do
+        if Fk:getCardById(cid).name == "underhanding" and room:getCardArea(cid) == Card.Void then
+          table.insert(cids, cid)
+          if #cids == 2 then break end
+        end
+      end
+      if #cids > 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(cids)
+        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      end
+    else
+      if self.cost_data == "os__miaolue_underhanding" then
+        local id = nil
+        for _, cid in ipairs(Fk:getAllCardIds()) do
+          if Fk:getCardById(cid).name == "underhanding" and room:getCardArea(cid) == Card.Void then --优先拿游戏外的
+            id = cid
+            break
+          end
+        end
+        if not id then
+          local cids = room:getCardsFromPileByRule("underhanding")
+          if #cids > 0 then id = cids[1] end
+        end
+        if id then
+          room:obtainCard(player, id, false, fk.ReasonPrey)
+        end
+        player:drawCards(1, self.name)
+      else
+        local choice = room:askForChoice(player, {"dismantlement", "nullification", "ex_nihilo"}, self.name, "#os__miaolue-ask")
+        local id = room:getCardsFromPileByRule(choice, 1, "allPiles")
+        if #id > 0 then
+          room:obtainCard(player, id[1], false, fk.ReasonPrey)
+        end
+      end
+    end
+  end,
+}
+local os__yingjia = fk.CreateTriggerSkill{
+  name = "os__yingjia",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or player.phase ~= Player.Finish then return false end
+    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e) 
+      local use = e.data[1]
+      return use.from == player.id and use.card.type == Card.TypeTrick
+    end, Player.HistoryTurn)
+    if #filterdEvents > 0 then
+      local usedCardNames = {}     
+      table.forEach(filterdEvents, function(e)
+        table.insertIfNeed(usedCardNames, e.data[1].card.name)
+      end)
+      return #filterdEvents > #usedCardNames
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local plist, cid = player.room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, function(p)
+      return p.id
+    end), 1, 1, nil, "#os__yingjia-target", self.name, true) --但是没判断可不可以弃置
+    if #plist > 0 then
+      self.cost_data = {plist[1], cid}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = self.cost_data[1]
+    room:throwCard(self.cost_data[2], self.name, player)
+    room:getPlayerById(to):gainAnExtraTurn()
+  end
+}
+os__dongzhao:addSkill(os__miaolue)
+os__dongzhao:addSkill(os__yingjia)
 
 Fk:loadTranslationTable{
   ["os__dongzhao"] = "董昭",
   ["os__miaolue"] = "妙略",
-  [":os__miaolue"] = "游戏开始时，你获得两张【瞒天过海】；当你受到1点伤害后，你可选择：1. 获得一张【瞒天过海】并摸一张牌；2. 获得一张智囊。" ..
+  [":os__miaolue"] = "游戏开始时，你获得两张【瞒天过海】；当你受到1点伤害后，你可选择：1. 获得一张【瞒天过海】并摸一张牌；2. 从牌堆或弃牌堆获得一张你指定的智囊。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
-  "【<b>瞒天过海</b>】 锦囊牌  出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。</font>",
+  "【<b>瞒天过海</b>】（<font color='#CC3131'>♥</font>5/<font color='#CC3131'>♦</font>5/♠5/♣5） 锦囊牌  出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。 此牌不计入你的手牌上限。</font>",
   ["os__yingjia"] = "迎驾",
-  [":os__yingjia"] = "一名角色的回合结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
+  [":os__yingjia"] = "一名角色的结束阶段结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
+
+  ["os__miaolue_underhanding"] = "获得一张【瞒天过海】并摸一张牌",
+  ["os__miaolue_zhinang"] = "从牌堆或弃牌堆获得一张你指定的智囊",
+  ["#os__miaolue-ask"] = "妙略：选择一种“智囊”，从牌堆或弃牌堆获得一张",
+  ["#os__yingjia-target"] = "迎驾：你可弃置一张手牌并选择一名角色，其获得一个额外的回合",
+
+  ["$os__miaolue1"] = "智者通权达变，以解临近之难。",
+  ["$os__miaolue2"] = "依吾计而行，此患乃除耳。",
+  ["$os__yingjia1"] = "行非常之事，乃有非常之功，愿将军三思。",
+  ["$os__yingjia2"] = "将军今留匡弼，事势不便，惟移驾幸许耳。",
+  ["~os__dongzhao"] = "为曹公助书方略，实昭之幸也……",
 }
 
 local os__feiyi = General(extension, "os__feiyi", "shu", 3)
@@ -164,11 +290,11 @@ local os__shengxi = fk.CreateTriggerSkill{
         end
       end
       if not id then
-        local cids = room:getCardsFromPileByRule("redistribute", 1, "allPiles")
+        local cids = room:getCardsFromPileByRule("redistribute")
         if #cids > 0 then id = cids[1] end
       end
       if id then
-        room:obtainCard(player, id, false, fk.ReasonPrey)
+        room:obtainCard(player, id, true, fk.ReasonPrey)
       end
     else
       local id = room:getCardsFromPileByRule(self.cost_data)
@@ -241,7 +367,7 @@ Fk:loadTranslationTable{
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "①准备阶段开始时，你可从游戏外、牌堆或弃牌堆中获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
-  "【<b>调剂盐梅</b>】 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。重铸：出牌阶段，你可将此牌置入弃牌堆，然后摸一张牌。</font>",
+  "【<b>调剂盐梅</b>】（<font color='#CC3131'>♥</font>6/<font color='#CC3131'>♦</font>6/♠6/♣6） 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。重铸：出牌阶段，你可将此牌置入弃牌堆，然后摸一张牌。</font>",
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
 
@@ -250,6 +376,12 @@ Fk:loadTranslationTable{
   ["os__kuanjiGive"] = "宽济",
   ["os__kuanjiGet"] = "其获得",
   ["os__kuanjiNoGet"] = "不获得",
+
+  ["$os__shengxi1"] = "利治小之宜，秉居静之理。",
+  ["$os__shengxi2"] = "外却骆谷之师，内保宁缉之实。",
+  ["$os__kuanji1"] = "功以才成，业由才广，弃才不用，非长计也。",
+  ["$os__kuanji2"] = "舍此不任而防后患，是备风波而废舟楫也。",
+  ["~os__feiyi"] = "安南重任，万不可轻之。",
 }
 
 local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
@@ -398,6 +530,10 @@ Fk:loadTranslationTable{
   ["#os__chayi-discard"] = "察异：你使用了一张牌，须弃置一张牌",
   ["@@os__chayi_discard"] = "察异 弃牌",
   ["#os__chayi_using"] = "察异",
+
+  ["$os__muyue1"] = "歃血盟誓，以告神明。",
+  ["$os__chayi1"] = "戮力一心，同讨魏贼。",
+  ["~os__chenzhen"] = "震不负丞相所托……",
 }
 
 local os__xunchen = General(extension, "os__xunchen", "qun", 3)
@@ -428,7 +564,7 @@ local os__weipo = fk.CreateActiveSkill{
       end
     end
     if not id then
-      local cids = room:getCardsFromPileByRule(choice, 1, "allPiles") --？
+      local cids = room:getCardsFromPileByRule(choice, 1) --？
       if #cids > 0 then id = cids[1] end
     end
     if id then
@@ -509,7 +645,7 @@ Fk:loadTranslationTable{
   ["os__weipo"] = "危迫",
   [":os__weipo"] = "出牌阶段限一次，你可令一名角色弃置一张牌，然后令其获得一张【兵临城下】或由你指定的一种智囊。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
-  "【<b>兵临城下</b>】 锦囊牌  出牌阶段，对一名其他角色使用。你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。</font>",
+  "【<b>兵临城下</b>】（♠7/♣7/♣K） 锦囊牌  出牌阶段，对一名其他角色使用。你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。</font>",
   ["os__chenshi"] = "陈势",
   [":os__chenshi"] = "当其他角色使用【兵临城下】指定目标后，可交给你一张牌，然后将牌堆顶三张牌中不为【杀】的牌置入弃牌堆；当其他角色成为【兵临城下】的目标后，可交给你一张牌，然后将牌堆顶三张牌中的【杀】置入弃牌堆。",
   ["os__moushi"] = "谋识",
@@ -518,6 +654,14 @@ Fk:loadTranslationTable{
   ["#os__chenshi-give1"] = "陈势：你可交给 %src 一张牌，将牌堆顶三张牌中不为【杀】的牌置入弃牌堆",
   ["#os__chenshi-give2"] = "陈势：你可交给 %src 一张牌，将牌堆顶三张牌中的【杀】置入弃牌堆",
   ["@os__moushi"] = "谋识",
+
+  ["$os__weipo1"] = "想必……将军心中已有所计较。",
+  ["$os__weipo2"] = "谌言尽于此，采纳与否还凭将军。",
+  ["$os__chenshi1"] = "将军已为此二者所围，形势实不容乐观。	",
+  ["$os__chenshi2"] = "此二人若合力攻之，则将军危矣。",
+  ["$os__moushi1"] = "潜谋于无形，胜于不争不费。",
+  ["$os__moushi2"] = "欲思其成，必虑其败也。",
+  ["~os__xunchen"] = "袁公不济，吾自当以死继之……",
 }
 
 local os__wangling = General(extension, "os__wangling", "wei", 4)
@@ -682,8 +826,8 @@ Fk:loadTranslationTable{
   ["$os__mibei2"] = "事以密成，语以泄败！",
   ["$os__xingqi1"] = "司马氏虽权尊势重，吾等徐图亦无不可！",
   ["$os__xingqi2"] = "先谋后事者昌，先事后谋者亡！",
-  ["$os__mouli1"] = "澄汰王室，迎立宗子！",
   ["$os__mouli1"] = "僣孽为害，吾岂可谋而不行？",
+  ["$os__mouli2"] = "澄汰王室，迎立宗子。",
   ["~os__wangling"] = "一生尽忠事魏，不料，今日晚节尽毁啊！",
 }
 
@@ -818,6 +962,20 @@ Fk:loadTranslationTable{
 
   ["#os__sidai_buff"] = "伺怠",
   ["#os__sidai_nojink"] = "伺怠：弃置一张基本牌，否则不能响应此【杀】",
+
+  ["$os__sidai1"] = "敌军疲乏，正是战机，随我杀！",
+  ["$os__sidai2"] = "敌军无备，随我冲锋！",
+  ["$os__jieyu1"] = "葭萌，蜀之咽喉，峻必竭力守之。",
+  ["$os__jieyu2"] = "吾头可得，城不可得。",
+  ["~os__huojun"] = "恨，不能与使君共成霸业……",
+}
+
+Fk:loadTranslationTable{
+  ["os__zhouchu"] = "周处",
+  ["os__guoyi"] = "果毅",
+  [":os__guoyi"] = "当你使用【杀】或普通锦囊牌指定一名其他角色为目标后，若其体力值或手牌数为全场最高，或你的手牌数不大于X（X为你已损失体力值+1），你可以令该角色选择一项：1. 本回合不能使用或打出手牌；2. 弃置X张牌。若条件均满足，或该角色本回合两个选项均已选择，则此牌结算两次。",
+  ["os__chuhai"] = "除害",
+  [":os__chuhai"] = "使命技，令两名其他角色进入濒死状态。成功：当前回合结束时，废除你的判定区，然后每名其他角色依次交给你一张牌。完成前：其他角色交给你牌时，须将其中一张置入弃牌堆。",
 }
 
 local os__wujing = General(extension, "os__wujing", "wu", 4)
@@ -922,6 +1080,8 @@ Fk:loadTranslationTable{
 
   ["#os__fenghan-ask"] = "锋悍：你可令至多 %arg 名角色各摸一张牌",
   ["#os__congji-ask"] = "从击：你可将弃置的牌中所有的红色牌交给一名其他角色",
+
+  ["~os__wujing"] = "贼寇未除，奈何……吾身先丧……",
 }
 
 local os__xujing = General(extension, "os__xujing", "shu", 3)
@@ -1066,6 +1226,22 @@ Fk:loadTranslationTable{
   ["#os__boming_draw"] = "博名",
   ["os__ejian_discard"] = "弃置除获得的牌外和获得的牌类别相同的牌",
   ["os__ejian_damage"] = "受到1点伤害",
+
+  ["$os__boming1"] = "先载附从，吾后行即可。",
+  ["$os__boming2"] = "诸位速速上船，靖随后便至。",
+  ["$os__ejian1"] = "为政者当沙汰秽浊，显拔幽滞，以顺民心。",
+  ["$os__ejian2"] = "此所谓寡助之至，天下叛之矣。",
+  ["~os__xujing"] = "恨，不能与使君共成霸业……",
+}
+
+Fk:loadTranslationTable{
+  ["os__qiaogong"] = "桥公",
+  ["os__weizhu"] = "遗珠",
+  [":os__weizhu"] = "结束阶段，你摸两张牌，然后选择两张牌，称为“遗珠”，随机洗入牌堆顶前2X张牌中（X场上角色数)，并记录；其他角色使用“遗珠”牌指定唯一目标后，你可以修改或增加一个目标，然后你将此牌从“遗珠”记录中移除并摸一张牌。",
+  ["os__ejian"] = "鸾俦",
+  [":os__ejian"] = "出牌阶段限一次，你可以选择两名角色视为拥有〖共患〗直到你下次发动此技能。",
+  ["os__gonghuan"] = "共患",
+  [":os__gonghuan"] = "每回合限一次，当体力值不大于你且有〖共患〗的角色受到伤害时，你可以将此伤害转移给自己。",
 }
 
 local os__zongyu = General(extension, "os__zongyu", "shu", 3)
@@ -1183,6 +1359,12 @@ Fk:loadTranslationTable{
   ["os__zhibian_get"] = "将%arg区域内的一张牌置于你的手牌中",
   ["#os__yuyan-card1"] = "御严：交给 %src 一张非基本牌，否则取消此目标",
   ["#os__yuyan-card2"] = "御严：交给 %src 一张点数大于 %arg 的牌，否则取消此目标",
+
+  ["$os__zhibian1"] = "两国各增守将，皆事势宜然，何足相问。",
+  ["$os__zhibian2"] = "固边大计，乃立国之本，岂有不设之理。",
+  ["$os__yuyan1"] = "正直敢言，不惧圣怒。",
+  ["$os__yuyan2"] = "威武不能屈，方为大丈夫。",
+  ["~os__zongyu"] = "恨，不能与使君共成霸业……",
 }
 
 local os__chenwudongxi = General(extension, "os__chenwudongxi", "wu", 4)
@@ -1302,12 +1484,17 @@ Fk:loadTranslationTable{
   ["yl_times_draw"] = "摸牌 多出杀",
   ["yl_times"] = "多出杀",
   ["yl_draw"] = "摸牌",
-
   ["beishui_os__yilie"] = "背水：你失去1点体力",
   ["#os__fenming-ask"] = "你可对一名角色发动“奋命”",
   ["beishui_os__fenming"] = "背水：你进入连环状态",
   ["os__fenming_discard"] = "你弃置其牌",
   ["os__fenming_chained"] = "其进入连环状态",
+
+  ["$os__yilie1"] = "区区绳索，就想挡住吾等去路？！",
+  ["$os__yilie2"] = "以身索敌，何惧同伤！",
+  ["$os__fenming1"] = "东吴男儿，岂是贪生怕死之辈。",
+  ["$os__fenming2"] = "不惜性命，也要保主公周全。",
+  ["~os__chenwudongxi"] = "杀身为主，死而无憾。",
 }
 
 local os__jiangqin = General(extension, "os__jiangqin", "wu", 4)
@@ -1464,6 +1651,12 @@ Fk:loadTranslationTable{
   ["os__shangyi_exchange"] = "与%arg交换一张手牌",
   ["#os__shangyi-exchange"] = "尚义：选择一张手牌，与 %src 交换其【%arg】",
   ["@os__xiangyu-turn"] = "翔羽",
+
+  ["$os__shangyi1"] = "国士，当以义为先！",
+  ["$os__shangyi2"] = "豪侠尚义，何拘俗礼！",
+  ["$os__xiangyu1"] = "此战必是有死无生！	",
+  ["$os__xiangyu2"] = "抢占先机，占尽优势！",
+  ["~os__jiangqin"] = "奋敌护主，成吾忠名……",
 }
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",

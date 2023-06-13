@@ -5,7 +5,7 @@ Fk:loadTranslationTable{
   ["overseas_token"] = "国际服衍生牌",
 }
 
-local autoDesctructCards = {"celestial_calabash", "horsetail_whisk", "talisman", "moon_spear", "redistribute", "enemy_at_the_gates"}
+local autoDesctructCards = {"celestial_calabash", "horsetail_whisk", "talisman", "moon_spear", "underhanding", "redistribute", "enemy_at_the_gates"}
 
 local autoDesctruct = fk.CreateTriggerSkill{
   name = "#auto_destruct",
@@ -226,6 +226,72 @@ Fk:loadTranslationTable{
   [":moon_spear_skill"] = "当你于其他角色的回合中第一次失去牌后，你可使用【杀】。",
 }
 
+local underhandingSkill = fk.CreateActiveSkill{
+  name = "underhanding_skill",
+  min_target_num = 1,
+  max_target_num = 2,
+  target_filter = function(self, to_select, selected)
+    local p = Fk:currentRoom():getPlayerById(to_select)
+    return p ~= Self and not p:isAllNude()
+  end,
+  on_effect = function(self, room, cardEffectEvent)
+    local player = room:getPlayerById(cardEffectEvent.from)
+    local to = room:getPlayerById(cardEffectEvent.to)
+    if not to:isAllNude() then
+      local id = room:askForCardChosen(player, to, "hej", self.name)
+      room:obtainCard(player, id, false, fk.ReasonPrey)
+    end
+  end,
+}
+local underhandingAction = fk.CreateTriggerSkill{
+  name = "underhanding_action",
+  global = true,
+  priority = 10,
+  events = { fk.CardUseFinished },
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.card and data.card.name == "underhanding" and target:isAlive() and not target:isNude()
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
+      for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
+        if not player:isNude() then
+          local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#underhanding-card::" .. pid)[1]
+          room:moveCardTo(c, Player.Hand, room:getPlayerById(pid), fk.ReasonGive, self.name, nil, false)
+        end
+      end
+    end
+  end,
+}
+Fk:addSkill(underhandingAction)
+local underhandingExclude = fk.CreateMaxCardsSkill{
+  name = "underhanding_exclude",
+  global = true,
+  exclude_from = function(self, player, card)
+    return card.name == "underhanding"
+  end,
+}
+Fk:addSkill(underhandingExclude)
+local underhanding = fk.CreateTrickCard{
+  name = "&underhanding",
+  suit = Card.Heart,
+  number = 5,
+  skill = underhandingSkill,
+}
+extension:addCards{
+  underhanding,
+  underhanding:clone(Card.Club, 5),
+  underhanding:clone(Card.Spade, 5),
+  underhanding:clone(Card.Diamond, 5),
+}
+Fk:loadTranslationTable{
+  ["underhanding"] = "瞒天过海",
+  [":underhanding"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一至两名区域内有牌的其他角色。<br /><b>效果</b>：你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。<br />此牌不计入你的手牌上限。",
+  ["underhanding_skill"] = "瞒天过海",
+  ["underhanding_action"] = "瞒天过海",
+  ["#underhanding-card"] = "瞒天过海：交给 %dest 一张牌",
+}
+
 local redistributeSkill = fk.CreateActiveSkill{
   name = "redistribute_skill",
   target_num = 2,
@@ -336,7 +402,7 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
       local id = room:getNCards(1)[1]
       room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
       local card = Fk:getCardById(id)
-      if card.trueName == "slash" and not player:prohibitUse(card) and not player:isProhibited(to, card) and player:isAlive() and to:isAlive() then
+      if card.trueName == "slash" and not player:prohibitUse(card) and not player:isProhibited(to, card) and to:isAlive() then
         room:useCard({
           card = card,
           from = player.id,
@@ -361,7 +427,7 @@ extension:addCards{
   enemyAtTheGates:clone(Card.Club, 13),
 }
 Fk:loadTranslationTable{
-  ["enemy_at_the_gates"] = "兵临城下",
+  ["enemy_at_the_gates"] = "兵临城下", -- 根据实际结算修改描述
   [":enemy_at_the_gates"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一名其他角色<br /><b>效果</b>：你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。",
 }
 

@@ -116,10 +116,10 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
 local os_ex__yuzhang_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__yuzhang_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
   end,
 }
 
@@ -186,12 +186,12 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
 local os_ex__qianxi_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__qianxi_prohibit",
   prohibit_use = function(self, player, card)
-    if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
+    --if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
     if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
   end,
   prohibit_response = function(self, player, card)
-    if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
+    --if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
     if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
     if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
   end,
@@ -803,7 +803,6 @@ local os_ex__bingyi = fk.CreateTriggerSkill{
 guyong:addSkill(os_ex__shenxing)
 guyong:addSkill(os_ex__bingyi)
 
-
 Fk:loadTranslationTable{
   ["os_ex__guyong"] = "界顾雍",
   ["os_ex__shenxing"] = "慎行",
@@ -816,9 +815,15 @@ Fk:loadTranslationTable{
   ["$os_ex__shenxing2"] = "权衡斟酌，再虑一番。",
   ["$os_ex__bingyi1"] = "秉持吾志，一心为公。",
   ["$os_ex__bingyi2"] = "志爱公利，道德纯备。",
-  ["~os__zhugeguo"] = "陛下厚爱，雍……",
+  ["~os_ex__guyong"] = "陛下厚爱，雍……",
 }
 
-
+Fk:loadTranslationTable{
+  ["os_ex__caoxiu"] = "界曹休",
+  ["os_ex__qianju"] = "千驹",
+  [":os_ex__qianju"] = "锁定技，你计算与其他角色的距离-X（X为你的装备区内的牌数）；每回合限一次，当你对你至其的距离小于2的角色造成伤害后，你将牌堆或弃牌堆中一张你空置装备栏对应类型的装备牌置入你的装备区。",
+  ["os_ex__qingxi"] = "倾袭",
+  [":os_ex__qingxi"] = "当你本回合使用的第一张【杀】指定目标后，你可令其选择一项：1.令你摸X张牌，此【杀】不可被响应（X为你装备牌的数量且至少为1）；2. 弃置装备区内的所有牌（至少一张）并弃置等量你装备区的牌（不足则全弃），此【杀】伤害+1。",
+}
 
 return extension
