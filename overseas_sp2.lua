@@ -221,7 +221,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
     if player:getMark("_os__shelie") ~= 0 then
       table.removeOne(choices, player:getMark("_os__shelie"))
     end
-    self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#os__shelie_extra-ask")
+    self.cost_data = player.room:askForChoice(player, choices, self.name, "#os__shelie_extra-ask")
     return true
   end,
   on_use = function(self, event, target, player, data)

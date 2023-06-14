@@ -745,11 +745,13 @@ local os__renchou = fk.CreateTriggerSkill{
   events = {fk.Death},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name, false, true) and (target == player or player:getMark("_os__yanshi") == target.id) and (player:isAlive() or player.room:getPlayerById(player:getMark("_os__yanshi")):isAlive()) and data.damage and data.damage.from and data.damage.from:isAlive()  
+    if not player:hasSkill(self.name, false, true) or (target ~= player and player:getMark("_os__yanshi") ~= target.id) then return false end 
+    local from = player.dead and player.room:getPlayerById(player:getMark("_os__yanshi")) or player
+    return from and not from.dead and data.damage and data.damage.from and not data.damage.from.dead and data.damage.from ~= from
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local from = player:isAlive() and player or room:getPlayerById(player:getMark("_os__yanshi"))
+    local from = player.dead and room:getPlayerById(player:getMark("_os__yanshi")) or player 
     room:damage{
       from = from,
       to = data.damage.from,
@@ -767,7 +769,7 @@ Fk:loadTranslationTable{
   ["os__yanshi"] = "言誓",
   [":os__yanshi"] = "①游戏开始时，你选择一名其他角色。②当你或“言誓”角色受到除你与其以外的角色造成的伤害后，若伤害来源没有“誓”，伤害来源获得1枚“誓”。③你对有“誓”的角色使用牌无距离限制且对其造成的伤害+1。④当你对有“誓”的角色造成伤害后，你摸等同于伤害数的牌并弃其1枚“誓”。",
   ["os__renchou"] = "刃仇",
-  [":os__renchou"] = "锁定技，当你或“言誓”角色死亡时，若另一名角色A存活，则A对来源B造成X点伤害（X为A的体力值）。",
+  [":os__renchou"] = "锁定技，当你或“言誓”角色死亡时，若另一名角色A存活，且来源B不是A，则A对B造成X点伤害（X为A的体力值）。",
 
   ["#os__yanshi-choose"] = "言誓：请选择一名其他角色",
   ["@os__yanshi"] = "言誓",
