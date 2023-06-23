@@ -838,18 +838,13 @@ local os__sidai = fk.CreateViewAsSkill{
   anim_type = "offensive",
   pattern = "slash",
   frequency = Skill.Limited,
-  can_use = function(self, player) --没有考虑装备区里的
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and not table.every(player.player_cards[Player.Hand], function(cid)
-      return Fk:getCardById(cid).type ~= Card.TypeBasic
-    end)
-  end,
   card_filter = function() return false end,
   view_as = function(self, cards)
     local c = Fk:cloneCard("slash")
     c:addSubcards(table.filter(Self.player_cards[Player.Hand], function(cid)
       return Fk:getCardById(cid).type == Card.TypeBasic
     end))
-    c.skillName = self.name
+    c.skillName = "sidai"
     return c
   end,
   before_use = function(self, player, use)
@@ -857,9 +852,10 @@ local os__sidai = fk.CreateViewAsSkill{
     for _, id in ipairs(use.card.subcards) do
       table.insertIfNeed(included_basic_cards, Fk:getCardById(id).name)
     end
+    use.extraUse = true
     use.extra_data = use.extra_data or {}
     use.extra_data.os__sidaiBuff = included_basic_cards
-    use.card.extra_data = use.card.extra_data or {} --闪用的是这里……为什么
+    use.card.extra_data = use.card.extra_data or {} --闪用的是这里……
     use.card.extra_data.os__sidaiBuff = included_basic_cards
   end,
   enabled_at_play = function(self, player) --权宜
@@ -872,12 +868,13 @@ local os__sidai = fk.CreateViewAsSkill{
 local os__sidai_tm = fk.CreateTargetModSkill{
   name = "#os__sidai_tm",
   residue_func = function(self, player, skill, scope, card)
-    return skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "os__sidai") and 999 or 0
+    return (player:hasSkill("os__sidai") and card and table.contains(card.skillNames, "sidai")) and 999 or 0
   end,
   distance_limit_func = function(self, player, skill, card)
-    return card and table.contains(card.skillNames, "os__sidai") and 999 or 0
+    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, "sidai")) and 999 or 0
   end,
 }
+
 local os__sidai_buff = fk.CreateTriggerSkill{
   name = "#os__sidai_buff",
   mute = true,
@@ -956,7 +953,7 @@ os__huojun:addSkill(os__jieyu)
 Fk:loadTranslationTable{
   ["os__huojun"] = "霍峻",
   ["os__sidai"] = "伺怠",
-  [":os__sidai"] = "限定技，出牌阶段，你可将所有基本牌当【杀】使用（无次数和距离限制）。若这些牌中有：【酒】，此【杀】造成伤害时，伤害翻倍；【桃】，此【杀】造成伤害后，受到伤害角色减1点体力上限；【闪】，此【杀】的目标需弃置一张基本牌，否则不能响应。",
+  [":os__sidai"] = "限定技，出牌阶段，你可将所有基本牌当【杀】使用（无次数和距离限制、不计入使用次数）。若这些牌中有：【酒】，此【杀】造成伤害时，伤害翻倍；【桃】，此【杀】造成伤害后，受到伤害角色减1点体力上限；【闪】，此【杀】的目标需弃置一张基本牌，否则不能响应。",
   ["os__jieyu"] = "竭御",
   [":os__jieyu"] = "每轮限一次，结束阶段开始时或每轮第一次受到伤害后，你可弃置所有手牌，然后从弃牌堆中获得不同牌名的基本牌各一张。",
 

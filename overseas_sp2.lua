@@ -10,7 +10,10 @@ local os__godguanyu = General(extension, "os__godguanyu", "god", 4)
 local os__wushen = fk.CreateFilterSkill{
   name = "os__wushen",
   card_filter = function(self, to_select, player)
-    return player:hasSkill(self.name) and to_select.suit == Card.Heart and table.contains(player.player_cards[Player.Hand], to_select.id) --不能用getCardArea！
+    return player:hasSkill(self.name) and to_select.suit == Card.Heart and
+    not table.contains(player.player_cards[Player.Equip], to_select.id) and
+    not table.contains(player.player_cards[Player.Judge], to_select.id)
+    -- table.contains(player.player_cards[Player.Hand], to_select.id) --不能用getCardArea！
   end,
   view_as = function(self, to_select)
     local card = Fk:cloneCard("slash", Card.Heart, to_select.number)
@@ -959,7 +962,7 @@ local os__kunsi = fk.CreateViewAsSkill{
 local os__kunsi_buff = fk.CreateTargetModSkill{
   name = "#os__kunsi_buff",
   residue_func = function(self, player, skill, scope, card)
-    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "os__kunsi") and 999 or 0
+    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "kunsi") and 999 or 0
   end,
   distance_limit_func = function(self, player, skill, card)
     return card and table.contains(card.skillNames, "os__kunsi") and 999 or 0
@@ -1162,6 +1165,7 @@ local os__chongqi = fk.CreateTriggerSkill{
   name = "os__chongqi",
   anim_type = "support",
   events = {fk.GameStart},
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name)
   end,
@@ -1245,7 +1249,7 @@ Fk:loadTranslationTable{
   ["os__fuzuan"] = "复纂",
   [":os__fuzuan"] = "你可于以下时机点选择一名有转换技的角色，调整其一个转换技的阴阳状态：出牌阶段限一次，你对其他角色造成伤害后，受到伤害后。",
   ["os__chongqi"] = "宠齐",
-  [":os__chongqi"] = "①锁定技，当你获得此技能后，所有角色获得〖非服〗。②游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
+  [":os__chongqi"] = "锁定技，①当你获得此技能后，所有角色获得〖非服〗。②游戏开始时，你可减1点体力上限，令一名其他角色获得〖复纂〗。",
   ["os__feifu"] = "非服",
   [":os__feifu"] = "锁定技，转换技，阳：当你使用【杀】指定唯一目标后；阴：当你成为【杀】的唯一目标后；目标角色A须交给此【杀】的使用者B一张牌，若此牌为装备牌，B可使用此牌。",
 
