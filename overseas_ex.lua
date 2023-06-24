@@ -274,7 +274,7 @@ local os_ex__jiefan = fk.CreateActiveSkill{
     room:setPlayerMark(room:getPlayerById(effect.from), "_os_ex__jiefan", target.id)
     for _, p in ipairs(room:getOtherPlayers(target)) do
       if p:inMyAttackRange(target) then
-        if #room:askForDiscard(p, 1, 1, true, self.name, true, "crossbow,qinggang_sword,ice_sword,double_swords,blade,spear,axe,halberd,kylin_bow,guding_blade,fan|.", "#os_ex__jiefan-discard::"..target.id) == 0 then --手动…………
+        if #room:askForDiscard(p, 1, 1, true, self.name, true, ".|.|.|.|.|weapon", "#os_ex__jiefan-discard::"..target.id) == 0 then --手动…………
           target:drawCards(1, self.name)
         end
       end

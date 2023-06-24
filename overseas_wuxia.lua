@@ -363,10 +363,10 @@ local os__jiange = fk.CreateViewAsSkill{
 local os__jiange_buff = fk.CreateTargetModSkill{
   name = "#os__jiange_buff",
   residue_func = function(self, player, skill, scope, card)
-    return (player:hasSkill(self.name) and card and table.contains(card.skillNames, "os__jiange")) and 999 or 0
+    return (player:hasSkill(self.name) and card and table.contains(card.skillNames, os__jiange.name)) and 999 or 0
   end,
   distance_limit_func = function(self, player, skill, card)
-    return (player:hasSkill(self.name) and card and table.contains(card.skillNames, "os__jiange")) and 999 or 0
+    return (player:hasSkill(self.name) and card and table.contains(card.skillNames, os__jiange.name)) and 999 or 0
   end,
 }
 os__jiange:addRelatedSkill(os__jiange_buff)

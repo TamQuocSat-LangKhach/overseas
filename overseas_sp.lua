@@ -2773,7 +2773,7 @@ local os__equan = fk.CreateTriggerSkill{
     if event == fk.Damaged then
       room:addPlayerMark(target, "@os__poison", data.damage)
     else
-      for _, p in ipairs(room.alive_players) do
+      for _, p in ipairs(room:getAlivePlayers()) do
         if p:getMark("@os__poison") > 0 and not p.dead then
           room:setPlayerMark(p, "_os__equan", 1)
           room:loseHp(p, p:getMark("@os__poison"), self.name)

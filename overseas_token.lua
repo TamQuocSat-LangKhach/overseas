@@ -234,9 +234,15 @@ local underhandingSkill = fk.CreateActiveSkill{
     local p = Fk:currentRoom():getPlayerById(to_select)
     return p ~= Self and not p:isAllNude()
   end,
-  on_effect = function(self, room, cardEffectEvent)
-    local player = room:getPlayerById(cardEffectEvent.from)
-    local to = room:getPlayerById(cardEffectEvent.to)
+  on_use = function(self, room, cardUseEvent)
+    cardUseEvent.extra_data = cardUseEvent.extra_data or {}
+  end,
+  on_effect = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.to)
+    --effect.extra_data = effect.extra_data or {}
+    effect.extra_data.underhandingTargets = effect.extra_data.underhandingTargets or {}
+    table.insert(effect.extra_data.underhandingTargets, effect.to)
     if not to:isAllNude() then
       local id = room:askForCardChosen(player, to, "hej", self.name)
       room:obtainCard(player, id, false, fk.ReasonPrey)
@@ -249,18 +255,19 @@ local underhandingAction = fk.CreateTriggerSkill{
   priority = 10,
   events = { fk.CardUseFinished },
   can_trigger = function(self, event, target, player, data)
-    return target == player and data.card and data.card.name == "underhanding" and target:isAlive() and not target:isNude()
+    return target == player and data.card and data.card.name == "underhanding" and not player.dead and not player:isNude() and data.extra_data and data.extra_data.underhandingTargets
   end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
-    if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
-      for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
-        if not player:isNude() then
-          local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#underhanding-card::" .. pid)[1]
-          room:moveCardTo(c, Player.Hand, room:getPlayerById(pid), fk.ReasonGive, self.name, nil, false)
-        end
+    --if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
+    for _, pid in ipairs(data.extra_data.underhandingTargets) do
+      local target = room:getPlayerById(pid)
+      if not player:isNude() and not target.dead then
+        local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#underhanding-card::" .. pid)[1]
+        room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
       end
     end
+    --end
   end,
 }
 Fk:addSkill(underhandingAction)
@@ -339,7 +346,7 @@ local redistributeAction = fk.CreateTriggerSkill{
   priority = 10,
   events = { fk.CardUseFinished },
   can_trigger = function(self, event, target, player, data)
-    return data.card and data.card.name == "redistribute" and data.extra_data and data.extra_data.redistributeCids and target:isAlive()
+    return data.card and data.card.name == "redistribute" and data.extra_data and data.extra_data.redistributeCids and not target.dead
   end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
