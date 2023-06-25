@@ -633,6 +633,17 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
       return target == player and data.from and data.from ~= player and not data.from.dead and not player.dead
     end
   end,
+  on_trigger = function(self, event, target, player, data)
+    if event == fk.Damaged then
+      self.cancel_cost = false
+      for i = 1, data.damage do
+        if self.cancel_cost then break end
+        self:doCost(event, target, player, data)
+      end
+    else
+      self:doCost(event, target, player, data)
+    end
+  end,
   on_cost = function(self, event, target, player, data)
     if event == fk.Damaged then
       return true
