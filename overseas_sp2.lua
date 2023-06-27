@@ -851,13 +851,13 @@ local os__renshe = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local choices = {"os__waishi_times"}
     local room = player.room
-    if not table.every(room:getOtherPlayers(player), function(p)
-      return p.kingdom == player.kingdom
+    if table.find(room.alive_players, function(p)
+      return p.kingdom ~= player.kingdom
     end) then
       table.insert(choices, 1, "os__renshe_change")
     end
-    if not table.every(room:getOtherPlayers(player), function(p)
-      return p == data.from
+    if table.find(room.alive_players, function(p)
+      return p ~= data.from and p ~= player
     end) then
       table.insert(choices, "os__renshe_draw")
     end
@@ -874,8 +874,7 @@ local os__renshe = fk.CreateTriggerSkill{
     local choice = self.cost_data
     if choice == "os__waishi_times" then
       room:addPlayerMark(player, "@os__waishi_times", 1)
-    else
-      if choice == "os__renshe_change" then
+    elseif choice == "os__renshe_change" then
         local kingdoms = {}
         for _, p in ipairs(room.alive_players) do
           table.insertIfNeed(kingdoms, p.kingdom)
@@ -883,21 +882,20 @@ local os__renshe = fk.CreateTriggerSkill{
         table.removeOne(kingdoms, player.kingdom)
         player.kingdom = room:askForChoice(player, kingdoms, self.name, "#os__chijie-choose")
         room:broadcastProperty(player, "kingdom")
-      else
-        local target = room:askForChoosePlayers(player, table.map(
-          table.filter(room:getOtherPlayers(player), function(p)
-            return (not p == data.from)
-          end),
-          function(p)
-            return p.id
-          end
-        ), 1, 1, "#os__renshe-target", self.name, false)
-        if #target > 0 then
-          local to = room:getPlayerById(target[1])
-          for _, p in ipairs(room:getAlivePlayers()) do --顺序
-            if p == to or p == player then
-              p:drawCards(1, self.name)
-            end
+    else
+      local target = room:askForChoosePlayers(player, table.map(
+        table.filter(room.alive_players, function(p)
+          return (p ~= data.from and p ~= player)
+        end),
+        function(p)
+          return p.id
+        end
+      ), 1, 1, "#os__renshe-target", self.name, false)
+      if #target > 0 then
+        local to = room:getPlayerById(target[1])
+        for _, p in ipairs(room:getAlivePlayers()) do --顺序
+          if p == to or p == player then
+            p:drawCards(1, self.name)
           end
         end
       end
@@ -930,8 +928,8 @@ Fk:loadTranslationTable{
   ["os__renshe_change"] = "将势力改为现存的另一个势力",
   ["os__waishi_times"] = "令〖外使〗的发动次数上限于你的出牌阶段结束前+1",
   ["@os__waishi_times"] = "外使次数+",
-  ["os__renshe_draw"] = "与一名其他角色各摸一张牌",
-  ["#os__renshe-target"] = "忍涉：选择一名其他角色，与其各摸一张牌",
+  ["os__renshe_draw"] = "与一名除伤害来源之外的其他角色各摸一张牌",
+  ["#os__renshe-target"] = "忍涉：选择一名除伤害来源之外的其他角色，与其各摸一张牌",
 }
 
 local jianshuo = General(extension, "jianshuo", "qun", 6)

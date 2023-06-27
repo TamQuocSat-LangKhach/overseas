@@ -915,7 +915,10 @@ local os__jieyu = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       return player.phase == Player.Finish
     else
-      return player:getMark("_os__jieyu_dmg-round") == 1
+      local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+        return e.data[1].to == player
+      end, Player.HistoryRound)
+      return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -936,14 +939,6 @@ local os__jieyu = fk.CreateTriggerSkill{
     if #dummy.subcards > 0 then
       room:obtainCard(player, dummy, false, fk.ReasonPrey)
     end
-  end,
-
-  refresh_events = {fk.Damaged},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("_os__jieyu_dmg-round") < 2
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__jieyu_dmg-round")
   end,
 }
 

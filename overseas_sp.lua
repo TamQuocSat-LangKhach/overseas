@@ -1285,7 +1285,7 @@ local os__juntun = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage, fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return target  and player:hasSkill(self.name) and not target.dead and (target == player or (event == fk.Damage and target:hasSkill("os__xiongjun"))) and player:getMark("@os__baonue") < 5 and not player.dead
+    return target and player:hasSkill(self.name) and not target.dead and (target == player or (event == fk.Damage and target:hasSkill("os__xiongjun"))) and player:getMark("@os__baonue") < 5 and not player.dead
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@os__baonue", 1)
@@ -1395,22 +1395,18 @@ local os__xiongjun = fk.CreateTriggerSkill{
   events = {fk.Damage},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:getMark("_damage_times-turn") == 1
+    if target ~= player or not player:hasSkill(self.name) then return false end
+    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+      return e.data[1].from == player
+    end, Player.HistoryTurn)
+    return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
   end,
   on_use = function(self, event, target, player, data)
-    for _, p in ipairs(player.room.alive_players) do
-      if p:hasSkill(self.name) then
+    for _, p in ipairs(player.room:getAlivePlayers()) do
+      if p:hasSkill(self.name) and not p.dead then
         p:drawCards(1, self.name)
       end
     end
-  end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_damage_times-turn", 1)
   end,
 }
 
@@ -1423,7 +1419,7 @@ Fk:loadTranslationTable{
   ["niufudongxie"] = "牛辅董翓",
   ["os__juntun"] = "军屯",
   [":os__juntun"] = "游戏开始时或当其他角色死亡后，你可令一名没有〖凶军〗的角色获得〖凶军〗。当拥有〖凶军〗的其他角色造成伤害后，你获得等量暴虐值。<br/>" .. 
-    "<font color='grey'>#\"<b>暴虐值</b>\"<br/>当你造成或受到伤害后，你获得等量暴虐值。暴虐值上限为5。</font>",
+    "<font color='grey'>#\"<b>暴虐值</b>\"<br/>当你造成或受到伤害后，你获得1点暴虐值。暴虐值上限为5。</font>",
   ["os__xiongxi"] = "凶袭",
   [":os__xiongxi"] = "出牌阶段限一次，你可弃置X张牌对一名其他角色造成1点伤害。（X=5-暴虐值，且可为0）",
   ["os__xiafeng"] = "黠凤",
@@ -4089,6 +4085,7 @@ local os__kujian = fk.CreateActiveSkill{
     local tag = room:getTag("os__kujian") or {}
     table.forEach(effect.cards, function(cid)
       table.insertIfNeed(tag, cid)
+      room:setCardMark(Fk:getCardById(cid), "@@os__kujian", 1)
     end)
     room:setTag("os__kujian", tag)
     room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
@@ -4131,14 +4128,15 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:notifySkillInvoked(player, "os__kujian", event == fk.AfterCardsMove and "negative" or "drawcard")
     room:broadcastSkillInvoke("os__kujian")
     if event ~= fk.AfterCardsMove then
+      room:notifySkillInvoked(player, "os__kujian", "drawcard")
       room:doIndicate(player.id, {target.id})
       player:drawCards(1, self.name)
       target:drawCards(1, self.name)
     else
-      local targets = table.filter(room:getAlivePlayers(true), function(p) return p:getMark("_os__kujian") > 0 end)
+      room:notifySkillInvoked(player, "os__kujian", "negative")
+      local targets = table.filter(room:getAlivePlayers(), function(p) return p:getMark("_os__kujian") > 0 end)
       for _, to in ipairs(targets) do
         for i = 1, to:getMark("_os__kujian"), 1 do
           room:doIndicate(player.id, {to.id})
@@ -4161,16 +4159,26 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       end))
     end
     if #cids > 0 then
-      self.cost_data = cids --待改
+      --self.cost_data = cids
       return true
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local tag = player.room:getTag("os__kujian")
-    table.forEach(self.cost_data, function(cid)
-      table.removeOne(tag, cid)
-    end)
-    player.room:setTag("os__kujian", tag)
+    local cids = {}
+    for _, move in ipairs(data) do
+      table.insertTable(cids, table.filter(move.moveInfo, function(info)
+        return table.contains(tag, info.cardId) and info.toArea == Card.DiscardPile
+      end))
+    end
+    if #cids > 0 then
+      local room = player.room
+      table.forEach(cids, function(cid)
+        table.removeOne(tag, cid)
+        room:setCardMark(Fk:getCardById(cid), "@@os__kujian", 0)
+      end)
+      room:setTag("os__kujian", tag)
+    end
   end,
 }
 os__kujian:addRelatedSkill(os__kujian_judge)
@@ -4242,7 +4250,7 @@ local os__ruilian = fk.CreateTriggerSkill{
         end
       end
       if #cids > 0 then
-        self.cost_data = cids --待改
+        --self.cost_data = cids
         return true
       end
       return false
@@ -4254,7 +4262,17 @@ local os__ruilian = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       local cids = type(player:getMark("_os__ruilianCids-turn")) == "table" and player:getMark("_os__ruilianCids-turn") or {}
-      table.insertTable(cids, self.cost_data)
+      local otherCids = {}
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              table.insert(otherCids, info.cardId)
+            end
+          end
+        end
+      end
+      table.insertTable(cids, otherCids)
       room:setPlayerMark(player, "_os__ruilianCids-turn", cids)
       room:setPlayerMark(player, "@os__ruilian-turn", #player:getMark("_os__ruilianCids-turn"))
     else
@@ -4280,7 +4298,7 @@ Fk:loadTranslationTable{
   ["@@os__ruilian"] = "睿敛",
   ["@os__ruilian-turn"] = "睿敛",
   ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌",
-  ["@os__kujian"] = "苦谏",
+  ["@@os__kujian"] = "苦谏",
 }
 
 Fk:loadTranslationTable{
