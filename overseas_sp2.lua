@@ -2103,12 +2103,6 @@ local os__qirang_buff = fk.CreateTargetModSkill{
 os__qirang:addRelatedSkill(os__qirang_buff)
 os__qirang:addRelatedSkill(os__qirang_trick)
 
-local os__yuhuaMax = fk.CreateMaxCardsSkill{
-  name = "#os__yuhuaMax",
-  exclude_from = function(self, player, card)
-    return player:hasSkill(self.name) and card.type ~= Card.TypeBasic
-  end,
-}
 local os__yuhua = fk.CreateTriggerSkill{
   name = "os__yuhua",
   events = {fk.AfterCardsMove},
@@ -2144,15 +2138,21 @@ local os__yuhua = fk.CreateTriggerSkill{
     end
   end,
 }
+local os__yuhuaMax = fk.CreateMaxCardsSkill{
+  name = "#os__yuhuaMax",
+  exclude_from = function(self, player, card)
+    return player:hasSkill(os__yuhua.name) and card.type ~= Card.TypeBasic
+  end,
+}
 local os__yuhua_maxcards_audio = fk.CreateTriggerSkill{
   name = "#os__yuhua_maxcards_audio",
   refresh_events = {fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(os__yuhuaMax.name) and player.phase == Player.Discard
+    return player == target and player:hasSkill(os__yuhua.name) and player.phase == Player.Discard
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:broadcastSkillInvoke(os__yuhuaMax.name)
-    player.room:notifySkillInvoked(player, os__yuhuaMax.name, "special")
+    player.room:broadcastSkillInvoke(os__yuhua.name)
+    player.room:notifySkillInvoked(player, os__yuhua.name, "special")
   end,
 }
 os__yuhua:addRelatedSkill(os__yuhuaMax)
