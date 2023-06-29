@@ -2061,7 +2061,7 @@ local os__qirang_trick = fk.CreateTriggerSkill{
   events = {fk.TargetSpecifying, fk.CardUsing}, --时机……？
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and type(player:getMark("_os__qirangTrick-phase")) == "table" and data.card.type == Card.TypeTrick and table.contains(player:getMark("_os__qirangTrick-phase"), data.card.id) and data.firstTarget
+    return target == player and type(player:getMark("_os__qirangTrick-phase")) == "table" and data.card.type == Card.TypeTrick and table.contains(player:getMark("_os__qirangTrick-phase"), data.card.id) and (event == fk.CardUsing or data.firstTarget)
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.TargetSpecifying then
@@ -2144,7 +2144,19 @@ local os__yuhua = fk.CreateTriggerSkill{
     end
   end,
 }
+local os__yuhua_maxcards_audio = fk.CreateTriggerSkill{
+  name = "#os__yuhua_maxcards_audio",
+  refresh_events = {fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:hasSkill(os__yuhuaMax.name) and player.phase == Player.Discard
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:broadcastSkillInvoke(os__yuhuaMax.name)
+    player.room:notifySkillInvoked(player, os__yuhuaMax.name, "special")
+  end,
+}
 os__yuhua:addRelatedSkill(os__yuhuaMax)
+os__yuhua:addRelatedSkill(os__yuhua_maxcards_audio)
 
 os__zhugeguo:addSkill(os__qirang)
 os__zhugeguo:addSkill(os__yuhua)
