@@ -3838,7 +3838,7 @@ local os__fanghun_gain = fk.CreateTriggerSkill{
   events ={fk.TargetSpecified, fk.TargetConfirmed},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and (event == fk.TargetConfirmed or data.firstTarget)
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
   end,
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
@@ -3928,7 +3928,7 @@ local os__fuhan = fk.CreateTriggerSkill{
       local moonSpear = nil
       for _, id in ipairs(Fk:getAllCardIds()) do
         local card = Fk:getCardById(id)
-        if card.name == "moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile}, room:getCardArea(card)) then
+        if card.name == "moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile, Card.Void}, room:getCardArea(card)) then
           moonSpear = card
           break
         end
@@ -3967,11 +3967,11 @@ os__zhaoxiang:addRelatedSkill("longdan") --……
 Fk:loadTranslationTable{
   ["os__zhaoxiang"] = "赵襄",
   ["os__fanghun"] = "芳魂",
-  [":os__fanghun"] = "①当你使用【杀】指定第一个目标后或成为【杀】的目标后，你获得1枚“梅影”。②你可弃1枚“梅影”以发动〖龙胆〗并摸一张牌。",
+  [":os__fanghun"] = "①当你使用【杀】指定目标后或成为【杀】的目标后，你获得1枚“梅影”。②你可弃1枚“梅影”以发动〖龙胆〗并摸一张牌。",
   ["os__fuhan"] = "扶汉",
   [":os__fuhan"] = "限定技，准备阶段开始时，你可弃所有“梅影”，然后从五张未登场的蜀势力武将牌中选择一张，获得其所有技能，并将体力上限调整为以此移去“梅影”的数量（最少为2，最多为8），回复1点体力。",
   ["os__queshi"] = "鹊拾",
-  [":os__queshi"] = "游戏开始时，你将【银月枪】置入你的装备区。当你发动“扶汉”后，你从场上、牌堆或弃牌堆中获得【银月枪】。",
+  [":os__queshi"] = "游戏开始时，你将【银月枪】置入你的装备区。当你发动“扶汉”后，你从游戏外、场上、牌堆或弃牌堆中获得【银月枪】。",
 
   ["@meiying"] = "梅影",
   ["#os__fuhan-invoke"] = "扶汉：你可弃所有“梅影”，从5张蜀势力武将牌中选择一张获得其所有技能，将体力上限调整为%arg，回复1点体力",
