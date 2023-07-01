@@ -326,7 +326,9 @@ local os__kuanji = fk.CreateTriggerSkill{
     if not player:hasSkill(self.name) or player:usedSkillTimes(self.name) > 0 then return false end
     for _, move in ipairs(data) do
       if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
-        return true
+        return table.find(move.moveInfo, function(info)
+          return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+        end)
       end
     end
   end,
@@ -340,8 +342,11 @@ local os__kuanji = fk.CreateTriggerSkill{
       local cards = {}
       for _, move in ipairs(data) do
         if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
-          table.insertTable(cards, table.map(move.moveInfo, function(info)
-          return info.cardId end))
+          table.forEach(move.moveInfo, function(info)
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              table.insert(cards, info.cardId)
+            end
+          end)
         end
       end
       local cids = room:askForGuanxing(player, cards, nil, nil, "os__kuanjiGive", true, {"os__kuanjiGet", "os__kuanjiNoGet"}).top
@@ -365,7 +370,7 @@ os__feiyi:addSkill(os__kuanji)
 Fk:loadTranslationTable{
   ["os__feiyi"] = "费祎",
   ["os__shengxi"] = "生息",
-  [":os__shengxi"] = "①准备阶段开始时，你可从游戏外、牌堆或弃牌堆中获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
+  [":os__shengxi"] = "①准备阶段开始时，你可获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
   "【<b>调剂盐梅</b>】（<font color='#C04040'>♥</font>6/<font color='#C04040'>♦</font>6/♠6/♣6） 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。重铸：出牌阶段，你可将此牌置入弃牌堆，然后摸一张牌。</font>",
   ["os__kuanji"] = "宽济",

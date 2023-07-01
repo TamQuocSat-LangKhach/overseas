@@ -4147,29 +4147,26 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       end
     end
   end,
-
-  can_refresh = {fk.AfterCardsMove}, --移出手牌区……
+  --[[
+  refresh_events = {fk.AfterCardsMove}, --移出手牌区……
   can_refresh = function(self, event, target, player, data)
-    local tag = player.room:getTag("os__kujian")
-    if not tag then return false end
-    local cids = {}
-    for _, move in ipairs(data) do
-      table.insertTable(cids, table.filter(move.moveInfo, function(info)
-        return table.contains(tag, info.cardId) and info.toArea == Card.DiscardPile
-      end))
-    end
-    if #cids > 0 then
-      --self.cost_data = cids
-      return true
-    end
+    return true
   end,
   on_refresh = function(self, event, target, player, data)
     local tag = player.room:getTag("os__kujian")
+    if tag == {} then return end
     local cids = {}
     for _, move in ipairs(data) do
-      table.insertTable(cids, table.filter(move.moveInfo, function(info)
-        return table.contains(tag, info.cardId) and info.toArea == Card.DiscardPile
-      end))
+      if move.from == player.id and (move.toArea ~= Card.PlayerHand) then
+        table.insertTable(cids, table.filter(move.moveInfo, function(info)
+          return table.contains(tag, info.cardId)
+        end))
+        for _, info in ipairs(move.moveInfo) do
+          if table.contains(tag, info.cardId) then
+            table.insert(cids, info.cardId)
+          end
+        end
+      end
     end
     if #cids > 0 then
       local room = player.room
@@ -4180,6 +4177,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       room:setTag("os__kujian", tag)
     end
   end,
+  --]]
 }
 os__kujian:addRelatedSkill(os__kujian_judge)
 
