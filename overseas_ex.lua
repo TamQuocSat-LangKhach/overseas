@@ -829,7 +829,7 @@ Fk:loadTranslationTable{
   ["~os_ex__guyong"] = "陛下厚爱，雍……",
 }
 
---local caoxiu = General(extension, "os_ex__caoxiu", "wei", 4)
+local caoxiu = General(extension, "os_ex__caoxiu", "wei", 4)
 local os_ex__qianju_distance = fk.CreateDistanceSkill{
   name = "#os_ex__qianju_distance",
   frequency = Skill.Compulsory,
@@ -845,13 +845,13 @@ local os_ex__qianju = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:distanceTo(data.to) < 2 and player:usedSkillTimes(self.name) == 0
+    return target == player and player:hasSkill(self.name) and (data.extra_data or {}).kuanggucheak and player:usedSkillTimes(self.name) == 0 --
   end,
   on_use = function(self, event, target, player, data)
     local types = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
     local room = player.room
     local cards = {}
-    local draw_pile = table.clone(room.draw_pile) --没有subtype！
+    local draw_pile = table.clone(room.draw_pile)
     table.insertTable(draw_pile, room.discard_pile)
     table.shuffle(draw_pile)
     for i = 1, #draw_pile, 1 do
@@ -862,8 +862,25 @@ local os_ex__qianju = fk.CreateTriggerSkill{
       end
     end
     if #cards > 0 then
+      room:sendLog{
+        type = "#os_ex__qianju_log",
+        from = player.id,
+        arg = self.name,
+        arg2 = Fk:getCardById(cards[1], true):toLogString(),
+      }
       room:moveCardTo(cards, Card.PlayerEquip, player, fk.ReasonJustMove, self.name)
     end
+  end,
+
+  refresh_events = {fk.BeforeHpChanged},
+  can_refresh = function(self, event, target, player, data)
+    if data.damageEvent and player == data.damageEvent.from and player:distanceTo(target) < 2 then
+      return true
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.damageEvent.extra_data = data.damageEvent.extra_data or {}
+    data.damageEvent.extra_data.kuanggucheak = true
   end,
 }
 os_ex__qianju:addRelatedSkill(os_ex__qianju_distance)
@@ -873,28 +890,32 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
   events = {fk.TargetSpecified},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    if target ~= player or not player:hasSkill(self.name) then return false end
+    if target ~= player or not player:hasSkill(self.name) or data.card.trueName ~= "slash" then return false end
     local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
       local use = e.data[1]
-      return use.from == player and use.card.trueName == "slash" 
+      return use.from == player.id and use.card.trueName == "slash" 
     end, Player.HistoryTurn)
-    return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard).data[1].id
+    --player.room.logic:dumpEventStack(true)
+    return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id --就是UseCard
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, data, "os_ex__qingxi::" .. data.to)
+    return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__qingxi::" .. data.to)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(data.to)
     local num = #player:getCardIds(Player.Equip)
-    local choices = {"os_ex__qingxi_draw:::" .. tostring(math.max(1, num)) .. ":" .. player.general}
+    local choices = {"os_ex__qingxi_draw:::" .. player.general .. ":" .. tostring(math.max(1, num))}
     local num2 = #to:getCardIds(Player.Equip)
     if num2 > 0 then table.insert(choices, "os_ex__qingxi_discard") end
     local choice = room:askForChoice(to, choices, self.name)
     if choice == "os_ex__qingxi_discard" then
       to:throwAllCards("e")
-      if num2 >= num then player:throwAllCards("e") 
-      else room:askForCardsChosen(to, player, num2, num2, "e", self.name) end
+      if #player:getCardIds(Player.Equip) > 0 then
+        num = math.min(num, num2)
+        local cards = room:askForCardsChosen(to, player, num, num, "e", self.name)
+        room:throwCard(cards, self.name, player, to)
+      end
       data.additionalDamage = (data.additionalDamage or 0) + 1
     else
       player:drawCards(math.max(1, num), self.name)
@@ -902,17 +923,19 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
     end
   end,
 }
---caoxiu:addSkill(os_ex__qianju)
---caoxiu:addSkill(os_ex__qingxi)
+caoxiu:addSkill(os_ex__qianju)
+caoxiu:addSkill(os_ex__qingxi)
 Fk:loadTranslationTable{
   ["os_ex__caoxiu"] = "界曹休",
   ["os_ex__qianju"] = "千驹",
-  [":os_ex__qianju"] = "锁定技，你计算与其他角色的距离-X（X为你的装备区内的牌数）；每回合限一次，当你对你至其的距离小于2的角色造成伤害后，你将牌堆或弃牌堆中一张你空置装备栏对应类型的装备牌置入你的装备区。",
+  [":os_ex__qianju"] = "锁定技，你计算与其他角色的距离-X（X为你的装备区内的牌数）；每回合限一次，当你对你至其的距离小于2的角色造成伤害后，你将牌堆或弃牌堆中一张装备牌置入你的装备区。",
   ["os_ex__qingxi"] = "倾袭",
   [":os_ex__qingxi"] = "当你使用【杀】指定目标后，若此【杀】为此回合你使用的第一张【杀】，你可令目标角色选择一项：1.令你摸X张牌，此【杀】不可被响应（X为你装备牌的数量且至少为1）；2. 弃置装备区内的所有牌（至少一张）并弃置等量你装备区的牌（不足则全弃），此【杀】伤害+1。",
 
-  ["os_ex__qingxi"] = "你想对 %dest 发动技能“倾袭”吗？",
-  ["os_ex__qingxi_draw"] = "令%arg2摸%arg张牌，你不可响应此【杀】",
+  ["#os_ex__qianju_log"] = "%from 发动了“%arg”，将 %arg2 置入装备区",
+  ["#os_ex__qingxi"] = "你想对 %dest 发动技能“倾袭”吗？",
+  ["os_ex__qingxi_draw"] = "令%arg摸%arg2张牌，你不可响应此【杀】",
+  ["os_ex__qingxi_discard"] = "弃置装备区内的所有牌并弃置等量其装备区的牌（不足则全弃），此【杀】伤害+1",
 }
 
 return extension

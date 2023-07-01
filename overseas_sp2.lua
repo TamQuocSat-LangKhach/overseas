@@ -1735,7 +1735,7 @@ local os__duoduan = fk.CreateTriggerSkill{
     room:recastCard(self.cost_data, player, self.name)
     local from = room:getPlayerById(data.from)
     if #room:askForDiscard(from, 1, 1, true, self.name, true, nil, "#os__duoduan-discard") > 0 then
-      local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard) -- AimStruct 没有 disresponsiveList
+      local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard) -- AimStruct 没有 disresponsiveList
       parentUseData.data[1].disresponsiveList = parentUseData.data[1].disresponsiveList or {}
       table.forEach(room.alive_players, function(p)
         table.insertIfNeed(parentUseData.data[1].disresponsiveList, p.id)
