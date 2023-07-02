@@ -206,8 +206,8 @@ local os__yingjia = fk.CreateTriggerSkill{
   name = "os__yingjia",
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) or player.phase ~= Player.Finish then return false end
-    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e) 
+    if not player:hasSkill(self.name) or target.phase ~= Player.Finish then return false end
+    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
       local use = e.data[1]
       return use.from == player.id and use.card.type == Card.TypeTrick
     end, Player.HistoryTurn)
@@ -242,7 +242,7 @@ Fk:loadTranslationTable{
   ["os__dongzhao"] = "董昭",
   ["os__miaolue"] = "妙略",
   [":os__miaolue"] = "游戏开始时，你获得两张【瞒天过海】；当你受到1点伤害后，你可选择：1. 获得一张【瞒天过海】并摸一张牌；2. 从牌堆或弃牌堆获得一张你指定的智囊。" ..
-  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】<br/>" ..
   "【<b>瞒天过海</b>】（<font color='#C04040'>♥</font>5/<font color='#C04040'>♦</font>5/♠5/♣5） 锦囊牌  出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。 此牌不计入你的手牌上限。</font>",
   ["os__yingjia"] = "迎驾",
   [":os__yingjia"] = "一名角色的结束阶段结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
@@ -371,7 +371,7 @@ Fk:loadTranslationTable{
   ["os__feiyi"] = "费祎",
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "①准备阶段开始时，你可获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
-  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】<br/>" ..
   "【<b>调剂盐梅</b>】（<font color='#C04040'>♥</font>6/<font color='#C04040'>♦</font>6/♠6/♣6） 锦囊牌  出牌阶段，对两名手牌数不同的角色使用。若所有目标角色的手牌数不均相同，为这些角色中手牌数最小的目标角色摸一张牌，不为的弃置一张手牌。然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色。重铸：出牌阶段，你可将此牌置入弃牌堆，然后摸一张牌。</font>",
   ["os__kuanji"] = "宽济",
   [":os__kuanji"] = "每回合限一次，当你的牌非因使用而置入弃牌堆后，你可令一名其他角色获得其中的任意张牌。",
@@ -649,7 +649,7 @@ Fk:loadTranslationTable{
   ["os__xunchen"] = "荀谌",
   ["os__weipo"] = "危迫",
   [":os__weipo"] = "出牌阶段限一次，你可令一名角色弃置一张牌，然后令其获得一张【兵临城下】或由你指定的一种智囊。" ..
-  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】（线下可由面杀玩家自行约定选取三种锦囊）<br/>" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】<br/>" ..
   "【<b>兵临城下</b>】（♠7/♣7/♣K） 锦囊牌  出牌阶段，对一名其他角色使用。你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。</font>",
   ["os__chenshi"] = "陈势",
   [":os__chenshi"] = "当其他角色使用【兵临城下】指定目标后，可交给你一张牌，然后将牌堆顶三张牌中不为【杀】的牌置入弃牌堆；当其他角色成为【兵临城下】的目标后，可交给你一张牌，然后将牌堆顶三张牌中的【杀】置入弃牌堆。",
@@ -1655,10 +1655,112 @@ Fk:loadTranslationTable{
   ["$os__xiangyu2"] = "抢占先机，占尽优势！",
   ["~os__jiangqin"] = "奋敌护主，成吾忠名……",
 }
+--[[
+local os__sunyi = General(extension, "os__sunyi", "wu", 4)
+local zaoli = fk.CreateTriggerSkill{
+  name = "os__zaoli",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player.phase == Player.Play and #player:getCardIds(Player.Equip) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+
+  end,
+}
+local zaoli_record = fk.CreateTriggerSkill{
+  name = "#os__zaoli_record",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or player.phase == Player.NotActive then return false end
+    local room = player.room
+    local current = room.current
+    for _, move in ipairs(data) do
+      if current and move.to == current.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("_os__zaoli_record")
+    if mark == 0 then mark = {} end
+    local current = room.current
+    for _, move in ipairs(data) do
+      if current and move.to == current.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
+            table.insertIfNeed(mark, id)
+            room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 1)
+          end
+        end
+      end
+    end
+    room:setPlayerMark(player, "_os__zaoli_record", mark)
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.Death and player ~= target then return false end
+    return type(player:getMark("_os__zaoli_record")) == "table"
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("_os__zaoli_record")
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
+          for _, info in ipairs(move.moveInfo) do
+            table.removeOne(mark, info.cardId)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@os__zaoli", 0)
+          end
+        end
+      end
+      room:setPlayerMark(player, "_os__zaoli_record", mark)
+    elseif event == fk.TurnEnd then
+      for _, id in ipairs(mark) do
+        room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 0)
+      end
+      room:setPlayerMark(player, "_os__zaoli_record", 0)
+    elseif event == fk.Death then
+      for _, id in ipairs(mark) do
+        if table.every(room.alive_players, function (p)
+          local p_mark = p:getMark("_os__zaoli_record")
+          return not (type(p_mark) == "table" and table.contains(p_mark, id))
+        end) then
+        room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 0)
+        end
+      end
+      room:setPlayerMark(player, "_os__zaoli_record", 0)
+    end
+  end,
+}
+local zaoli_prohibit = fk.CreateProhibitSkill{
+  name = "#os__zaoli_prohibit",
+  prohibit_use = function(self, from, card)
+    if from:hasSkill(zaoli.name) and (not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
+      return true
+    end
+  end,
+  prohibit_response = function(self, from, card)
+    if from:hasSkill(zaoli.name) and (not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
+      return true
+    end
+  end,
+}
+--]]
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",
   ["os__zaoli"] = "躁厉",
-  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置区域内所有装备牌并弃置任意张手牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌大于两张，你失去1点体力。（X为你以此法弃置的牌的总数）",
+  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置区域内所有装备牌并弃置任意张手牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
 }
 
 return extension
