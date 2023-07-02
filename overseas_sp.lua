@@ -1379,7 +1379,7 @@ local os__xiafeng_disres = fk.CreateTriggerSkill{
 local os__xiafeng_buff = fk.CreateTargetModSkill{
   name = "#os__xiafeng_buff",
   residue_func = function(self, player, skill)
-    return (player:getMark("_os__xiafeng_count-turn") <= player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
+    return (player:getMark("_os__xiafeng_count-turn") < player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
   end,
   distance_limit_func = function(self, player, skill)
     return (player:getMark("_os__xiafeng_count-turn") <= player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
@@ -1744,7 +1744,7 @@ local os__xingwu_damage = fk.CreateActiveSkill{
   on_use = function(self, room, use)
     local player = room:getPlayerById(use.from)
     local target = room:getPlayerById(use.tos[1])
-    room:throwCard(use.cards, self.name, player) 
+    room:moveCardTo(use.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__dance")
     room:throwCard(target:getCardIds(Player.Equip), self.name, target, player)
     room:damage{
       from = player,

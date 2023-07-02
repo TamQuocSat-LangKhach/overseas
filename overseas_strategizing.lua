@@ -426,10 +426,9 @@ local os__muyue = fk.CreateActiveSkill{
       room:setPlayerMark(player, "os__muyue_status", 0)
     end
     room:throwCard(effect.cards, self.name, player)
-    local dummy = Fk:cloneCard("slash")
-    dummy:addSubcards(room:getCardsFromPileByRule(name))
-    if #dummy.subcards > 0 then
-      room:obtainCard(target, dummy, false, fk.ReasonPrey)
+    local id = room:getCardsFromPileByRule(name)
+    if #id > 0 then
+      room:obtainCard(target, id[1], false, fk.ReasonPrey)
     end
   end,
 }
@@ -1655,17 +1654,45 @@ Fk:loadTranslationTable{
   ["$os__xiangyu2"] = "抢占先机，占尽优势！",
   ["~os__jiangqin"] = "奋敌护主，成吾忠名……",
 }
---[[
-local os__sunyi = General(extension, "os__sunyi", "wu", 4)
+
+local sunyi = General(extension, "os__sunyi", "wu", 4)
 local zaoli = fk.CreateTriggerSkill{
   name = "os__zaoli",
   events = {fk.EventPhaseStart},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player.phase == Player.Play and #player:getCardIds(Player.Equip) > 0
+    return player:hasSkill(self.name) and player.phase == Player.Play
   end,
   on_use = function(self, event, target, player, data)
-
+    local room = player.room
+    --local cards = table.clone(player.player_cards[Player.Equip]) or {}
+    local cards = table.clone(player.player_cards[Player.Equip])
+    table.insertTable(cards, room:askForDiscard(player, 1, 999, false, self.name, true, nil, "#os__zaoli-discard", true))
+    room:throwCard(cards, self.name, player, player)
+    player:drawCards(#cards, self.name)
+    local cids = {}
+    for _, id in ipairs(cards) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeEquip then
+        table.insertTable(cids, room:getCardsFromPileByRule(".|.|.|.|.|" .. card:getSubtypeString()))
+      end
+    end
+    if #cids > 0 then
+      local subTypes, equips = {}, {}
+      for _, id in ipairs(cids) do
+        local name = Fk:getCardById(id).sub_type
+        if not player:getEquipment(name) and not table.contains(subTypes, name) then
+          table.insert(equips, id)
+          table.insert(subTypes, name)
+        end
+      end
+      if #equips > 0 then
+        room:moveCardTo(equips, Card.PlayerEquip, player, fk.ReasonJustMove, self.name)
+        if #equips > 2 then
+          room:loseHp(player, 1, self.name)
+        end
+      end
+    end
   end,
 }
 local zaoli_record = fk.CreateTriggerSkill{
@@ -1717,7 +1744,7 @@ local zaoli_record = fk.CreateTriggerSkill{
     local mark = player:getMark("_os__zaoli_record")
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
+        if room.current and (move.to ~= room.current.id or move.toArea ~= Card.PlayerHand) then
           for _, info in ipairs(move.moveInfo) do
             table.removeOne(mark, info.cardId)
             room:setCardMark(Fk:getCardById(info.cardId), "@@os__zaoli", 0)
@@ -1746,21 +1773,31 @@ local zaoli_record = fk.CreateTriggerSkill{
 local zaoli_prohibit = fk.CreateProhibitSkill{
   name = "#os__zaoli_prohibit",
   prohibit_use = function(self, from, card)
-    if from:hasSkill(zaoli.name) and (not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
+    if from:hasSkill(zaoli.name) and from.phase == Player.Play and (from:getMark("_os__zaoli_record") == 0 or not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
       return true
     end
   end,
   prohibit_response = function(self, from, card)
-    if from:hasSkill(zaoli.name) and (not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
+    if from:hasSkill(zaoli.name) and from.phase == Player.Play and (from:getMark("_os__zaoli_record") == 0 or not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id)) then
       return true
     end
   end,
 }
---]]
+zaoli:addRelatedSkill(zaoli_record)
+zaoli:addRelatedSkill(zaoli_prohibit)
+sunyi:addSkill(zaoli)
+
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",
   ["os__zaoli"] = "躁厉",
-  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置区域内所有装备牌并弃置任意张手牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
+  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置任意张手牌和装备区内的所有牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
+
+  ["@@os__zaoli"] = "躁厉",
+  ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，弃置这些牌和装备区内的所有牌",
+
+  ["$os__zaoli1"] = "喜怒不形于色，诈伪要明之徒。",
+  ["$os__zaoli2"] = "摇舌鼓唇，竖子是之也！",
+  ["~os__sunyi"] = "叛我贼子，虽死亦不饶之……",
 }
 
 return extension

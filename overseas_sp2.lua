@@ -2643,7 +2643,7 @@ zhangmancheng:addSkill(os__fengji)
 zhangmancheng:addSkill(os__yiju)
 zhangmancheng:addSkill(os__budao)
 zhangmancheng:addRelatedSkill(os__zhouhu) --
-zhangmancheng:addSkill(os__zuhuo)
+zhangmancheng:addRelatedSkill(os__zuhuo)
 zhangmancheng:addRelatedSkill(os__fengqi)
 zhangmancheng:addRelatedSkill(os__huangjin)
 --zhangmancheng:addRelatedSkill(os__guimen)

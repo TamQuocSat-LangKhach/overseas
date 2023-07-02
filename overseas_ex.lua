@@ -936,6 +936,10 @@ Fk:loadTranslationTable{
   ["#os_ex__qingxi"] = "你想对 %dest 发动技能“倾袭”吗？",
   ["os_ex__qingxi_draw"] = "令%arg摸%arg2张牌，你不可响应此【杀】",
   ["os_ex__qingxi_discard"] = "弃置装备区内的所有牌并弃置等量其装备区的牌（不足则全弃），此【杀】伤害+1",
+
+  ["$os_ex__qingxi1"] = "此残兵败将，胜之若儿戏耳！",
+  ["$os_ex__qingxi2"] = "有休在此，主公何虑？哈哈哈哈！",
+  ["~os_ex__caoxiu"] = "此战大败，休甚是惭愧啊……",
 }
 
 return extension
