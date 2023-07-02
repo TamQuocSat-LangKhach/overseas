@@ -405,7 +405,7 @@ local os__muyue = fk.CreateActiveSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.trueName) and (card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)) then
+      if not table.contains(allCardNames, card.trueName) and (card.type == Card.TypeBasic or card:isCommonTrick()) and not card.is_derived then
         table.insert(allCardNames, card.trueName)
       end
     end
@@ -1790,10 +1790,10 @@ sunyi:addSkill(zaoli)
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",
   ["os__zaoli"] = "躁厉",
-  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置任意张手牌和装备区内的所有牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
+  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置任意张手牌和装备区里的所有牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
 
   ["@@os__zaoli"] = "躁厉",
-  ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，弃置这些牌和装备区内的所有牌",
+  ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，弃置这些牌和装备区里的所有牌",
 
   ["$os__zaoli1"] = "喜怒不形于色，诈伪要明之徒。",
   ["$os__zaoli2"] = "摇舌鼓唇，竖子是之也！",
