@@ -2962,7 +2962,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
   name = "#os__jianwei_pd",
   events = {fk.EventPhaseStart},
   mute = true,
-  priority = 0.9, --…………只是为了实现官方的神奇结算
+  priority = 0.9, --…………
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
     if target == player then
@@ -3033,7 +3033,7 @@ xiahouen:addSkill(os__jianwei)
 Fk:loadTranslationTable{
   ["xiahouen"] = "夏侯恩",
   ["os__fujian"] = "负剑",
-  [":os__fujian"] = "锁定技，①游戏开始时或准备阶段开始时，若你的装备区里没有武器牌，则你从牌堆中随机获得一张武器牌并使用之。②当你于回合外失去武器牌后，你失去1点体力。",
+  [":os__fujian"] = "锁定技，①游戏开始时或准备阶段开始时，若你的装备区里没有武器牌，则你从牌堆中随机获得一张武器牌并将其置入装备区。②当你于回合外失去武器牌后，你失去1点体力。",
   ["os__jianwei"] = "剑威",
   [":os__jianwei"] = "若你装备区里有武器牌，你的【杀】无视防具，你拼点的点数+X（X为你的攻击范围），其他角色的准备阶段开始时，其可与你拼点；你的准备阶段开始时，你可与攻击范围内的一名角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌。",
 
