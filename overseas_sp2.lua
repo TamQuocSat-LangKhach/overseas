@@ -2904,11 +2904,9 @@ local os__fujian = fk.CreateTriggerSkill{
       local id = room:getCardsFromPileByRule(".|.|.|.|.|weapon")
       if #id > 0 then
         room:obtainCard(player, id[1], false, fk.ReasonPrey)
-        room:useCard({
-          from = player.id,
-          tos = { {player.id} },
-          card = Fk:getCardById(id[1]),
-        })
+        if not player:getEquipment(Card.SubtypeWeapon) then
+          player.room:moveCardTo(id, Card.PlayerEquip, player, fk.ReasonJustMove, self.name)
+        end
       end
     end
   end,
@@ -2964,8 +2962,9 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
   name = "#os__jianwei_pd",
   events = {fk.EventPhaseStart},
   mute = true,
+  priority = 0.9, --…………只是为了实现官方的神奇结算
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() then return false end
+    if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
     if target == player then
       return table.find(player.room.alive_players, function(p)
         return not p:isKongcheng() and player:inMyAttackRange(p)
@@ -3021,7 +3020,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
         end
       end
       room:obtainCard(player, dummy, false, fk.ReasonPrey)
-    elseif pd.results[pd_target.id].winner == to then
+    else
       if player:getEquipment(Card.SubtypeWeapon) then room:obtainCard(to, player:getEquipment(Card.SubtypeWeapon), false, fk.ReasonPrey) end
     end
   end,
@@ -3036,7 +3035,7 @@ Fk:loadTranslationTable{
   ["os__fujian"] = "负剑",
   [":os__fujian"] = "锁定技，①游戏开始时或准备阶段开始时，若你的装备区里没有武器牌，则你从牌堆中随机获得一张武器牌并使用之。②当你于回合外失去武器牌后，你失去1点体力。",
   ["os__jianwei"] = "剑威",
-  [":os__jianwei"] = "①若你装备区里有武器牌，你的【杀】无视防具，你拼点的点数+X（X为你的攻击范围）。②其他角色的准备阶段开始时，其可与你拼点；你的准备阶段开始时，你可与攻击范围内的一名角色拼点：若你赢，你获得其每个区域各一张牌；若其赢，其获得你装备区里的武器牌。",
+  [":os__jianwei"] = "若你装备区里有武器牌，你的【杀】无视防具，你拼点的点数+X（X为你的攻击范围），其他角色的准备阶段开始时，其可与你拼点；你的准备阶段开始时，你可与攻击范围内的一名角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌。",
 
   ["#os__jianwei_pd"] = "剑威",
   ["#os__jianwei-target"] = "剑威：你可与一名攻击范围内的角色拼点：若你赢，你获得其每个区域各一张牌；若其赢，其获得你装备区里的武器牌",
@@ -3048,4 +3047,398 @@ Fk:loadTranslationTable{
   ["$os__jianwei2"] = "此剑吹毛得过，削铁如泥。",
   ["~xiahouen"] = "长坂剑神，也陨落了……",
 }
+
+local liuhong = General(extension, "os__liuhong", "qun", 4)
+local os__yujue = fk.CreateTriggerSkill{
+  name = "os__yujue",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or player.phase ~= Player.NotActive then return false end
+    for _, move in ipairs(data) do
+      local from = move.from and player.room:getPlayerById(move.from) or nil
+      if move.to == player.id and from and move.toArea == Card.PlayerHand then
+        if from:getMark("_os__yujue-turn") < 3 then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    for _, move in ipairs(data) do
+      if not table.contains(targets, move.from) and move.from then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            table.insert(targets, move.from)
+          end
+        end
+      end
+    end
+    room:sortPlayersByAction(targets)
+    for _, target_id in ipairs(targets) do
+      if not player:hasSkill(self.name) then break end
+      local skill_target = room:getPlayerById(target_id)
+      if skill_target and not skill_target.dead and skill_target:getMark("_os__yujue-turn") < 3 and (skill_target:getMark("_os__yujue-turn") < 2 or table.find(room.alive_players, function(p)
+          return not p:isNude() and skill_target:inMyAttackRange(p)
+        end)) then
+        self:doCost(event, skill_target, player, data)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#os__yujue-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    --local choices = {"os__yujue_discard", "os__yujue_obtain"}
+    local choices = {}
+    local mark = target:getMark("_os__yujue-turn")
+    local availableTargets
+    if mark == 3 then return false end
+    if mark ~= 1 then
+      availableTargets = table.map(
+        table.filter(room.alive_players, function(p)
+          return not p:isNude() and target:inMyAttackRange(p)
+        end),
+        function(p)
+          return p.id
+        end
+      )
+      if #availableTargets > 0 then table.insert(choices, "os__yujue_discard") end
+    end
+    if mark ~= 2 then table.insert(choices, "os__yujue_obtain") end
+    if #choices == 0 then return false end
+    local choice = room:askForChoice(target, choices, self.name)
+    if choice == "os__yujue_discard" then
+      local to = room:askForChoosePlayers(target, availableTargets, 1, 1, "#os__yujue-target", self.name, false)
+      to = room:getPlayerById(to[1])
+      local card = room:askForCardChosen(target, to, "he", self.name)
+      room:throwCard(card, self.name, to, target)
+      room:addPlayerMark(target, "_os__yujue-turn")
+    else
+      room:addPlayerMark(target, "@@os__yujue_obtain") --还没做！
+      room:addPlayerMark(target, "_os__yujue-turn", 2)
+    end
+  end,
+}
+local os__yujue_do_obtain = fk.CreateTriggerSkill{
+  name = "#os__yujue_do_obtain",
+  events = {fk.CardUsing},
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@@os__yujue_obtain") > 0 
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:removePlayerMark(player, "@@os__yujue_obtain")
+    local cids = room:getCardsFromPileByRule(".|.|.|.|.|" .. data.card:getTypeString())
+    if #cids > 0 then
+      room:obtainCard(player, cids[1], false, fk.ReasonPrey)
+    end
+  end,
+}
+os__yujue:addRelatedSkill(os__yujue_do_obtain)
+local os__yujue_skill = fk.CreateTriggerSkill{
+  name = "#os__yujue_skill",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(os__yujue.name, true)
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == os__yujue
+    else
+      return target == player and player:hasSkill(os__yujue.name, true, true)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart or event == fk.EventAcquireSkill then
+      if player:hasSkill(os__yujue.name, true) then
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          room:handleAddLoseSkills(p, "os__yujue_others&", nil, false, true)
+        end
+      end
+    elseif event == fk.EventLoseSkill or event == fk.Deathed then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        room:handleAddLoseSkills(p, "-os__yujue_others&", nil, false, true)
+      end
+    end
+  end,
+}
+os__yujue:addRelatedSkill(os__yujue_skill)
+local os__yujue_others = fk.CreateActiveSkill{
+  name = "os__yujue_others&",
+  prompt = "#os__yujue_others",
+  anim_type = "support",
+  min_card_num = 1,
+  max_card_num = function(self)
+    local room = Fk:currentRoom()
+    local num = 0
+    local max_num = (Self.kingdom == "qun" and table.find(room.alive_players, function(p)
+      return p:hasSkill("os__fengqix")
+    end)) and 4 or 2
+    for _, p in ipairs(room.alive_players) do
+      if p:hasSkill("os__yujue") and p:getMark("_os__yujue-phase") < 2 and p ~= Self then
+        num = math.max(num, max_num - p:getMark("_os__yujue-phase"))
+      end
+    end
+    return num
+  end,
+  target_num = 0,
+  can_use = function(self, player)
+    local room = Fk:currentRoom()
+    local max_num = (player.kingdom == "qun" and table.find(room.alive_players, function(p)
+      return p:hasSkill("os__fengqix")
+    end)) and 4 or 2
+    for _, p in ipairs(room.alive_players) do
+      if p:hasSkill("os__yujue") and p:getMark("_os__yujue-phase") < max_num and p ~= Self then
+        return true
+      end
+    end
+    return false
+  end,
+  card_filter = function(self, to_select, selected)
+    local room = Fk:currentRoom()
+    local num = 0
+    local max_num = (Self.kingdom == "qun" and table.find(room.alive_players, function(p)
+      return p:hasSkill("os__fengqix")
+    end)) and 4 or 2
+    for _, p in ipairs(room.alive_players) do
+      if p:hasSkill("os__yujue") and p:getMark("_os__yujue-phase") < 2 and p ~= Self then
+        num = math.max(num, max_num - p:getMark("_os__yujue-phase"))
+      end
+    end
+    return #selected < num
+  end,
+  target_filter = function() return false end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local cards = effect.cards
+    if #cards == 0 then return false end
+    local max_num = (player.kingdom == "qun" and table.find(room.alive_players, function(p)
+      return p:hasSkill("os__fengqix")
+    end)) and 4 or 2 --还是错的
+    local targets = table.filter(room:getOtherPlayers(player), function(p) return p:hasSkill("os__yujue") and max_num - p:getMark("_os__yujue-phase") >= #cards end)
+    if #targets == 0 then return false end
+    local to
+    if #targets == 1 then
+      to = targets[1]
+    else
+      to = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, function(p) return p.id end), 1, 1, nil, self.name, false)[1])
+    end
+    room:doIndicate(player.id, {to.id})
+    --room:notifySkillInvoked(to, "os__yujue", "support")
+    room:broadcastSkillInvoke("os__yujue")
+    room:addPlayerMark(to, "_os__yujue-phase", #cards)
+    room:moveCardTo(cards, Player.Hand, to, fk.ReasonGive, self.name, nil, false)
+  end,
+}
+Fk:addSkill(os__yujue_others)
+
+local os__gezhi = fk.CreateTriggerSkill{
+  name = "os__gezhi",
+  events = {fk.CardUsing, fk.EventPhaseEnd},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or player.phase ~= Player.Play then return false end
+    if event == fk.CardUsing then
+      local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
+        local use = e.data[1]
+        return use.from == player.id and use.card.type == data.card.type
+      end, Player.HistoryTurn)
+      return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
+    else
+      if player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then return false end
+      for _, p in ipairs(player.room.alive_players) do
+        if p:getMark("_os__gezhi") == 0 then return true end
+        local num = 3
+        if player:hasSkill("os__fengqix") then
+          for _, skill_name in ipairs(Fk.generals[p.general]:getSkillNameList(true)) do
+            if Fk.skills[skill_name].lordSkill and not p:hasSkill(skill_name) then
+              num = 4
+              break
+            end
+          end
+          if target.deputyGeneral and target.deputyGeneral ~= "" then
+            for _, skill_name in ipairs(Fk.generals[p.deputyGeneral]:getSkillNameList(true)) do
+              if Fk.skills[skill_name].lordSkill and not p:hasSkill(skill_name) then
+                num = 4
+                break
+              end
+            end
+          end
+        end
+        return #p:getMark("_os__gezhi") < num
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.CardUsing then
+      local id = player.room:askForCard(player, 1, 1, false, self.name, true, nil, "#os__gezhi-ask")
+      if #id > 0 then
+        self.cost_data = id[1]
+        return true
+      end
+    else
+      local availableTargets = {}
+      for _, p in ipairs(player.room.alive_players) do
+        if p:getMark("_os__gezhi") == 0 then
+          table.insert(availableTargets, p.id)
+        elseif #p:getMark("_os__gezhi") < 3 then
+          table.insert(availableTargets, p.id)
+        elseif #p:getMark("_os__gezhi") == 3 then
+          if player:hasSkill("os__fengqix") then
+            for _, skill_name in ipairs(Fk.generals[p.general]:getSkillNameList(true)) do
+              if Fk.skills[skill_name].lordSkill and not p:hasSkill(skill_name) then
+                table.insert(availableTargets, p.id)
+                break
+              end
+            end
+            if target.deputyGeneral and target.deputyGeneral ~= "" then
+              for _, skill_name in ipairs(Fk.generals[p.deputyGeneral]:getSkillNameList(true)) do
+                if Fk.skills[skill_name].lordSkill and not p:hasSkill(skill_name) then
+                  table.insertIfNeed(availableTargets, p.id)
+                  break
+                end
+              end
+            end
+          end
+        end
+      end
+      if #availableTargets == 0 then return false end
+      local target = player.room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__gezhi-target", self.name, true)
+      if #target > 0 then
+        self.cost_data = target[1]
+        return true
+      end
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      room:recastCard(self.cost_data, player, self.name)
+    else
+      local target = room:getPlayerById(self.cost_data)
+      local allChoices = {"os__gezhi_ar", "os__gezhi_maxcard", "os__gezhi_maxhp"}
+      if player:hasSkill("os__fengqix") then
+        for _, skill_name in ipairs(Fk.generals[target.general]:getSkillNameList(true)) do
+          if Fk.skills[skill_name].lordSkill and not target:hasSkill(skill_name) then
+            table.insert(allChoices, "os__gezhi_lordskill")
+            break
+          end
+        end
+        if target.deputyGeneral and target.deputyGeneral ~= "" then
+          for _, skill_name in ipairs(Fk.generals[target.deputyGeneral]:getSkillNameList(true)) do
+            if Fk.skills[skill_name].lordSkill and not target:hasSkill(skill_name) then
+              table.insertIfNeed(allChoices, "os__gezhi_lordskill")
+              break
+            end
+          end
+        end
+      end
+      local choices = {}
+      if target:getMark("_os__gezhi") ~= 0 then
+        for i = 1, #allChoices do
+          if not table.contains(target:getMark("_os__gezhi"), i) then
+            table.insert(choices, allChoices[i])
+          end
+        end
+      else
+        choices = allChoices
+      end
+      local record = type(target:getMark("_os__gezhi")) == "table" and target:getMark("_os__gezhi") or {}
+      local choice = room:askForChoice(target, choices, self.name)
+      if choice == "os__gezhi_lordskill" then
+        local skills = {}
+        for _, skill_name in ipairs(Fk.generals[target.general]:getSkillNameList(true)) do
+          if Fk.skills[skill_name].lordSkill and not target:hasSkill(skill_name) then
+            table.insertIfNeed(skills, skill_name)
+          end
+        end
+        if target.deputyGeneral and target.deputyGeneral ~= "" then
+          for _, skill_name in ipairs(Fk.generals[target.deputyGeneral]:getSkillNameList(true)) do
+            if Fk.skills[skill_name].lordSkill and not target:hasSkill(skill_name) then
+              table.insertIfNeed(skills, skill_name)
+            end
+          end
+        end
+        if #skills > 0 then
+          room:handleAddLoseSkills(target, table.concat(skills, "|"), nil, true, false)
+        end
+        table.insert(record, 4)
+      elseif choice == "os__gezhi_ar" then
+        room:addPlayerMark(target, "@@os__gezhi_ar")
+        table.insert(record, 1)
+      elseif choice == "os__gezhi_maxcard" then
+        room:addPlayerMark(target, MarkEnum.AddMaxCards, 2)
+        table.insert(record, 2)
+      else
+        room:changeMaxHp(target, 1)
+        table.insert(record, 3)
+      end
+      room:setPlayerMark(target, "_os__gezhi", record)
+    end
+  end,
+}
+local os__gezhi_ar = fk.CreateAttackRangeSkill{
+  name = "#os__gezhi_ar",
+  correct_func = function(self, from, to)
+    return (from:getMark("@@os__gezhi_ar") ~= 0) and from:getMark("@@os__gezhi_ar") * 2 or 0
+  end,
+}
+os__gezhi:addRelatedSkill(os__gezhi_ar)
+
+local os__fengqix = fk.CreateTriggerSkill{
+  name = "os__fengqix$",
+  frequency = Skill.Compulsory,
+}
+
+liuhong:addSkill(os__yujue)
+liuhong:addSkill(os__gezhi)
+liuhong:addSkill(os__fengqix)
+
+Fk:loadTranslationTable{
+  ["os__liuhong"] = "刘宏",
+  ["os__yujue"] = "鬻爵",
+  [":os__yujue"] = "①其他角色的出牌阶段，其可交给你任意张牌（每阶段至多两张）。②你的回合外，你每获得其他角色的一张牌，你可令其选择一项：1. 弃置攻击范围内的一名其他角色的一张牌；2. 使用下一张牌时获得一张同类型的牌。（每名角色每回合每项限一次）",
+  ["os__gezhi"] = "革制",
+  [":os__gezhi"] = "①当你于你的出牌阶段使用牌时，若为你此阶段首次使用此类型的牌，你可重铸一张手牌。②出牌阶段结束时，若本阶段你以此法重铸了至少两张牌，你可令一名角色选择一项：1. 攻击范围+2；2. 手牌上限+2；3. 体力上限+1。（每名角色每项限一次）",
+  ["os__fengqix"] = "烽起", --上声用x，去声用h（s），入声用-p/t/k
+  [":os__fengqix"] = "主公技，锁定技，群雄角色出牌阶段可因〖鬻爵〗交给你牌数量修改为4；武将牌上有主公技的角色成为〖革制〗指定的角色时，其选项增加一项：获得其武将牌上的主公技。",
+
+  ["#os__yujue-invoke"] = "你想对 %dest 发动“鬻爵”吗？",
+  ["os__yujue_discard"] = "弃置攻击范围内的一名角色的一张牌",
+  ["os__yujue_obtain"] = "使用下一张牌时获得一张同类型的牌",
+  ["#os__yujue_do_obtain"] = "鬻爵",
+  ["#os__yujue-target"] = "鬻爵：选择攻击范围内的一名角色，弃置其一张牌",
+  ["@@os__yujue_obtain"] = "鬻爵拿牌",
+  ["os__yujue_others&"] = "鬻爵",
+  [":os__yujue_others&"] = "出牌阶段，你可交给刘宏任意张牌（每阶段至多两张）。若其有〖烽起〗且你为群雄角色，“两”修改为“四”。",
+  ["#os__yujue_others"] = "鬻爵：你可交给汉孝灵皇帝刘宏一些牌，他可能会给你加官进爵",
+  ["#os__gezhi-ask"] = "革制：你可重铸一张手牌",
+  ["#os__gezhi-target"] = "你可选择一名角色，对其发动“革制”",
+  ["os__gezhi_ar"] = "攻击范围+2",
+  ["os__gezhi_maxcard"] = "手牌上限+2",
+  ["os__gezhi_maxhp"] = "体力上限+1",
+  ["os__gezhi_lordskill"] = "获得你武将牌上的主公技",
+  ["@@os__gezhi_ar"] = "革制攻击范围+2",
+
+  ["$os__yujue1"] = "财物交足，官位任取。",
+  ["$os__yujue2"] = "卖官鬻爵，取财之道。",
+  ["$os__gezhi1"] = "改革旧制，保我汉室长存！",
+  ["$os__gezhi2"] = "革除旧弊，方乃中兴！",
+  ["~os__liuhong"] = "汉室中兴，还需尔等忠良。",
+}
+
 return extension

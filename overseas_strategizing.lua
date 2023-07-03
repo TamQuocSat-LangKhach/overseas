@@ -52,7 +52,7 @@ local os__yingji = fk.CreateViewAsSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and (card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
+      if not table.contains(allCardNames, card.name) and (card.type == Card.TypeBasic or card:isCommonTrick()) and not card.is_derived and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
         table.insert(allCardNames, card.name)
       end
     end
@@ -1095,15 +1095,7 @@ local os__boming = fk.CreateActiveSkill{
   end,
   target_num = 1,
   on_use = function(self, room, effect)
-    room:moveCards({
-      ids = effect.cards,
-      from = effect.from,
-      to = effect.tos[1],
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonGive,
-      proposer = effect.from,
-      skillName = self.name,
-    })
+    room:moveCardTo(effect.cards, Player.Hand, room:getPlayerById(effect.tos[1]), fk.ReasonGive, self.name, nil, false)
   end,
 }
 local os__boming_draw = fk.CreateTriggerSkill{
@@ -1190,7 +1182,7 @@ local os__ejian = fk.CreateTriggerSkill{
         end
         if #cards > 0 then
           self.cost_data = {move.to, cards}
-          break --同时移动牌中同时给两名其他角色就有问题，怎么解决
+          break
         end
       end
     end
@@ -1234,8 +1226,8 @@ Fk:loadTranslationTable{
   ["os__qiaogong"] = "桥公",
   ["os__weizhu"] = "遗珠",
   [":os__weizhu"] = "结束阶段，你摸两张牌，然后选择两张牌，称为“遗珠”，随机洗入牌堆顶前2X张牌中（X场上角色数)，并记录；其他角色使用“遗珠”牌指定唯一目标后，你可以修改或增加一个目标，然后你将此牌从“遗珠”记录中移除并摸一张牌。",
-  ["os__ejian"] = "鸾俦",
-  [":os__ejian"] = "出牌阶段限一次，你可以选择两名角色视为拥有〖共患〗直到你下次发动此技能。",
+  ["os__luanchou"] = "鸾俦",
+  [":os__luanchou"] = "出牌阶段限一次，你可以选择两名角色视为拥有〖共患〗直到你下次发动此技能。",
   ["os__gonghuan"] = "共患",
   [":os__gonghuan"] = "每回合限一次，当体力值不大于你且有〖共患〗的角色受到伤害时，你可以将此伤害转移给自己。",
 }
