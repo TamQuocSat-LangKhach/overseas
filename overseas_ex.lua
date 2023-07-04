@@ -942,4 +942,51 @@ Fk:loadTranslationTable{
   ["~os_ex__caoxiu"] = "此战大败，休甚是惭愧啊……",
 }
 
+local os_ex__sunjian = General(extension, "os_ex__sunjian", "wu", 4, 5)
+local os_ex__polu = fk.CreateTriggerSkill{
+  name = "os_ex__polu$",
+  events = {fk.Deathed},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and ((data.damage and data.damage.from and data.damage.from.kingdom == "wu") or target.kingdom == "wu")
+  end,
+  on_cost = function(self, event, target, player, data)
+    local targets = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, function(p) return p.id end), 1, 99, "#os_ex__polu:::" .. player:usedSkillTimes(self.name, Player.HistoryGame) + 1, self.name, true)
+    if #targets > 0 then
+      self.cost_data = targets
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local targets = self.cost_data
+    local room = player.room
+    room:sortPlayersByAction(targets)
+    room:addPlayerMark(player, "@os_ex__polu")
+    for _, pid in ipairs(targets) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        p:drawCards(player:usedSkillTimes(self.name, Player.HistoryGame))
+      end
+    end
+  end,
+}
+os_ex__sunjian:addSkill("yinghun")
+os_ex__sunjian:addSkill("ol_ex__wulie")
+os_ex__sunjian:addSkill(os_ex__polu)
+
+Fk:loadTranslationTable{
+  ["os_ex__sunjian"] = "界孙坚",
+  ["os_ex__polu"] = "破虏",
+  [":os_ex__polu"] = "主公技，当吴势力角色杀死一名角色或死亡后，你可令任意名角色各摸X张牌（X为你发动过此技能的次数+1）。",
+
+  ["$os_ex__yinghun1"] = "义定四野，武匡海内。",
+  ["$os_ex__yinghun2"] = "江东男儿，皆胸怀匡扶天下之志。",
+  ["$os_ex__polu1"] = "义定四野，武匡海内。", --其实是给英魂的，先这样
+  ["$os_ex__polu2"] = "江东男儿，皆胸怀匡扶天下之志。",
+  ["~os_ex__sunjian"] = "吾身虽死，忠勇须传。",
+
+  ["@os_ex__polu"] = "破虏",
+  ["#os_ex__polu"] = "破虏：你可选择任意名角色，令其各摸 %arg 张牌",
+}
+
 return extension

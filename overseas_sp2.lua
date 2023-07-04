@@ -10,6 +10,7 @@ local os__godguanyu = General(extension, "os__godguanyu", "god", 4)
 
 local os__wushen = fk.CreateFilterSkill{
   name = "os__wushen",
+  anim_type = "offensive",
   card_filter = function(self, to_select, player)
     return player:hasSkill(self.name) and to_select.suit == Card.Heart and
     not table.contains(player.player_cards[Player.Equip], to_select.id) and
@@ -150,11 +151,11 @@ Fk:loadTranslationTable{
   ["os__wuhun_judge"] = "判定，若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色失去X点体力（X为其“梦魇”数）",
   ["#os__wuhun-targets"] = "武魂：选择至少一名有“梦魇”的角色，各失去X点体力（X为其“梦魇”数）",
 
-  ["$os__wushen1"] = "还不速速领死！",
-  ["$os__wushen2"] = "取汝狗头，犹如探囊取物！",
-  ["$os__wuhun1"] = "谁来与我同去？",
-  ["$os__wuhun2"] = "拿命来！",
-  ["~os__godguanyu"] = "什么，此地名叫麦城？",
+  ["$os__wushen1"] = "生当啖汝之肉！",
+  ["$os__wushen2"] = "死当追汝之魂！",
+  ["$os__wuhun1"] = "追你到天涯海角！",
+  ["$os__wuhun2"] = "我看你怎么跑！",
+  ["~os__godguanyu"] = "我还会回来的……",
 }
 
 local os__godlvmeng = General(extension, "os__godlvmeng", "god", 3)
@@ -337,11 +338,11 @@ Fk:loadTranslationTable{
   ["@@os__gongxin_dr-turn"] = "攻心",
   ["#os__gongxin_dr"] = "攻心",
 
-  ["$os__shelie1"] = "什么都略懂一点，生活更多彩一些。",
-  ["$os__shelie2"] = "略懂，略懂。",
-  ["$os__gongxin1"] = "攻城为下，攻心为上。",
-  ["$os__gongxin2"] = "我替施主把把脉。",
-  ["~os__godlvmeng"] = "劫数难逃，我们别无选择……",
+  ["$os__shelie1"] = "尘世之间，岂有吾所未闻之事？",
+  ["$os__shelie2"] = "往事皆知，未来尽料。",
+  ["$os__gongxin1"] = "敌将虽有破军之勇，然未必有弑神之心。",
+  ["$os__gongxin2"] = "知敌所欲为，则此战已尽在掌握。",
+  ["~os__godlvmeng"] = "吾能已通神，却难逆天命啊……",
 }
 
 local os__gexuan = General(extension, "os__gexuan", "qun", 3)
@@ -533,6 +534,15 @@ Fk:loadTranslationTable{
   ["os__lingbao_black_discard"] = "弃置%arg另一个区域的一张牌",
   ["#os__lingbao-black_red"] = "灵宝：选择两名角色，先选的摸一张牌，后选的弃置一张牌",
   ["#os__sidao-ask"] = "司道：选择一件法宝并使用之",
+
+  ["$os__danfa1"] = "取五灵三使之药，炼九光七曜之丹。",
+  ["$os__danfa2"] = "云液踊跃成雪霜，流珠之英能延年。",
+  ["$os__lingbao1"] = "洞明于至道，俯弘于世教。",
+  ["$os__lingbao2"] = "凝神太虚镜，北冥探玄珠。",
+  ["$os__sidao1"] = "执吾法器，以司正道。",
+  ["$os__sidao2"] = "内修道法，外需宝器。",
+  ["~os__gexuan"] = "金丹难成，大道难修……",
+  --胜利：科有天禁不可抑，华精庵蔼化仙人
 }
 
 local os__himiko = General(extension, "os__himiko", "qun", 3, 3, General.Female)
@@ -673,6 +683,7 @@ local os__bingzhao = fk.CreateTriggerSkill{
 local os__canshi = fk.CreateTriggerSkill{
   name = "os__canshi",
   events = {fk.TargetConfirming, fk.AfterCardTargetDeclared},
+  mute = "true",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0)
     or (event == fk.AfterCardTargetDeclared and data.tos and #data.tos == 1)) 
@@ -699,9 +710,13 @@ local os__canshi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TargetConfirming then
+      room:broadcastSkillInvoke(self.name, 1)
+      room:notifySkillInvoked(player, self.name, "defensive")
       AimGroup:cancelTarget(data, data.to)
       room:removePlayerMark(room:getPlayerById(data.from), "@@os__puppet")
     else
+      room:broadcastSkillInvoke(self.name, 2)
+      room:notifySkillInvoked(player, self.name, "special")
       room:doIndicate(player.id, self.cost_data)
       table.insert(data.tos, self.cost_data)
       table.forEach(self.cost_data, function(pid) 
@@ -738,6 +753,16 @@ Fk:loadTranslationTable{
   ["@os__bingzhao"] = "秉诏",
   ["#os__canshi"] = "蚕食：你可取消【%arg】的目标，然后 %dest 弃“傀”",
   ["#os__canshi-targets"] = "蚕食：你可令任意名有“傀”的角色也成为目标，然后这些角色弃“傀”",
+
+  ["$os__zongkui1"] = "不要抵抗，接受我的操纵吧。",
+  ["$os__zongkui2"] = "当我的傀儡，你将受益良多。",
+  ["$os__guju1"] = "你还没有见过真正的恐惧。",
+  ["$os__guju2"] = "这些，你就感到害怕了吗？",
+  ["$os__baijia1"] = "没有人能阻止我的觉醒。",
+  ["$os__baijia2"] = "哼哼哼……这才是我的真面目。",
+  ["$os__canshi1"] = "此患不足为惧，可蚕食而尽。",
+  ["$os__canshi2"] = "小则蚕食，大则溃坝。",
+  ["~os__himiko"] = "鬼道破灭，我有何寄托？",
 }
 
 local nashime = General(extension, "nashime", "qun", 3)
@@ -931,6 +956,13 @@ Fk:loadTranslationTable{
   ["@os__waishi_times"] = "外使次数+",
   ["os__renshe_draw"] = "与一名除伤害来源之外的其他角色各摸一张牌",
   ["#os__renshe-target"] = "忍涉：选择一名除伤害来源之外的其他角色，与其各摸一张牌",
+
+  ["$os__chijie1"] = "按照女王的命令，选择目标吧！",
+  ["$os__waishi1"] = "贵国的繁荣，在下都看到了。",
+  ["$os__waishi2"] = "希望我们两国，可以世代修好。",
+  ["$os__renshe1"] = "无论风雨再大，都无法阻挡我的脚步。",
+  ["$os__renshe2"] = "一定不能辜负女王的期望！",
+  ["~nashime"] = "请把这身残躯，带回我的家乡……",
 }
 
 local jianshuo = General(extension, "jianshuo", "qun", 6)
@@ -1343,6 +1375,10 @@ Fk:loadTranslationTable{
   [":os__shenxing"] = "锁定技，若你的坐骑区没有牌，你与其他角色的距离-1，你的手牌上限+1。",
   ["os__daoji"] = "盗戟",
   [":os__daoji"] = "出牌阶段限一次，你可弃置一张非基本牌并选择一名攻击范围内的其他角色，你获得其一张牌。若你以此法获得的牌为：基本牌，你摸一张牌；装备牌，则你使用此牌，对其造成1点伤害。",
+
+  ["$os__daoji1"] = "八十斤双戟？于我如探囊取物！",
+  ["$os__daoji2"] = "以汝之矛，攻汝之盾！",
+  ["~os__hucheer"] = "未料一伸手，便被……敌酋捉……",
 }
 
 local os__luzhik = General(extension, "os__luzhik", "qun", 3)
@@ -1458,6 +1494,12 @@ Fk:loadTranslationTable{
   ["#os__mingren-exchange"] = "明任：你可用一张手牌替换“任”",
   ["#os__zhenliang-discard"] = "贞良：你可弃置一张牌，令 %src 受到的伤害-1",
   ["#os__zhenliang_defend"] = "贞良",
+
+  ["$os__mingren1"] = "吾之任，君之明举！",
+  ["$os__mingren2"] = "得义真所救，吾任之必尽瘁以报。",
+  ["$os__zhenliang1"] = "贞洁贤良，吾之本心。",
+  ["$os__zhenliang2"] = "风霜以别草木之性，危乱而见贞良之节。",
+  ["~os__luzhik"] = "泓泓眸子宿渊亭，不见蛾眉只见经。",
 }
 
 --[[local jiangji = General(extension, "jiangji", "wei", 3)
@@ -1835,6 +1877,12 @@ Fk:loadTranslationTable{
   ["#os__gongsun-target"] = "共损：请选择攻击范围内的一名角色",
   ["#os__gongsun-suit"] = "共损：请选择一种花色，直至你的下个回合开始前，你和 %src 无法使用、打出或弃置该花色的手牌。",
   ["@os__gongsun"] = "共损",
+
+  ["$os__duoduan1"] = "北伐之事，丞相亦听我定夺。",
+  ["$os__duoduan2"] = "筹定规画，片刻既定！",
+  ["$os__gongsun1"] = "我岂能与魏延这种莽夫共事！",
+  ["$os__gongsun2"] = "早知如此，投靠魏国又如何！",
+  ["~os__yangyi"] = "我功勋卓著，只为昏君奸臣所害，哼！",
 }
 
 local os__xuezong =  General(extension, "os__xuezong", "wu", 3)
@@ -1959,6 +2007,12 @@ Fk:loadTranslationTable{
   ["@os__jiexun"] = "诫训",
   ["os__jiexun_draw"] = "摸%arg张牌，重置〖诫训〗次数",
   ["os__jiexun_update"] = "升级〖复难〗和〖诫训〗",
+
+  ["$os__funan1"] = "礼尚往来，乃君子风范。",
+  ["$os__funan2"] = "以子之矛，攻子之盾。",
+  ["$os__jiexun1"] = "帝王应以社稷为重，以大观为主。",
+  ["$os__jiexun2"] = "吾冒昧进谏，只求陛下思虑。",
+  ["~os__xuezong"] = "尔等，竟做如此有辱斯文之事。",
 }
 
 ---@param player ServerPlayer @ 执行的玩家
@@ -3038,8 +3092,8 @@ Fk:loadTranslationTable{
   [":os__jianwei"] = "若你装备区里有武器牌，你的【杀】无视防具，你拼点的点数+X（X为你的攻击范围），其他角色的准备阶段开始时，其可与你拼点；你的准备阶段开始时，你可与攻击范围内的一名角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌。",
 
   ["#os__jianwei_pd"] = "剑威",
-  ["#os__jianwei-target"] = "剑威：你可与一名攻击范围内的角色拼点：若你赢，你获得其每个区域各一张牌；若其赢，其获得你装备区里的武器牌",
-  ["#os__jianwei-ask"] = "剑威：你可与 %src 拼点：若你赢，你获得其装备区里的武器牌；若其赢，其获得你每个区域各一张牌",
+  ["#os__jianwei-target"] = "剑威：你可与一名攻击范围内的角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌",
+  ["#os__jianwei-ask"] = "剑威：你可与 %src 拼点：若其没赢，你获得其装备区里的武器牌；若其赢，其获得你每个区域各一张牌",
 
   ["$os__fujian1"] = "得此宝剑，如虎添翼！",
   ["$os__fujian2"] = "丞相至宝，汝岂配用之？啊！……",
@@ -3441,4 +3495,51 @@ Fk:loadTranslationTable{
   ["~os__liuhong"] = "汉室中兴，还需尔等忠良。",
 }
 
+local os__mayunlu = General(extension, "os__mayunlu", "shu", 4, 4, General.Female)
+local os__fengpo = fk.CreateTriggerSkill{
+  name = "os__fengpo",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (data.card.trueName == "slash" or data.card.name == "duel") and #AimGroup:getAllTargets(data.tos) == 1 and not player.room:getPlayerById(data.to):isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    local cids = to:getCardIds(Player.Hand)
+    room:fillAG(player, cids)
+    room:delay(3000)
+    room:closeAG(player)
+    local updateValue = #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e) 
+      local death = e.data[1]
+      return death.damage and death.damage.from == player
+    end, Player.HistoryTurn) == 1
+    local n = updateValue and #table.filter(cids, function(id) 
+      return Fk:getCardById(id).color == Card.Red
+    end) or #table.filter(cids, function(id) 
+      return Fk:getCardById(id).suit == Card.Diamond
+    end)
+    local choice = room:askForChoice(player,{"os__fengpo_draw:::" .. n, "os__fengpo_damage:::" .. n}, self.name)
+    if choice:startsWith("os__fengpo_draw") then
+      player:drawCards(n, self.name)
+    else
+      data.additionalDamage = (data.additionalDamage or 0) + n
+    end
+  end,
+}
+os__mayunlu:addSkill("mashu")
+os__mayunlu:addSkill(os__fengpo)
+
+Fk:loadTranslationTable{
+  ["os__mayunlu"] = "马云騄",
+  ["os__fengpo"] = "凤魄",
+  [":os__fengpo"] = "当你使用【杀】或【决斗】仅指定一名角色为目标后，你可观看其手牌然后选择一项：1. 摸X张牌；2. 令此牌的伤害值基数+X（X为其<font color='red'>♦</font>手牌数，若你于本局游戏内杀死过角色，则修改为“其红色手牌数”）。",
+
+  ["os__fengpo_draw"] = "摸%arg张牌",
+  ["os__fengpo_damage"] = "令此牌的伤害值基数+%arg",
+
+  ["$os__fengpo1"] = "看我不好好杀杀你的威风。",
+  ["$os__fengpo2"] = "贼人是不是被本姑娘吓破胆了呀？",
+  ["~os__mayunlu"] = "子龙哥哥，救我……",
+}
 return extension
