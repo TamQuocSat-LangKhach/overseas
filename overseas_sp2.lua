@@ -1436,7 +1436,7 @@ local os__zhenliang_defend = fk.CreateTriggerSkill{
     player:addSkillUseHistory("os__zhenliang")
     room:throwCard(self.cost_data, self.name, player, player)
     data.damage = data.damage - 1
-    if #player:getPile("os__duty") > 0 and Fk:getCardById(effect.cards[1]):compareColorWith(Fk:getCardById(player:getPile("os__duty")[1])) then
+    if #player:getPile("os__duty") > 0 and Fk:getCardById(self.cost_data[1]):compareColorWith(Fk:getCardById(player:getPile("os__duty")[1])) then
       player:drawCards(1, self.name)
     end
   end,
