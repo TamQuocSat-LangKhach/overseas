@@ -631,7 +631,7 @@ local os__moushi = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name, true) and data.card.color ~= Card.NoColor --有问题的
+    return player == target and player:hasSkill(self.name, true) and data.card and data.card.color ~= Card.NoColor
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

@@ -827,8 +827,8 @@ local os__kaizeng_others = fk.CreateActiveSkill{
     local choiceList = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic then
-        table.insertIfNeed(choiceList, card.trueName)
+      if not table.contains(choiceList, card.trueName) and card.type == Card.TypeBasic and not card.is_derived then
+        table.insert(choiceList, card.trueName)
       end
     end
     table.insertTable(choiceList, {"trick", "equip"})
@@ -875,7 +875,7 @@ local os__yangming = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and #player:getMark("@os__yangming-phase") > 0 
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getMark("@os__yangming-phase") ~= 0 
   end,
   on_use = function(self, event, target, player, data)
     local num = #player:getMark("@os__yangming-phase")
