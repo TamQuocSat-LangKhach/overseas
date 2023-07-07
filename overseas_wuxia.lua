@@ -141,7 +141,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
     if event == fk.EventPhaseChanging then
       return data.from == Player.NotActive and player:getMark("_os__chuanshu") ~= 0
     elseif event == fk.Death then
-      return player:hasSkill(self.name, true, true)
+      return player:getMark("_os__chuanshu") ~= 0
     elseif event == fk.PreCardUse then
       return player:getMark("_os__chuanshu_slash") ~= 0
     else
@@ -185,7 +185,12 @@ local os__chuanshu = fk.CreateTriggerSkill{
         data.damage = data.damage + #os__chuanshuRecord
       end
       table.removeOne(os__chuanshuRecord, player.id)
-      table.forEach(os__chuanshuRecord, function(pid) room:getPlayerById(pid):drawCards(data.damage, self.name) end)
+      for _, pid in ipairs(os__chuanshuRecord) do
+        local p = room:getPlayerById(pid)
+        if not p.dead then
+          p:drawCards(data.damage, self.name)
+        end
+      end
     end
   end,
 }

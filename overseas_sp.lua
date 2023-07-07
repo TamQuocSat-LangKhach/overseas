@@ -17,7 +17,7 @@ local os__qingkou = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name) and
       player.phase == Player.Start and not player:prohibitUse(Fk:cloneCard("duel"))
     else
-      return data.card.skillName == self.name and player:getMark("_os__qingkou_damage") > 0 --不能用 target == player
+      return data.card.skillName == self.name and player:getMark("_os__qingkou_damage") > 0
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -2729,7 +2729,7 @@ local os__wanwei = fk.CreateTriggerSkill{
       local card = Fk:getCardById(cids[1])
       if card.skill:canUse(player) and not player:prohibitUse(card) then
         local cardName = card.name
-        local use = room:askForUseCard(player, cardName, ".|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. cardName, false) --toLogString太丑了
+        local use = room:askForUseCard(player, cardName, ".|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. card:toLogString(), false)
         if use then
           room:useCard(use)
         end
@@ -2786,7 +2786,7 @@ Fk:loadTranslationTable{
   ["os__wanwei_defend"] = "防止此伤害，你失去1点体力",
   ["os__wanwei_get"] = "本回合结束阶段开始时，获得牌堆底牌并展示之，若能使用则使用之",
   ["os__wanwei_both"] = "防止此伤害，并于本回合结束阶段开始时，获得牌堆底牌",
-  ["#os__wanwei-use"] = "挽危：请使用获得的【%arg】",
+  ["#os__wanwei-use"] = "挽危：请使用获得的 %arg",
   ["os__yuejianPut"] = "约俭：置于牌堆顶或牌堆底",
 }
 

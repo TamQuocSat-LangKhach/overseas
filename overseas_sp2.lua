@@ -1037,10 +1037,8 @@ local os__kunsi_trig = fk.CreateTriggerSkill{
       local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       table.removeOne(parentUseData.data[1].extra_data.os__kunsiTarget, data.to.id)
     else
-      table.forEach(table.map(player:getMark("_os__linglu"), function(pid)
-        return room:getPlayerById(pid)
-      end), function(p)
-        room:handleAddLoseSkills(p, "-os__linglu")
+      table.forEach(player:getMark("_os__linglu"), function(pid)
+        room:handleAddLoseSkills(room:getPlayerById(pid), "-os__linglu")
       end)
     end
   end,
@@ -3542,6 +3540,14 @@ local os__jichou_dr = fk.CreateTriggerSkill{
     data.disresponsiveList = data.disresponsiveList or {}
     table.insertIfNeed(data.disresponsiveList, player.id)
   end,
+
+  refresh_events = {fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(os__jichou.name) and data == os__jichou
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(player, "os__jichou_give&", nil, false, true)
+  end,
 }
 local os__jichou_give = fk.CreateActiveSkill{
   name = "os__jichou_give&", --乐
@@ -3563,7 +3569,7 @@ local os__jichou_give = fk.CreateActiveSkill{
 }
 os__jichou:addRelatedSkill(os__jichou_prohibit)
 os__jichou:addRelatedSkill(os__jichou_dr)
---Fk:addSkill(os__jichou_give)
+Fk:addSkill(os__jichou_give)
 
 local os__jilun = fk.CreateTriggerSkill{ --机论的获得技能
   name = "os__jilun",
@@ -3646,7 +3652,7 @@ local os__jilun_vs = fk.CreateViewAsSkill{
 Fk:addSkill(os__jilun_vs)
 
 jiangji:addSkill(os__jichou)
-jiangji:addSkill(os__jichou_give) --开摆！
+--jiangji:addSkill(os__jichou_give) --开摆！
 jiangji:addSkill(os__jilun)
 
 Fk:loadTranslationTable{
@@ -3674,6 +3680,203 @@ Fk:loadTranslationTable{
   ["$os__jilun1"] = "时移不移，违天之祥也。",
   ["$os__jilun2"] = "民望不因，违人之咎也。",
   ["~jiangji"] = "洛水之誓，言犹在耳……咳咳咳",
+}
+
+local yangang = General(extension, "yangang", "qun", 4)
+
+local os__zhiqu = fk.CreateTriggerSkill{
+  name = "os__zhiqu",
+  events = {fk.EventPhaseStart},
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local num = #table.filter(room.alive_players, function(p) return player:distanceTo(p) <= 1 end)
+    local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
+      return p.id
+    end), 1, 1, "#os__zhiqu-ask:::" .. num, self.name, true)
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local num = #table.filter(room.alive_players, function(p) return player:distanceTo(p) <= 1 end)
+    local to = room:getPlayerById(self.cost_data)
+    local wrestle = player:inMyAttackRange(to) and to:inMyAttackRange(player)
+    room:setPlayerMark(player, MarkEnum.BypassTimesLimit, 1)
+    room:setPlayerMark(player, MarkEnum.BypassDistancesLimit, 1)
+    --num = 50
+    for i = 1, num, 1 do
+      local id = room:getNCards(1)[1]
+      room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
+      local card = Fk:getCardById(id)
+      if (card.trueName == "slash" or card.name == "n_brick") and not player:prohibitUse(card) and not player:isProhibited(to, card) and not to.dead then --彩蛋
+        room:useCard({
+          card = card,
+          from = player.id,
+          tos = { {to.id} },
+          skillName = self.name,
+          extraUse = true,
+        })
+      end
+      if wrestle and card.type == Card.TypeTrick and card.skill:canUse(player) and not player:prohibitUse(card) then --大有问题
+        local targets = {}
+        if (table.contains({"savage_assault", "archery_attack", "duel", "enemy_at_the_gates", "drowning", "unexpectation", "raid_and_frontal_attack"}, card.name) or
+          (table.contains({"snatch", "dismantlement", "chasing_near"}, card.name) and not to:isAllNude()) or 
+          (card.name == "indulgence" and not to:hasDelayedTrick("indulgence")) or
+          (card.name == "supply_shortage" and not to:hasDelayedTrick("supply_shortage"))) and not player:isProhibited(to, card) then
+          table.insert(targets, to.id)
+        end
+        if table.contains({"amazing_grace", "god_salvation", "iron_chain", "redistribute", "underhanding", "fire_attack"}, card.name)
+          and not (player:isProhibited(player, card) and player:isProhibited(to, card)) then
+          targets = {player.id, to.id}
+        end
+        if table.contains({"ex_nihilo", "foresight"}, card.name) and not player:isProhibited(player, card) then
+          table.insert(targets, player.id)
+        end
+        --[[
+          if card.skill:targetFilter(to.id, {}, {}, card) and not player:isProhibited(to, card) then
+          table.insertIfNeed(targets, to.id)
+        end
+        if card.skill:targetFilter(player.id, {}, {}, card) and not player:isProhibited(player, card) then
+          table.insertIfNeed(targets, player.id)
+        end
+        --]]
+        local use = {
+          from = player.id,
+          card = card,
+          skillName = self.name,
+        } 
+        if #targets == 1 then
+          use.tos = { targets }
+          room:useCard(use)
+        elseif #targets > 1 then
+          if table.contains({"amazing_grace", "god_salvation"}, card.name) then --有bug
+            use.tos = { targets }
+            room:useCard(use)
+          elseif card.skill:getMaxTargetNum(player, card) == 1 then
+            local tar = room:askForChoosePlayers(player, targets, 1, 1, "#os__zhiqu-targets::" .. to.id .. ":" .. card:toLogString(), self.name, false, true)
+            use.tos = { tar }
+            room:useCard(use)
+          elseif card.skill:getMaxTargetNum(player, card) > 1 then
+            if table.contains({"iron_chain", "underhanding"}, card.name) then
+              local tar = room:askForChoosePlayers(player, targets, 1, 2, "#os__zhiqu-targets::" .. to.id .. ":" .. card:toLogString(), self.name, false, true)
+              use.tos = table.map(tar, function(pid) return { pid } end)
+              room:useCard(use)
+            else
+              use.tos = {targets}
+              room:useCard(use)
+            end
+          end
+        end
+        --local use = room:askForUseCard(player, card.name, ".|.|.|.|.|.|" .. id, "#os__zhiqu-use::" .. to.id .. ":" .. card.name, false, {bypass_distances = true, bypass_times = true})
+      end
+    end
+    room:setPlayerMark(player, MarkEnum.BypassTimesLimit, 0)
+    room:setPlayerMark(player, MarkEnum.BypassDistancesLimit, 0)
+  end,
+}
+
+local os__xianfeng = fk.CreateTriggerSkill{
+  name = "os__xianfeng",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.to ~= player and data.card and data.card.is_damage_card and not player.dead and not data.to.dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#os__xianfeng::" .. data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local target = data.to
+    local choice = room:askForChoice(target, {"os__xianfeng_self", "os__xianfeng_yg"}, self.name, "#os__xianfeng-ask:" .. player.id)
+    if choice == "os__xianfeng_self" then
+      target:drawCards(1, self.name)
+      room:addPlayerMark(player, "@os__xianfeng")
+    else
+      player:drawCards(1, self.name)
+      local record = type(player:getMark("_os__xianfeng_others")) == "table" and player:getMark("_os__xianfeng_others") or {}
+      table.insert(record, target.id)
+      room:setPlayerMark(player, "_os__xianfeng_others", record)
+      record = type(target:getMark("@os__xianfeng_others")) == "table" and target:getMark("@os__xianfeng_others") or {player.general, 0}
+      record[2] = record[2] - 1
+      room:setPlayerMark(target, "@os__xianfeng_others", record)
+    end
+  end,
+}
+local os__xianfeng_distance = fk.CreateDistanceSkill{
+  name = "#os__xianfeng_distance",
+  correct_func = function(self, from, to)
+    if from:getMark("@os__xianfeng") > 0 then
+      return -from:getMark("@os__xianfeng")
+    end
+  end,
+}
+local os__xianfeng_others_distance = fk.CreateDistanceSkill{
+  name = "#os__xianfeng_others_distance",
+  correct_func = function(self, from, to)
+    if to:getMark("_os__xianfeng_others") ~= 0 then
+      return -#table.filter(to:getMark("_os__xianfeng_others"), function(pid) return from.id == pid end)
+    end
+  end,
+}
+local os__xianfeng_cleaner = fk.CreateTriggerSkill{
+  name = "#os__xianfeng_cleaner",
+  refresh_events = {fk.EventPhaseChanging, fk.Death},
+  can_refresh = function(self, event, target, player, data)
+    if target ~= player then return false end
+    if event == fk.EventPhaseChanging then
+      return data.from == Player.NotActive and (player:getMark("@os__xianfeng") ~= 0 or player:getMark("_os__xianfeng_others") ~= 0)
+    else
+      return player:getMark("_os__xianfeng_others") ~= 0
+    end
+    return false
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@os__xianfeng", 0)
+    room:setPlayerMark(player, "_os__xianfeng_others", 0)
+    for _, p in ipairs(room.alive_players) do
+      room:setPlayerMark(p, "@os__xianfeng_others", 0) --摆烂
+    end
+  end,
+}
+os__xianfeng:addRelatedSkill(os__xianfeng_distance)
+os__xianfeng:addRelatedSkill(os__xianfeng_others_distance)
+os__xianfeng:addRelatedSkill(os__xianfeng_cleaner)
+
+yangang:addSkill(os__zhiqu)
+yangang:addSkill(os__xianfeng)
+
+Fk:loadTranslationTable{
+  ["yangang"] = "严纲",
+  ["os__zhiqu"] = "直取",
+  [":os__zhiqu"] = "结束阶段开始时，你可选择一名其他角色并依次亮出牌堆顶X张牌，使用其中的【杀】。(X为你至其距离1以内的角色数)若搏击：改为使用其中的【杀】和锦囊牌，这些牌只能指定你或其为目标。" ..
+  "<br/><font color='grey'>#\"<b>搏击</b>\"<br/>你与其在彼此的攻击范围内",
+  ["os__xianfeng"] = "先锋",
+  [":os__xianfeng"] = "当你于出牌阶段使用伤害牌对其他角色造成伤害后，你可令其选择一项：1. 其摸一张牌，直到你的下回合开始，你至其他角色距离-1；2. 你摸一张牌，直到你的下回合开始，其至你距离-1。",
+
+  ["#os__zhiqu-ask"] = "你可对一名其他角色发动“直取”，依次亮出牌堆顶的 %arg 张牌，对其使用其中的一些牌",
+  ["#os__zhiqu-targets"] = "直取：选择 你或/和%dest 成为 %arg 的目标",
+  ["#os__xianfeng"] = "你想对 %dest 发动技能“先锋”吗？",
+  ["#os__xianfeng-ask"] = "先锋：对 %src 选择一项",
+  ["os__xianfeng_self"] = "你摸一张牌，直到其下回合开始，其至你距离-1",
+  ["os__xianfeng_yg"] = "其摸一张牌，直到其下回合开始，你至其距离-1",
+  ["@os__xianfeng"] = "先锋",
+  ["@os__xianfeng_others"] = "先锋",
+}
+
+Fk:loadTranslationTable{
+  ["gongsunfan"] = "公孙范",
+  ["os__huiyuan"] = "回援",
+  [":os__huiyuan"] = "当你于出牌阶段使用牌结算结束后，若此阶段你未获得此类型的牌，你可选择一名角色并展示其一张手牌，若与你使用的牌类型：相同，你获得此牌，不同：你弃置此牌，然后其摸一张牌。若游击：你对其造成1点伤害。" ..
+  "<br/><font color='grey'>#\"<b>游击</b>\"<br/>其在你攻击范围内，你不在其攻击范围内",
+  ["os__shoushou"] = "收绶",
+  [":os__shoushou"] = "①当你获得其他角色的牌后，若你在任意一名角色的攻击范围内，其他角色至你距离+1。②当你造成或受到伤害后，若你不在任意一名角色的攻击范围内，其他角色至你距离-1。",
 }
 
 return extension

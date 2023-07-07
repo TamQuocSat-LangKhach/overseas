@@ -29,6 +29,7 @@ local os__dianyi = fk.CreateTriggerSkill{
         player:drawCards(num, self.name)
       elseif num < 0 then
         room:notifySkillInvoked(player, self.name)
+        num = -num
         player.room:askForDiscard(player, num, num, false, self.name, false)
       end
     end
