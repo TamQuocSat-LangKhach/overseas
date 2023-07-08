@@ -201,10 +201,14 @@ yuejiu:addSkill(os__cuijin)
 
 Fk:loadTranslationTable{
   ["yuejiu"] = "乐就",
-    ["os__cuijin"] = "催进",
-    [":os__cuijin"] = "当你或攻击范围内的角色使用【杀】时，你可弃置一张牌，令此【杀】伤害值基数+1。当此【杀】结算结束后，若此【杀】未造成伤害，你对此【杀】的使用者造成1点伤害。",
+  ["os__cuijin"] = "催进",
+  [":os__cuijin"] = "当你或攻击范围内的角色使用【杀】时，你可弃置一张牌，令此【杀】伤害值基数+1。当此【杀】结算结束后，若此【杀】未造成伤害，你对此【杀】的使用者造成1点伤害。",
 
   ["#os__cuijin-ask"] = "是否弃置一张牌，对 %dest 发动“催进”",
+
+  ["$os__cuijin1"] = "诸军速行，违者军法论处！",
+  ["$os__cuijin2"] = "快！贻误军机者，定斩不赦！",
+  ["~yuejiu"] = "哼，动手吧！",
 }
 
 local os__niujin = General(extension, "os__niujin", "wei", 4)
@@ -336,9 +340,10 @@ local os__shigong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local current = room.current
-    local choices = {"os__shigong_max"}
-    if current:getHandcardNum() >= current.hp then table.insert(choices, "os__shigong_dis") end
-    if room:askForChoice(current, choices, self.name) == "os__shigong_max" then
+    local choices = {"os__shigong_max:" .. player.id}
+    if current:getHandcardNum() >= current.hp then table.insert(choices, "os__shigong_dis:" .. player.id .. "::" .. current.hp) end
+    local choice = room:askForChoice(current, choices, self.name)
+    if choice:startsWith("os__shigong_max") then
       room:changeMaxHp(current, 1)
       room:recover({
         who = current,
@@ -378,8 +383,14 @@ Fk:loadTranslationTable{
   ["os__zhuidu_damage"] = "对其造成1点伤害",
   ["os__zhuidu_discard"] = "弃置其装备区的一张牌",
   ["beishui_os__zhuidu"] = "背水：你弃置一张牌",
-  ["os__shigong_max"] = "令其体力回复至体力上限",
-  ["os__shigong_dis"] = "令其体力回复至1点",
+  ["os__shigong_max"] = "增加1点体力上限，回复1点体力，摸一张牌，令%src体力回复至体力上限",
+  ["os__shigong_dis"] = "弃置%arg张手牌，令%src体力回复至1点",
+
+  ["$os__zhuidu1"] = "到了阴司地府，你们也别想好过！",
+  ["$os__zhuidu2"] = "髡头墨面，杀人诛心。",
+  ["$os__shigong1"] = "冀州安定，此司空之功也……",
+  ["$os__shigong2"] = "妾当自缚，以示诚心。",
+  ["~liufuren"] = "害人终害己，最毒妇人心……",
 }
 
 local os__dengzhi = General(extension, "os__dengzhi", "shu", 3)
@@ -2862,7 +2873,6 @@ local os__shuangren = fk.CreateTriggerSkill{
 
 os__jiling:addSkill(os__shuangren)
 
-
 Fk:loadTranslationTable{
   ["os__jiling"] = "纪灵",
   ["os__shuangren"] = "双刃",
@@ -2872,7 +2882,11 @@ Fk:loadTranslationTable{
   ["#os__shuangren_slash-ask"] = "双刃：你可视为对至 %src 距离不大于1的至多两名角色依次使用一张【杀】",
   ["os__shuangren_counter"] = "双刃：你可视为对其使用一张【杀】",
   ["#os__shuangren_counter-ask"] = "双刃：你可视为对 %src 使用一张【杀】",
-  ["#os__shuangren_end"] = "你可弃置一张牌发动〖双刃〗", 
+  ["#os__shuangren_end"] = "你可弃置一张牌发动“双刃”", 
+
+  ["$os__shuangren1"] = "仲国大将纪灵在此！",
+  ["$os__shuangren2"] = "吃我一记三尖两刃刀！",
+  ["~os__jiling"] = "额，将军为何咆哮不断……",
 }
 
 local os__wuban = General(extension, "os__wuban", "shu", 4)
@@ -2915,6 +2929,10 @@ Fk:loadTranslationTable{
   ["os__wuban"] = "吴班",
   ["os__jintao"] = "进讨",
   [":os__jintao"] = "锁定技，你使用【杀】无距离限制且次数+1。你出牌阶段使用的第一张【杀】伤害值基数+1，第二张【杀】不可响应。",
+
+  ["$os__jintao1"] = "一雪前耻，誓报前仇！",
+  ["$os__jintao2"] = "量敌而进，直讨吴境！",
+  ["~os__wuban"] = "恨，杀不尽吴狗！",
 }
 
 local huchuquan = General(extension, "huchuquan", "qun", 4)
@@ -2970,6 +2988,11 @@ Fk:loadTranslationTable{
   
   ["#os__fupan-give"] = "复叛：交给一名其他角色一张牌",
   ["os__fupan_dmg"] = "对其造成1点伤害，然后不能再以此法交给其牌",
+
+  ["$os__fupan1"] = "胜者为王，吾等……无话可说……",
+  ["$os__fupan2"] = "今乱平阳之地，汉人如何可防？",
+  ["$os__fupan3"] = "此为吾等，复兴匈奴之良机！",
+  ["~huchuquan"] = "久困汉庭，无力再叛……",
 }
 
 local os__qiaozhou = General(extension, "os__qiaozhou", "shu", 3)
@@ -3116,6 +3139,12 @@ Fk:loadTranslationTable{
   ["@os__xingbu-turn"] = "星卜",
   ["#os__xingbu_do"] = "星卜",
   ["#os__xingbu-discard"] = "星卜：弃置一张牌，然后摸两张牌",
+
+  ["$os__zhiming1"] = "天定人命，仅可一窥。",
+  ["$os__zhiming2"] = "知命而行，尽诸人事。",
+  ["$os__xingbu1"] = "天现祥瑞，此乃大吉之兆。",
+  ["$os__xingbu2"] = "天象显异，北伐万不可期。",
+  ["~os__qiaozhou"] = "老夫死不足惜，但求蜀地百姓无虞！",
 }
 
 local bingyuan = General(extension, "bingyuan", "qun", 3)
@@ -3218,6 +3247,12 @@ Fk:loadTranslationTable{
 
   ["#os__qingtao-ask"] = "清滔：你可重铸一张牌，然后若此牌为【酒】或非基本牌，你摸一张牌",
   ["@os__bingde-phase"] = "秉德",
+
+  ["$os__bingde1"] = "秉德纯懿，志行忠方。",
+  ["$os__bingde2"] = "慎所与，节所偏，德毕迩矣。",
+  ["$os__qingtao1"] = "君子当如滔流，循道而不失其行。",
+  ["$os__qingtao2"] = "探赜索隐，钩深致远。日月在躬，隐之弥曜。",
+  ["~bingyuan"] = "人能弘道，非道弘人。",
 }
 
 
@@ -3527,6 +3562,14 @@ Fk:loadTranslationTable{
   ["os__jiekuang_maxhp"] = "减1点体力上限",
   ["@os__luanlue"] = "乱掠",
   ["#os__luanlue_trig"] = "乱掠",
+
+  ["$os__jiekuang1"] = "昔汉帝安疆之恩，今当竭力以报。",
+  ["$os__jiekuang2"] = "发兵援汉，以示竭忠之心。",
+  ["$os__neirao1"] = "家破父亡，请留汉土。",
+  ["$os__neirao2"] = "虚国匡汉，无力安家。",
+  ["$os__luanlue1"] = "合兵寇河内，聚众掠太原。",
+  ["$os__luanlue2"] = "联白波之众，掠河东之地。",
+  ["~wufuluo"] = "胡马依北风，越鸟巢南枝……",
 }
 
 local os__puyangxing = General(extension, "os__puyangxing", "wu", 4)
@@ -3660,6 +3703,12 @@ Fk:loadTranslationTable{
   ["#os__zhengjian_change-ask"] = "征建：你可变更“征建”要求",
   ["#os__zhengjian_damage-ask"] = "征建：你可对 %src 造成1点伤害",
   ["os__zhengjian_dmg"] = "造成1点伤害",
+
+  ["$os__zhengjian1"] = "修建未成，皆因尔等懈怠。",
+  ["$os__zhengjian2"] = "哼！何故建田不成！",
+  ["$os__zhongchi1"] = "陛下，兴已知错。",
+  ["$os__zhongchi2"] = "微臣有罪，任凭陛下处置。",
+  ["~os__puyangxing"] = "陛下已流放吾等，为何……啊！",
 }
 
 local os__zhaoxiang = General(extension, "os__zhaoxiang", "shu", 4, 4, General.Female)
@@ -3808,6 +3857,12 @@ Fk:loadTranslationTable{
   ["#os__fuhan-invoke"] = "扶汉：你可弃所有“梅影”，从5张蜀势力武将牌中选择一张获得其所有技能，将体力上限调整为%arg，回复1点体力",
   ["@os__fuhan"] = "扶汉",
   ["#os__fanghun_gain"] = "芳魂",
+
+  ["$os__fanghun1"] = "万花凋落尽，一梅独傲霜。",
+  ["$os__fanghun2"] = "暗香疏影处，凌风踏雪来！",
+  ["$os__fuhan1"] = "承先父之志，扶汉兴刘。",
+  ["$os__fuhan2"] = "天将降大任于我。",
+  ["~os__zhaoxiang"] = "遁入阴影之中……",
 }
 
 local xiahoushang = General(extension, "xiahoushang", "wei", 4)
@@ -3892,6 +3947,10 @@ Fk:loadTranslationTable{
   ["os__tanfeng_slash"] = "将一张牌当【杀】对其使用",
   ["#os__tanfeng-skip"] = "探锋：令 %src 跳过此回合的一个阶段",
   ["#os__tanfeng-slash"] = "探锋：将一张牌当【杀】对 %src 使用",
+
+  ["$os__tanfeng1"] = "探敌薄防之地，夺敌不备之间。",
+  ["$os__tanfeng2"] = "探锋之锐，以待进取之机。",
+  ["~xiahoushang"] = "陛下垂怜至此，臣纵死无憾……",
 }
 
 local yanxiang = General(extension, "yanxiang", "qun", 3)
@@ -4128,6 +4187,13 @@ Fk:loadTranslationTable{
   ["@os__ruilian-turn"] = "睿敛",
   ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌",
   ["@@os__kujian"] = "苦谏",
+
+  ["$os__kujian1"] = "吾之所言，皆为公之大业。",
+  ["$os__kujian2"] = "公岂徒有纳谏之名乎！",
+  ["$os__kujian3"] = "明公虽奕世克昌，未若有周之盛。",
+  ["$os__ruilian1"] = "公若擅进庸肆，必失民心！",
+  ["$os__ruilian2"] = "外敛虚进之势，内减弊民之政。",
+  ["~yanxiang"] = "若遇明主，或可青史留名……",
 }
 
 Fk:loadTranslationTable{
