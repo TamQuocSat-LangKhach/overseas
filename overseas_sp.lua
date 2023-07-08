@@ -893,7 +893,8 @@ local os__xuewei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    if room:askForChoice(target, {"os__xuewei_defence", "os__xuewei_duel"}, self.name, "#os__xuewei-target::" .. to.id) == "os__xuewei_defence" then
+    local choice = room:askForChoice(target, {"os__xuewei_defence::" .. to.id, "os__xuewei_duel:" .. player.id}, self.name)
+    if choice:startsWith("os__xuewei_defence") then
       room:addPlayerMark(target, "_os__xuewei_defence_from-turn", 1)
       room:addPlayerMark(target, MarkEnum.MinusMaxCardsInTurn, 2)
       room:addPlayerMark(to, "_os__xuewei_defence_to-turn", 1)
@@ -988,9 +989,9 @@ Fk:loadTranslationTable{
   [":os__liechi"] = "锁定技，当你受到伤害后，若你的体力值不大于伤害来源，你选择一项：1.令其将手牌弃至与你手牌数相同；2.弃置其一张牌；若本回合你进入过濒死状态，则你可背水：弃置一张装备牌。",
 
   ["#os__xuewei-ask"] = "你可选择一名除 %dest 以外的其他角色，发动“血卫”",
-  ["#os__xuewei-target"] = "血卫：请选择一项（傅肜指定的角色为 %dest）",
-  ["os__xuewei_defence"] = "直到本回合结束，你不能对 傅肜 指定的角色使用【杀】且手牌上限-2",
-  ["os__xuewei_duel"] = "视为 傅肜 对你使用一张【决斗】",
+  --["#os__xuewei-target"] = "血卫：请选择一项（傅肜指定的角色为 %dest）",
+  ["os__xuewei_defence"] = "直到本回合结束，你不能对 %dest 使用【杀】且手牌上限-2",
+  ["os__xuewei_duel"] = "视为 %src 对你使用一张【决斗】",
   ["#os__xuewei_defence"] = "%from 由于“%arg”，不能对 %to 使用【杀】且手牌上限-2",
   ["os__liechi_same"] = "令其将手牌弃至与你手牌数相同",
   ["os__liechi_one"] = "你弃置其一张牌",
@@ -1079,9 +1080,6 @@ Fk:loadTranslationTable{
 
   ["#os__jiaohua"] = "你想对 %dest 发动技能“教化”吗？",
   ["#os__jiaohua-ask"] = "教化：选择一种类别，令 %dest 从牌堆中或弃牌堆中获得一张该类别的牌",
-  ["basic"] = "基本牌",
-  ["trick"] = "锦囊牌",
-  ["equip"] = "装备牌", --这好吗
 }
 
 local niufudongxie = General(extension, "niufudongxie", "qun", 4, 4, General.Bigender)

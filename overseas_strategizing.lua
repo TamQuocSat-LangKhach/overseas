@@ -1514,8 +1514,8 @@ local os__shangyi = fk.CreateActiveSkill{
     room:fillAG(player, cids)
     room:delay(3000)
     room:closeAG(player)
-    local choiceList = {"os__shangyi_discard:::" .. target.general} --%src不来
-    if not player:isKongcheng() then table.insert(choiceList, "os__shangyi_exchange:::" .. target.general) end
+    local choiceList = {"os__shangyi_discard:" .. target.id}
+    if not player:isKongcheng() then table.insert(choiceList, "os__shangyi_exchange:" .. target.id) end
     local choice = room:askForChoice(player, choiceList, self.name)
     room:fillAG(player, cids)
     local id = room:askForAG(player, cids, false, self.name)
@@ -1636,8 +1636,8 @@ Fk:loadTranslationTable{
   ["os__xiangyu"] = "翔羽",
   [":os__xiangyu"] = "锁定技，①你的回合内，每有一名角色失去过牌，本回合你的攻击范围便+1（至多+5）。②你使用【杀】指定一名角色为目标时，若你与其距离小于你的攻击范围，则其需依次使用两张【闪】才能抵消此【杀】。",
 
-  ["os__shangyi_discard"] = "弃置%arg一张手牌",
-  ["os__shangyi_exchange"] = "与%arg交换一张手牌",
+  ["os__shangyi_discard"] = "弃置%src一张手牌",
+  ["os__shangyi_exchange"] = "与%src交换一张手牌",
   ["#os__shangyi-exchange"] = "尚义：选择一张手牌，与 %src 交换其【%arg】",
   ["@os__xiangyu-turn"] = "翔羽",
 
