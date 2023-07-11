@@ -746,7 +746,7 @@ local os__yangshi = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name) and not player.dead
+    return player == target and player:hasSkill(self.name)-- and not player.dead
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2601,7 +2601,7 @@ local os__equan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.Damaged then
-      return player:hasSkill(self.name) and player.phase ~= Player.NotActive
+      return player:hasSkill(self.name) and player.phase ~= Player.NotActive and not target.dead
     else
       return target == player and player:hasSkill(self.name) and target.phase == Player.Start
     end

@@ -1139,16 +1139,19 @@ local os__ejian = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
     for _, move in ipairs(data) do
       local target = move.to and player.room:getPlayerById(move.to) or nil
       local from = move.from and player.room:getPlayerById(move.from) or nil
-      if from and from == player and from:hasSkill(self.name) and target and move.to ~= player.id and move.toArea == Card.PlayerHand then
+      if from and from == player and target and move.to ~= player.id and move.toArea == Card.PlayerHand then
         local cardType = {}
         local fromCard = {}
         for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          table.insertIfNeed(cardType, Fk:getCardById(id):getTypeString())
-          table.insert(fromCard, id)
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            local id = info.cardId
+            table.insertIfNeed(cardType, Fk:getCardById(id):getTypeString())
+            table.insert(fromCard, id)
+          end
         end
         local cids = target:getCardIds{Player.Hand, Player.Equip}
         for _, id in ipairs(cids) do
@@ -1160,12 +1163,51 @@ local os__ejian = fk.CreateTriggerSkill{
     end
     return false
   end,
-  on_use = function(self, event, target, player, data)
+  on_trigger = function(self, event, target, player, data)
     local room = player.room
+    local targets = {}
     for _, move in ipairs(data) do
       local target = move.to and player.room:getPlayerById(move.to) or nil
       local from = move.from and player.room:getPlayerById(move.from) or nil
-      if from and from == player and from:hasSkill(self.name) and target and move.to ~= player.id and move.toArea == Card.PlayerHand then
+      if from and from == player and target and move.to ~= player.id and move.toArea == Card.PlayerHand then
+        local cardType = {}
+        local fromCard = {}
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            local id = info.cardId
+            table.insertIfNeed(cardType, Fk:getCardById(id):getTypeString())
+            table.insert(fromCard, id)
+          end
+        end
+        local cids = target:getCardIds{Player.Hand, Player.Equip}
+        for _, id in ipairs(cids) do
+          if table.contains(cardType, Fk:getCardById(id):getTypeString()) and not table.contains(fromCard, id) then
+            table.insertIfNeed(targets, move.to)
+            break
+          end
+        end
+      end
+    end
+    room:sortPlayersByAction(targets)
+    for _, target_id in ipairs(targets) do
+      if not player:hasSkill(self.name) then break end
+      local skill_target = room:getPlayerById(target_id)
+      if skill_target and not skill_target.dead then
+        self:doCost(event, skill_target, player, data)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#os__ejian-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local cards = {}
+    for _, move in ipairs(data) do
+      local to = move.to and player.room:getPlayerById(move.to) or nil
+      local from = move.from and player.room:getPlayerById(move.from) or nil
+      if from and from == player and from:hasSkill(self.name) and to == target and move.toArea == Card.PlayerHand then
         local cardType = {}
         local fromCard = {}
         for _, info in ipairs(move.moveInfo) do
@@ -1173,22 +1215,17 @@ local os__ejian = fk.CreateTriggerSkill{
           table.insertIfNeed(cardType, Fk:getCardById(id):getTypeString())
           table.insert(fromCard, id)
         end
-        local cids = target:getCardIds(Player.Hand)
-        table.insertTable(cids, target:getCardIds(Player.Equip))
-        local cards = {}
+        local cids = target:getCardIds{Player.Hand, Player.Equip}
         for _, id in ipairs(cids) do
           if table.contains(cardType, Fk:getCardById(id):getTypeString()) and not table.contains(fromCard, id) then
             table.insert(cards, id)
           end
         end
         if #cards > 0 then
-          self.cost_data = {move.to, cards}
           break
         end
       end
     end
-    local target = room:getPlayerById(self.cost_data[1])
-    local cards = self.cost_data[2]
     if room:askForChoice(target, {"os__ejian_discard", "os__ejian_damage"}, self.name) == "os__ejian_damage" then
       room:damage{
         from = player,
@@ -1213,6 +1250,7 @@ Fk:loadTranslationTable{
   [":os__ejian"] = "当其他角色获得你的牌后，若其有除此牌以外的牌与此牌类别相同的牌，你可令其选择：1. 弃置这些牌；2. 受到你造成的1点伤害。",
 
   ["#os__boming_draw"] = "博名",
+  ["#os__ejian-invoke"] = "你想对 %dest 发动技能“恶荐”吗？",
   ["os__ejian_discard"] = "弃置除获得的牌外和获得的牌类别相同的牌",
   ["os__ejian_damage"] = "受到1点伤害",
 

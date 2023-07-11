@@ -221,6 +221,7 @@ Fk:loadTranslationTable{
 
 local underhandingSkill = fk.CreateActiveSkill{
   name = "underhanding_skill",
+  --prompt = "#underhanding",
   min_target_num = 1,
   max_target_num = 2,
   target_filter = function(self, to_select, selected)
@@ -290,6 +291,7 @@ Fk:loadTranslationTable{
   ["underhanding_skill"] = "瞒天过海",
   ["underhanding_action"] = "瞒天过海",
   ["#underhanding-card"] = "瞒天过海：交给 %dest 一张牌",
+  --["#underhanding"] = "选择一至两名区域内有牌的其他角色，依次获得其区域内的一张牌，然后依次交给其一张牌。",
 }
 
 local redistributeSkill = fk.CreateActiveSkill{
