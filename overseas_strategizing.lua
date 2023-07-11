@@ -205,9 +205,9 @@ local os__miaolue = fk.CreateTriggerSkill{
 }
 local os__yingjia = fk.CreateTriggerSkill{
   name = "os__yingjia",
-  events = {fk.EventPhaseEnd},
+  events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) or target.phase ~= Player.Finish then return false end
+    if not player:hasSkill(self.name) or data.to ~= Player.NotActive then return false end
     local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
       local use = e.data[1]
       return use.from == player.id and use.card.type == Card.TypeTrick
@@ -246,7 +246,7 @@ Fk:loadTranslationTable{
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】<br/>" ..
   "【<b>瞒天过海</b>】（<font color='#C04040'>♥</font>5/<font color='#C04040'>♦</font>5/♠5/♣5） 锦囊牌  出牌阶段，对一至两名区域内有牌的其他角色使用。你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。 此牌不计入你的手牌上限。</font>",
   ["os__yingjia"] = "迎驾",
-  [":os__yingjia"] = "一名角色的结束阶段结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
+  [":os__yingjia"] = "一名角色的回合结束时，若你于此回合内使用过至少两张同名锦囊牌，你可弃置一张手牌并选择一名角色，其获得一个额外的回合。",
 
   ["os__miaolue_underhanding"] = "获得一张【瞒天过海】并摸一张牌",
   ["os__miaolue_zhinang"] = "从牌堆或弃牌堆获得一张你指定的智囊",

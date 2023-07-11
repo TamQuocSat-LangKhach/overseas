@@ -2444,7 +2444,7 @@ local os__zhongzuo = fk.CreateTriggerSkill{
     local room = player.room
     local p = room:getPlayerById(self.cost_data)
     p:drawCards(2, self.name)
-    if p:isWounded() then player:drawCards(1, self.name) end
+    if p:isWounded() and not player.dead then player:drawCards(1, self.name) end
   end,
 
   refresh_events = {fk.Damage, fk.Damaged},
