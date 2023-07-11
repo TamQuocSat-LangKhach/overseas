@@ -3423,7 +3423,7 @@ local os__jiekuang = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if event == fk.TargetConfirmed then
       return player:hasSkill(self.name) and target.hp < player.hp and player:usedSkillTimes(self.name) < 1 and data.from ~= player.id and #AimGroup:getAllTargets(data.tos) == 1 
-      and (data.card.type == Card.TypeBasic or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick)) and table.every(player.room.alive_players, function(p)
+      and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and table.every(player.room.alive_players, function(p)
         return p.hp > 0 --旧周泰？
       end)
     else

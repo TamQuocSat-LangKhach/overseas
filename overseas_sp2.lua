@@ -1574,7 +1574,7 @@ local os__gongsun = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventPhaseChanging, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("_os__gongsun") ~= 0 and (event == fk.Deathed or data.from == Player.NotActive)
+    return target == player and player:getMark("_os__gongsun") ~= 0 and (event == fk.Death or data.from == Player.NotActive)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
