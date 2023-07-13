@@ -1692,13 +1692,12 @@ local os__jiexun = fk.CreateTriggerSkill{
     end
     room:drawCards(target, num, self.name)
     num = player:getMark("@os__jiexun_update") == 0 and player:getMark("@os__jiexun") or player:getMark("@os__jiexun_update")
-    local canDiscards = {}
     if num > 0 then
       room:askForDiscard(target, num, num, true, self.name, false)
     end
     if player:getMark("@os__jiexun_update") == 0 then
       room:addPlayerMark(player, "@os__jiexun")
-      if #canDiscards > 0 and target:isNude() then
+      if num > 0 and target:isNude() then
         if room:askForChoice(player, {"os__jiexun_draw:::" .. num, "os__jiexun_update"}, self.name) == "os__jiexun_update" then
           room:setPlayerMark(player, "@@os__funan_update", 1)
           room:setPlayerMark(player, "@os__jiexun_update", num)
