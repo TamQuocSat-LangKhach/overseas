@@ -1220,11 +1220,11 @@ local os__xiafeng_disres = fk.CreateTriggerSkill{
 }
 local os__xiafeng_buff = fk.CreateTargetModSkill{
   name = "#os__xiafeng_buff",
-  residue_func = function(self, player, skill)
-    return (player:getMark("_os__xiafeng_count-turn") < player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:getMark("_os__xiafeng_count-turn") < player:getMark("_os__xiafeng-turn") and scope == Player.HistoryPhase
   end,
   distance_limit_func = function(self, player, skill)
-    return (player:getMark("_os__xiafeng_count-turn") <= player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
+    return (player:getMark("_os__xiafeng_count-turn") < player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0) and 999 or 0
   end,
 }
 

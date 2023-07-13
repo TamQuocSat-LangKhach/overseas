@@ -341,7 +341,7 @@ local os__xia__xushu = General(extension, "os__xia__xushu", "qun", 4)
 
 local os__jiange = fk.CreateViewAsSkill{
   name = "os__jiange",
-  pattern = "slash",
+  --pattern = "slash", --如果注释掉，就无法打出
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type ~= Card.TypeBasic
   end,
@@ -425,7 +425,7 @@ os__xia__xushu:addSkill(os__xiawang)
 Fk:loadTranslationTable{
   ["os__xia__xushu"] = "侠徐庶",
   ["os__jiange"] = "剑歌",
-  [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。",
+  [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。<br /><font color='grey' size = 2>暂时bug：无法打出",
   ["os__xiawang"] = "侠望",
   [":os__xiawang"] = "当至你距离不大于1的角色受到黑色牌造成的伤害后，你可对伤害来源使用【杀】。若此【杀】造成了伤害，则在当前伤害结束结算后结束当前阶段。",
 

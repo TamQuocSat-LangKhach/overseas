@@ -841,7 +841,7 @@ local os__huojun = General(extension, "os__huojun", "shu", 4)
 local os__sidai = fk.CreateViewAsSkill{
   name = "os__sidai",
   anim_type = "offensive",
-  pattern = "slash",
+  --pattern = "slash",
   frequency = Skill.Limited,
   card_filter = function() return false end,
   view_as = function(self, cards)
@@ -849,7 +849,7 @@ local os__sidai = fk.CreateViewAsSkill{
     c:addSubcards(table.filter(Self.player_cards[Player.Hand], function(cid)
       return Fk:getCardById(cid).type == Card.TypeBasic
     end))
-    c.skillName = "sidai"
+    c.skillName = self.name
     return c
   end,
   before_use = function(self, player, use)
@@ -873,10 +873,10 @@ local os__sidai = fk.CreateViewAsSkill{
 local os__sidai_tm = fk.CreateTargetModSkill{
   name = "#os__sidai_tm",
   residue_func = function(self, player, skill, scope, card)
-    return (player:hasSkill("os__sidai") and card and table.contains(card.skillNames, "sidai")) and 999 or 0
+    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, os__sidai.name)) and 999 or 0
   end,
   distance_limit_func = function(self, player, skill, card)
-    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, "sidai")) and 999 or 0
+    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, os__sidai.name)) and 999 or 0
   end,
 }
 
@@ -885,7 +885,7 @@ local os__sidai_buff = fk.CreateTriggerSkill{
   mute = true,
   refresh_events = {fk.DamageCaused, fk.Damage, fk.TargetConfirmed},
   can_refresh = function(self, event, target, player, data)
-    if target ~= player or not data.card or not table.contains(data.card.skillNames, "os__sidai") then return false end
+    if target ~= player or not data.card or not table.contains(data.card.skillNames, os__sidai.name) then return false end
     if event == fk.TargetConfirmed then
       return table.contains((data.card.extra_data or {}).os__sidaiBuff, "jink")
     else
