@@ -1532,8 +1532,10 @@ local os__shangyi = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_num = 0,
-  card_filter = function() return false end,
+  card_num = 1,
+  card_filter = function(self, to_select, selected, targets)
+    return #selected == 0
+  end,
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id and #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
@@ -1541,6 +1543,7 @@ local os__shangyi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    room:throwCard(effect.cards, self.name, player, player)
     local cids
     if not player:isKongcheng() then 
       cids = player.player_cards[Player.Hand]
@@ -1563,7 +1566,7 @@ local os__shangyi = fk.CreateActiveSkill{
       room:throwCard({id}, self.name, target, player)
       if card.color == Card.Black then player:drawCards(1, self.name) end
     else
-      local cids = room:askForCard(player, 1, 1, false, self.name, false, nil, "#os__shangyi-exchange:" .. target.id .. "::" .. card.name)
+      local cids = room:askForCard(player, 1, 1, false, self.name, false, nil, "#os__shangyi-exchange:" .. target.id .. "::" .. card:toLogString())
       local cards1 = cids
       local cards2 = {id}
       local move1 = {
@@ -1676,7 +1679,7 @@ Fk:loadTranslationTable{
 
   ["os__shangyi_discard"] = "弃置%src一张手牌",
   ["os__shangyi_exchange"] = "与%src交换一张手牌",
-  ["#os__shangyi-exchange"] = "尚义：选择一张手牌，与 %src 交换其【%arg】",
+  ["#os__shangyi-exchange"] = "尚义：选择一张手牌，与 %src 交换其%arg",
   ["@os__xiangyu-turn"] = "翔羽",
 
   ["$os__shangyi1"] = "国士，当以义为先！",

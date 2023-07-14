@@ -120,7 +120,13 @@ local os__fenwu = fk.CreateTriggerSkill{
     new_use.tos = { {self.cost_data} }
     new_use.card = slash
     local basic_types = 0
-    local basic_cards = {"peach", "slash", "jink", "analeptic"} --...
+    local basic_cards = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if not table.contains(basic_cards, card.name) and card.type == Card.TypeBasic then
+        table.insert(basic_cards, card.name)
+      end
+    end
     for _, b in ipairs(basic_cards) do
       if player:usedCardTimes(b, Player.HistoryTurn) > 0 then
         basic_types = basic_types + 1
@@ -1074,10 +1080,10 @@ local os__jiaohua = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, types, self.name, "#os__jiaohua-ask::" .. self.cost_data[1])
     local id = room:getCardsFromPileByRule(".|.|.|.|.|" .. choice, 1, "allPiles")
     if #id > 0 then
-      room:obtainCard(self.cost_data[1], id[1], false, fk.ReasonPrey)
       local mark = type(player:getMark("_os__jiaohua-turn")) == "table" and player:getMark("_os__jiaohua-turn") or {}
       table.insert(mark, Fk:getCardById(id[1]):getTypeString())
       room:setPlayerMark(player, "_os__jiaohua-turn", mark)
+      room:obtainCard(self.cost_data[1], id[1], false, fk.ReasonPrey)
     end
   end,
 }
@@ -1699,7 +1705,7 @@ local os__kaiji = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EnterDying},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target:getMark("_os__kaiji_enterdying") < 1 --其实是不对的，但@mark……
+    return player:hasSkill(self.name) and target:getMark("_os__kaiji_enterdying") < 1
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(target, "_os__kaiji_enterdying", 1)
@@ -3427,7 +3433,7 @@ local os__jiekuang = fk.CreateTriggerSkill{
         return p.hp > 0 --旧周泰？
       end)
     else
-      return data.card and (data.card.extra_data or {}).os__jiekuangUser == player.id and not player:prohibitUse(data.card) and not player:isProhibited(target, data.card)
+      return data.card and (data.extra_data or {}).os__jiekuangUser == player.id and not player:prohibitUse(Fk:cloneCard(data.card.name)) and not player:isProhibited(target, Fk:cloneCard(data.card.name))
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -3450,11 +3456,11 @@ local os__jiekuang = fk.CreateTriggerSkill{
       if choice == "os__jiekuang_hp" then room:loseHp(player, 1, self.name)
       else room:changeMaxHp(player, -1) end
       if player.dead then return false end
-      data.card.extra_data = data.card.extra_data or {}
-      data.card.extra_data.os__jiekuangUser = player.id
+      data.extra_data = data.extra_data or {}
+      data.extra_data.os__jiekuangUser = player.id
       AimGroup:cancelTarget(data, data.to)
       local user = room:getPlayerById(data.from)
-      if not (user:prohibitUse(card) or user:isProhibited(player, data.card)) then
+      if not user:isProhibited(player, data.card) then
         AimGroup:addTargets(room, data, player.id)
       end
     else
