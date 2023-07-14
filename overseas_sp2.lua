@@ -219,7 +219,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
   name = "#os__shelie_extra",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and type(player:getMark("@os__shelie-turn")) == "table" and #player:getMark("@os__shelie-turn") == 4 and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+    return target == player and player:hasSkill(os__shelie.name) and player.phase == Player.Finish and type(player:getMark("@os__shelie-turn")) == "table" and #player:getMark("@os__shelie-turn") == 4 and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     local choices = {"phase_draw", "phase_play"}
@@ -247,7 +247,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local suitsRecorded = type(player:getMark("@os__shelie-turn")) == "table" and player:getMark("@os__shelie-turn") or {}
-    table.insertIfNeed(suitsRecorded, "log_" .. data.card:getSuitString())
+    table.insertIfNeed(suitsRecorded, data.card:getSuitString(true))
     player.room:setPlayerMark(player, "@os__shelie-turn", suitsRecorded)
   end,
 }
@@ -268,29 +268,30 @@ local os__gongxin = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local cids = target.player_cards[Player.Hand]
-    room:fillAG(player, cids)
+    local cids = target:getCardIds(Player.Hand)
     local card_suits = {}
     table.forEach(cids, function(id)
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num = #card_suits
-    local id = room:askForAG(player, cids, true, self.name) --AG cancelble
-    room:closeAG(player)
-    if not id then return false end
-    local choice = room:askForChoice(player, {"os__gongxin_discard", "os__gongxin_put", "Cancel"}, self.name, "#os__gongxin-treat:::" .. Fk:getCardById(id).name)
-    if choice == "os__gongxin_discard" then
-      room:throwCard({id}, self.name, target, player)
-    elseif choice == "os__gongxin_put" then
-      room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
+    local cids = room:askForGuanxing(player, cids, nil, {0, 1}, self.name, true, {target.general, "os__gongxinDo"}).bottom
+    if #cids > 0 then
+      local id = cids[1]
+      target:showCards(cids)
+      local choice = room:askForChoice(player, {"os__gongxin_discard:::" .. Fk:getCardById(id):toLogString(), "os__gongxin_put:::" .. Fk:getCardById(id):toLogString()}, self.name, "#os__gongxin-treat::" .. target.id .. ":" .. Fk:getCardById(id):toLogString())
+      if choice:startsWith("os__gongxin_discard") then
+        room:throwCard({id}, self.name, target, player)
+      else
+        room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
+      end
     end
     card_suits = {}
-    cids = target.player_cards[Player.Hand]
+    cids = target:getCardIds(Player.Hand)
     table.forEach(cids, function(id)
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num2 = #card_suits
-    if num > num2 then
+    if num > num2 and not player.dead and not target.dead then
       room:setPlayerMark(target, "@@os__gongxin_dr-turn", 1)
       room:setPlayerMark(player, "_os__gongxin-turn", 1)
     end
@@ -332,9 +333,10 @@ Fk:loadTranslationTable{
   ["#os__shelie_extra"] = "涉猎",
   ["#os__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
   ["#os__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
-  ["#os__gongxin-treat"] = "攻心：你可对【%arg】选择一项",
-  ["os__gongxin_discard"] = "弃置",
-  ["os__gongxin_put"] = "置于牌堆顶",
+  ["os__gongxinDo"] = "弃置或置于牌堆顶",
+  ["#os__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
+  ["os__gongxin_discard"] = "弃置%arg",
+  ["os__gongxin_put"] = "将%arg置于牌堆顶",
   ["@@os__gongxin_dr-turn"] = "攻心",
   ["#os__gongxin_dr"] = "攻心",
 
@@ -343,6 +345,187 @@ Fk:loadTranslationTable{
   ["$os__gongxin1"] = "敌将虽有破军之勇，然未必有弑神之心。",
   ["$os__gongxin2"] = "知敌所欲为，则此战已尽在掌握。",
   ["~os__godlvmeng"] = "吾能已通神，却难逆天命啊……",
+}
+
+local os__gundameng = General(extension, "os__gundameng", "god", 3)
+os__gundameng.hidden = true
+
+local gundam__shelie = fk.CreateTriggerSkill{
+  name = "gundam__shelie",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Draw
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card_ids = room:getNCards(5)
+    local get, throw = {}, {}
+    room:moveCards({
+      ids = card_ids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonPut,
+    })
+    table.forEach(room.players, function(p)
+      room:fillAG(p, card_ids)
+    end)
+    while true do
+      local card_suits = {}
+      table.forEach(get, function(id)
+        table.insert(card_suits, Fk:getCardById(id).suit)
+      end)
+      for i = #card_ids, 1, -1 do
+        local id = card_ids[i]
+        if table.contains(card_suits, Fk:getCardById(id).suit) then
+          room:takeAG(player, id)
+          table.insert(throw, id)
+          table.removeOne(card_ids, id)
+        end
+      end
+      if #card_ids == 0 then break end
+      local card_id = room:askForAG(player, card_ids, false, self.name)
+      room:takeAG(player, card_id)
+      table.insert(get, card_id)
+      table.removeOne(card_ids, card_id)
+      if #card_ids == 0 then break end
+    end
+    room:closeAG()
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player.id, dummy, true, fk.ReasonPrey)
+    end
+    if #throw > 0 then
+      room:moveCards({
+        ids = throw,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+      })
+    end
+    return true
+  end,
+}
+local gundam__shelie_extra = fk.CreateTriggerSkill{
+  name = "#gundam__shelie_extra",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(gundam__shelie.name) and player.phase == Player.Finish and player:getMark("@gundam__shelie-turn") ~= 0 and #player:getMark("@gundam__shelie-turn") >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+  end,
+  on_cost = function(self, event, target, player, data)
+    self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#gundam__shelie_extra-ask")
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:sendLog{
+      type = "#gundam__shelie_extra_log",
+      from = player.id,
+      arg = self.name,
+      arg2 = self.cost_data,
+    }
+    player:gainAnExtraPhase(self.cost_data == "phase_draw" and Player.Draw or Player.Play)
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local suitsRecorded = type(player:getMark("@gundam__shelie-turn")) == "table" and player:getMark("@gundam__shelie-turn") or {}
+    table.insertIfNeed(suitsRecorded, data.card:getSuitString(true))
+    player.room:setPlayerMark(player, "@gundam__shelie-turn", suitsRecorded)
+  end,
+}
+gundam__shelie:addRelatedSkill(gundam__shelie_extra)
+
+local gundam__gongxin = fk.CreateActiveSkill{
+  name = "gundam__gongxin",
+  anim_type = "control",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_num = 0,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cids = target:getCardIds(Player.Hand)
+    local card_suits = {}
+    table.forEach(cids, function(id)
+      table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
+    end)
+    local num = #card_suits
+    local cids = room:askForGuanxing(player, cids, nil, {0, 1}, self.name, true, {target.general, "gundam__gongxinDo"}).bottom
+    if #cids > 0 then
+      local id = cids[1]
+      target:showCards(cids)
+      local choice = room:askForChoice(player, {"gundam__gongxin_discard:::" .. Fk:getCardById(id):toLogString(), "gundam__gongxin_put:::" .. Fk:getCardById(id):toLogString()}, self.name, "#gundam__gongxin-treat::" .. target.id .. ":" .. Fk:getCardById(id):toLogString())
+      if choice:startsWith("gundam__gongxin_discard") then
+        room:throwCard({id}, self.name, target, player)
+      else
+        room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
+      end
+    end
+    card_suits = {}
+    cids = target:getCardIds(Player.Hand)
+    table.forEach(cids, function(id)
+      table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
+    end)
+    local num2 = #card_suits
+    if num > num2 and not player.dead and not target.dead then
+      local choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-ask::" .. target.id)
+      if choice ~= "Cancel" then
+        local pattern = type(target:getMark("@gundam__gongxin-turn")) == "table" and target:getMark("@gundam__gongxin-turn") or {}
+        table.insertIfNeed(pattern, choice)
+        room:setPlayerMark(target, "@gundam__gongxin-turn", pattern)
+      end
+    end
+  end,
+}
+local gundam__gongxin_prohibit = fk.CreateProhibitSkill{
+  name = "#gundam__gongxin_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:getMark("@gundam__gongxin-turn") ~= 0 then
+      return table.contains(player:getMark("@gundam__gongxin-turn"), card:getColorString())
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    if player:getMark("@gundam__gongxin-turn") ~= 0 then
+      return table.contains(player:getMark("@gundam__gongxin-turn"), card:getColorString())
+    end
+  end,
+}
+gundam__gongxin:addRelatedSkill(gundam__gongxin_prohibit)
+
+os__gundameng:addSkill(gundam__shelie)
+os__gundameng:addSkill(gundam__gongxin)
+
+Fk:loadTranslationTable{
+  ["os__gundameng"] = "高达二号",
+  ["gundam__shelie"] = "涉猎",
+  [":gundam__shelie"] = "摸牌阶段，你可以改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。每轮限一次，结束阶段开始时，若你本回合使用牌花色数不小于你的体力值，你选择执行一个额外的摸牌阶段或出牌阶段。",
+  ["gundam__gongxin"] = "攻心",
+  [":gundam__gongxin"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后你可以展示其中一张牌，选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶。然后若其手牌中花色数因此减少，你可令其本回合无法使用或打出一种颜色的牌。",
+
+  ["@gundam__shelie-turn"] = "涉猎",
+  ["#gundam__shelie_extra"] = "涉猎",
+  ["#gundam__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
+  ["#gundam__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
+  ["gundam__gongxinDo"] = "弃置或置于牌堆顶",
+  ["#gundam__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
+  ["gundam__gongxin_discard"] = "弃置%arg",
+  ["gundam__gongxin_put"] = "将%arg置于牌堆顶",
+  ["#gundam__gongxin-ask"] = "攻心：你可令 %dest 本回合无法使用或打出一种颜色的牌",
+  ["@gundam__gongxin-turn"] = "攻心",
+
+  ["$gundam__shelie1"] = "尘世之间，岂有吾所未闻之事？",
+  ["$gundam__shelie2"] = "往事皆知，未来尽料。",
+  ["$gundam__gongxin1"] = "敌将虽有破军之勇，然未必有弑神之心。",
+  ["$gundam__gongxin2"] = "知敌所欲为，则此战已尽在掌握。",
+  ["~os__gundameng"] = "吾能已通神，却难逆天命啊……",
 }
 
 local os__gexuan = General(extension, "os__gexuan", "qun", 3)
