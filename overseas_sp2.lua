@@ -348,7 +348,7 @@ Fk:loadTranslationTable{
 }
 
 local os__gundameng = General(extension, "os__gundameng", "god", 3)
-os__gundameng.hidden = true
+--os__gundameng.hidden = true
 
 local gundam__shelie = fk.CreateTriggerSkill{
   name = "gundam__shelie",
