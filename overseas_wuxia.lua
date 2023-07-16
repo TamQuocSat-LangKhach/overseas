@@ -341,7 +341,7 @@ local os__xia__xushu = General(extension, "os__xia__xushu", "qun", 4)
 
 local os__jiange = fk.CreateViewAsSkill{
   name = "os__jiange",
-  --pattern = "slash", --如果注释掉，就无法打出
+  pattern = "slash",
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type ~= Card.TypeBasic
   end,

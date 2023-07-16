@@ -417,10 +417,11 @@ local os__jimeng = fk.CreateActiveSkill{
     local id = room:askForCardChosen(player, target, "hej", self.name)
     room:obtainCard(effect.from, id, false)
 
+    if player.dead or player:isNude() then return false end
     local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#os__jimeng-card::" .. target.id)[1]
     room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
 
-    if target.hp >= player.hp then
+    if target.hp >= player.hp and not player.dead then
       player:drawCards(1, self.name)
     end
   end,

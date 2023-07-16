@@ -4156,4 +4156,133 @@ Fk:loadTranslationTable{
   ["@os__shoushou"] = "收绶 至你",
 }
 
+--[[
+local qiaorui = General(extension, "qiaorui", "qun", 5)
+
+local os__xiawei = fk.CreateTriggerSkill{
+  name = "os__xiawei",
+  events = {fk.GameStart, fk.EventPhaseChanging, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.GameStart then
+      return true
+    elseif event == fk.EventPhaseChanging then
+      return target == player and data.from == Player.NotActive and #player:getPile("os__pomp&") > 0
+    else
+      return target == player and player.phase == Player.Start
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local ret = "os__xiawei_ask:::"
+      local choices = {}
+      for i = 2, 5 do
+        table.insert(choices, ret .. i)
+      end
+      table.insert(choices, "Cancel")
+      local num = player.room:askForChoice(player, choices, self.name, "#os__xiawei-invoke")
+      if num ~= "Cancel" then
+        self.cost_data = table.indexOf(choices, num)
+        return true
+      end
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseChanging then
+      player:setMark("_os__pomp", 0)
+      room:moveCardTo(player:getPile("os__pomp&"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__pomp&")
+    else
+      local cids
+      if event == fk.GameStart then
+        cids = room:getCardsFromPileByRule(".|.|.|.|.|basic", 2)
+      else
+        local num = self.cost_data
+        cids = room:getNCards(num + 1)
+        room:setPlayerMark(player, "@os__xiawei_presume-turn", num)
+      end
+      if #cids > 0 then
+        local dummy = Fk:cloneCard("jink")
+        dummy:addSubcards(cids)
+        player:addToPile("os__pomp&", dummy, true, self.name)
+        player:setMark("_os__pomp", cids)
+      end
+    end
+  end
+}
+local os__xiawei_presume = fk.CreateTriggerSkill{
+  name = "#os__xiawei_presume",
+  events = {fk.EventPhaseChanging},
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and data.to == Player.NotActive and player:getMark("@os__xiawei_presume-turn") > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local num = player:getMark("@os__xiawei_presume-turn")
+    if #room:askForDiscard(player, num, num, true, self.name, true, ".", "#os__xiawei_presume-discard:::" .. num) == 0 then
+      room:changeMaxHp(player, -1)
+    end
+  end,
+}
+os__xiawei:addRelatedSkill(os__xiawei_presume)
+
+local os__qiongji = fk.CreateTriggerSkill{
+  name = "os__qiongji",
+  events = {fk.DamageInflicted, fk.CardUsing, fk.CardResponding},
+  anim_type = "negative",
+  mute = true,
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self.name) then return false end
+    if event == fk.DamageInflicted then
+      return #player:getPile("os__pomp&") == 0
+    else
+      return player:usedSkillTimes("os__qiongji_draw") == 0 and player:getMark("_os__pomp") ~= 0 and table.find(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+    return table.contains(player:getMark("_os__pomp"), id)
+      end)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke(self.name)
+    if event == fk.DamageInflicted then
+      room:notifySkillInvoked(player, self.name, "negative")
+      data.damage = data.damage + 1
+    else
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:addSkillUseHistory("os__qiongji_draw")
+      player:drawCards(1, self.name)
+    end
+  end,
+}
+
+qiaorui:addSkill(os__xiawei)
+qiaorui:addSkill(os__qiongji)
+
+Fk:loadTranslationTable{
+  ["qiaorui"] = "桥蕤",
+  ["os__xiawei"] = "狭威",
+  [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。" ..
+    "<br/><font color='grey'>#\"<b>妄行</b>\"：选择X的值（1至4）执行相应效果，然后此回合结束时，你需弃置X张牌，否则减1点体力上限。",
+  ["os__qiongji"] = "穷技",
+  [":os__qiongji"] = "锁定技，当你受到伤害时，若你没有“威”，伤害值+1；每回合限一次，当你使用或打出“威”时，你摸一张牌。",
+
+  ["os__pomp&"] = "威",
+  ["os__xiawei_ask"] = "将牌堆顶的%arg张牌作为“威”",
+  ["#os__xiawei-invoke"] = "狭威：你可将牌堆顶若干张牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出",
+  ["@os__xiawei_presume-turn"] = "狭威妄行",
+  ["#os__xiawei_presume"] = "狭威",
+  ["#os__xiawei_presume-discard"] = "狭威：弃置 %arg 张牌，否则减1点体力上限",
+
+  ["$os__xiawei1"] = "既闻仲帝威名，还不速速归降！",
+	["$os__xiawei2"] = "仲朝国土，岂容贼军放肆！",
+	["$os__qiongji1"] = "吾计虽穷，势不可衰！",
+	["$os__qiongji2"] = "战在其势，何妨技穷？",
+  ["~qiaorui"] = "曹贼……安敢犯仲国之威……",
+}
+--]]
 return extension
