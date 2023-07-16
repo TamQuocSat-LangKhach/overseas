@@ -3507,11 +3507,13 @@ local os__luanlue = fk.CreateViewAsSkill{
   name = "os__luanlue",
   anim_type = "control",
   pattern = "snatch",
-  card_num = function() return Self:getMark("@os__luanlue") end,
   card_filter = function(self, to_select, selected)
     return Fk:getCardById(to_select).trueName == "slash" and #selected < Self:getMark("@os__luanlue")
   end,
   view_as = function(self, cards)
+    if #cards ~= Self:getMark("@os__luanlue") then
+      return nil
+    end
     local c = Fk:cloneCard("snatch")
     c.skillName = self.name
     c:addSubcards(cards)
