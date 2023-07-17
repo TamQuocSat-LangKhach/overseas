@@ -1760,7 +1760,7 @@ local zaoli_record = fk.CreateTriggerSkill{
           local id = info.cardId
           if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
             table.insertIfNeed(mark, id)
-            room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 1)
+            room:setCardMark(Fk:getCardById(id), "@@os__zaoli-turn", 1)
           end
         end
       end
@@ -1768,7 +1768,7 @@ local zaoli_record = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__zaoli_record", mark)
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
+  refresh_events = {fk.AfterCardsMove, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Death and player ~= target then return false end
     return type(player:getMark("_os__zaoli_record")) == "table"
@@ -1781,15 +1781,12 @@ local zaoli_record = fk.CreateTriggerSkill{
         if room.current and (move.to ~= room.current.id or move.toArea ~= Card.PlayerHand) then
           for _, info in ipairs(move.moveInfo) do
             table.removeOne(mark, info.cardId)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@os__zaoli", 0)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@os__zaoli-turn", 0)
           end
         end
       end
       room:setPlayerMark(player, "_os__zaoli_record", mark)
     elseif event == fk.TurnEnd then
-      for _, id in ipairs(mark) do
-        room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 0)
-      end
       room:setPlayerMark(player, "_os__zaoli_record", 0)
     elseif event == fk.Death then
       for _, id in ipairs(mark) do
@@ -1797,7 +1794,7 @@ local zaoli_record = fk.CreateTriggerSkill{
           local p_mark = p:getMark("_os__zaoli_record")
           return not (type(p_mark) == "table" and table.contains(p_mark, id))
         end) then
-        room:setCardMark(Fk:getCardById(id), "@@os__zaoli", 0)
+        room:setCardMark(Fk:getCardById(id), "@@os__zaoli-turn", 0)
         end
       end
       room:setPlayerMark(player, "_os__zaoli_record", 0)
@@ -1826,7 +1823,7 @@ Fk:loadTranslationTable{
   ["os__zaoli"] = "躁厉",
   [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置任意张手牌和装备区里的所有牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
 
-  ["@@os__zaoli"] = "躁厉",
+  ["@@os__zaoli-turn"] = "躁厉",
   ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，弃置这些牌和装备区里的所有牌",
 
   ["$os__zaoli1"] = "喜怒不形于色，诈伪要明之徒。",

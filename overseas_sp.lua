@@ -3981,12 +3981,9 @@ local os__kujian = fk.CreateActiveSkill{
   target_num = 1,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
-    local tag = room:getTag("os__kujian") or {}
     table.forEach(effect.cards, function(cid)
-      table.insertIfNeed(tag, cid)
       room:setCardMark(Fk:getCardById(cid), "@@os__kujian", 1)
     end)
-    room:setTag("os__kujian", tag)
     room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
   end,
 }
@@ -3995,55 +3992,77 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding, fk.AfterCardsMove},
   anim_type = "drawcard",
   mute = true,
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
-    local tag = player.room:getTag("os__kujian")
-    if not tag then return false end
     if event ~= fk.AfterCardsMove then
       if player == target then return false end
       return table.find(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
-        return table.contains(tag, id)
+        return Fk:getCardById(id):getMark("@@os__kujian") > 0
       end)
     else
-      local targets = {}
       for _, move in ipairs(data) do
         if move.from ~= player.id and move.moveReason ~= fk.ReasonUse and move.moveReason ~= fk.ReasonResonpse then
-          local num = #table.filter(move.moveInfo, function(info)
-            return table.contains(tag, info.cardId) and info.fromArea == Card.PlayerHand
-          end)
-          if num > 0 then
-            --targets[move.from] = (targets[move.from] or 0) + num
-            table.insertIfNeed(targets, move.from)
-            player.room:addPlayerMark(player.room:getPlayerById(move.from), "_os__kujian", num)
+          if table.find(move.moveInfo, function(info)
+            return Fk:getCardById(info.cardId):getMark("@@os__kujian") > 0 and info.fromArea == Card.PlayerHand
+          end) then
+            return true
           end
         end
-      end
-      if #targets > 0 then
-        return true
       end
     end
     return false
   end,
-  on_cost = function() return true end,
+  on_trigger = function(self, event, target, player, data)
+    if event ~= fk.AfterCardsMove then
+      self:doCost(event, target, player, data)
+    else
+      local room = player.room
+      local targets = {}
+      for _, move in ipairs(data) do
+        if move.from ~= player.id and move.moveReason ~= fk.ReasonUse and move.moveReason ~= fk.ReasonResonpse then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId):getMark("@@os__kujian") > 0 and info.fromArea == Card.PlayerHand then
+              table.insert(targets, move.from)
+            end
+          end
+        end
+      end
+      room:sortPlayersByAction(targets)
+      for _, target_id in ipairs(targets) do
+        if not player:hasSkill(self.name) then break end
+        local skill_target = room:getPlayerById(target_id)
+        if skill_target and not skill_target.dead and not player.dead and not (skill_target:isNude() and player:isNude()) then
+          self:doCost(event, skill_target, player, data)
+        end
+      end
+    end
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:broadcastSkillInvoke("os__kujian")
     if event ~= fk.AfterCardsMove then
       room:notifySkillInvoked(player, "os__kujian", "drawcard")
+      table.forEach(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+        return room:setCardMark(Fk:getCardById(id), "@@os__kujian", 0)
+      end)
       room:doIndicate(player.id, {target.id})
       player:drawCards(1, self.name)
       target:drawCards(1, self.name)
     else
       room:notifySkillInvoked(player, "os__kujian", "negative")
-      local targets = table.filter(room:getAlivePlayers(), function(p) return p:getMark("_os__kujian") > 0 end)
-      for _, to in ipairs(targets) do
-        for i = 1, to:getMark("_os__kujian"), 1 do
-          room:doIndicate(player.id, {to.id})
-          if not player:isNude() and player:isAlive() then room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
-          if not to:isNude() and to:isAlive() then room:askForDiscard(to, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
+      room:doIndicate(player.id, {target.id})
+      for _, move in ipairs(data) do
+        if move.from ~= player.id and move.moveReason ~= fk.ReasonUse and move.moveReason ~= fk.ReasonResonpse then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              room:setCardMark(Fk:getCardById(info.cardId), "@@os__kujian", 0)
+            end
+          end
         end
-        room:setPlayerMark(to, "_os__kujian", 0)
       end
+      if not player:isNude() then room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
+      if not target:isNude() then room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
     end
   end,
   --[[
@@ -4195,7 +4214,7 @@ Fk:loadTranslationTable{
   ["@@os__ruilian"] = "睿敛",
   ["@os__ruilian-turn"] = "睿敛",
   ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌",
-  ["@@os__kujian"] = "苦谏",
+  ["@@os__kujian"] = "谏",
 
   ["$os__kujian1"] = "吾之所言，皆为公之大业。",
   ["$os__kujian2"] = "公岂徒有纳谏之名乎！",

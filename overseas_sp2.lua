@@ -2707,74 +2707,8 @@ local zhilue = fk.CreateTriggerSkill{
     local choice = self.cost_data
     if choice == "os_xing__zhilue_move" then
       local targets = room:askForChooseToMoveCardInBoard(player, "#os_xing__zhilue-movecard", self.name, false)
-      --room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name)
-      local cards = {}
-      local cardsPosition = {}
-      targets = table.map(targets, function(id) return room:getPlayerById(id) end)
-      for _, equipId in ipairs(targets[1]:getCardIds(Player.Equip)) do
-        if targets[1]:canMoveCardInBoardTo(targets[2], equipId) then
-          table.insert(cards, equipId)
-        end
-      end
-      for _, equipId in ipairs(targets[2]:getCardIds(Player.Equip)) do
-        if targets[2]:canMoveCardInBoardTo(targets[1], equipId) then
-          table.insert(cards, equipId)
-        end
-      end
-      if #cards > 0 then
-        table.sort(cards, function(prev, next)
-          local prevSubType = Fk:getCardById(prev).sub_type
-          local nextSubType = Fk:getCardById(next).sub_type
-
-          return prevSubType < nextSubType
-        end)
-
-        for _, id in ipairs(cards) do
-          table.insert(cardsPosition, room:getCardOwner(id) == targets[1] and 0 or 1)
-        end
-      end
-      for _, trickId in ipairs(targets[1]:getCardIds(Player.Judge)) do
-        if targets[1]:canMoveCardInBoardTo(targets[2], trickId) then
-          table.insert(cards, trickId)
-          table.insert(cardsPosition, 0)
-        end
-      end
-      for _, trickId in ipairs(targets[2]:getCardIds(Player.Judge)) do
-        if targets[2]:canMoveCardInBoardTo(targets[1], trickId) then
-          table.insert(cards, trickId)
-          table.insert(cardsPosition, 1)
-        end
-      end
-      if #cards == 0 then return end
-
-      local firstGeneralName = targets[1].general + (targets[1].deputyGeneral ~= "" and ("/" .. targets[1].deputyGeneral) or "")
-      local secGeneralName = targets[2].general + (targets[2].deputyGeneral ~= "" and ("/" .. targets[2].deputyGeneral) or "")
-
-      local data = { cards = cards, cardsPosition = cardsPosition, generalNames = { firstGeneralName, secGeneralName } }
-      local command = "AskForMoveCardInBoard"
-      room:notifyMoveFocus(player, command)
-      local result = room:doRequest(player, command, json.encode(data))
-
-      if result == "" then
-        local randomIndex = math.random(1, #cards)
-        result = { cardId = cards[randomIndex], pos = cardsPosition[randomIndex] }
-      else
-        result = json.decode(result)
-      end
-
-      local cardToMove = Fk:getCardById(result.cardId)
-      room:moveCardTo(
-        cardToMove,
-        cardToMove.type == Card.TypeEquip and Player.Equip or Player.Judge,
-        result.pos == 0 and targets[2] or targets[1],
-        fk.ReasonJustMove,
-        self.name,
-        nil,
-        true
-      )
-
+      local card = room:askForMoveCardInBoard(player, room:getPlayerById(targets[1]), room:getPlayerById(targets[2]), self.name).card
       if player.dead then return end
-      local card = Fk:getCardById(result.cardId, true)
       if card.type == Card.TypeEquip then
         room:loseHp(player, 1, self.name)
       elseif card.sub_type == Card.SubtypeDelayedTrick then
@@ -4283,6 +4217,6 @@ Fk:loadTranslationTable{
 	["$os__qiongji1"] = "吾计虽穷，势不可衰！",
 	["$os__qiongji2"] = "战在其势，何妨技穷？",
   ["~qiaorui"] = "曹贼……安敢犯仲国之威……",
-}
 --]]
+
 return extension
