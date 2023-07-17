@@ -4115,7 +4115,7 @@ local os__shoushou = fk.CreateTriggerSkill{
         return true
       end
     else
-      return target == player and table.every(player.room.alive_players, function(p)
+      return target == player and table.find(player.room.alive_players, function(p)
         return not p:inMyAttackRange(player)
       end) and not player.dead
     end
@@ -4150,7 +4150,7 @@ Fk:loadTranslationTable{
   [":os__huiyuan"] = "当你于出牌阶段使用牌结算结束后，若此阶段你未获得过此类型的牌，你可选择一名角色并展示其一张手牌，若与你使用的牌类型：相同，你获得此牌，不同：你弃置其此牌，其摸一张牌。若游击：你对其造成1点伤害。" ..
   "<br/><font color='grey'>#\"<b>游击</b>\"：其在你攻击范围内，你不在其攻击范围内",
   ["os__shoushou"] = "收绶",
-  [":os__shoushou"] = "①当你获得其他角色的牌后，若你在一名角色的攻击范围内，其他角色至你距离+1。②当你造成或受到伤害后，若你不在所有角色的攻击范围内，其他角色至你距离-1。",
+  [":os__shoushou"] = "①当你获得其他角色的牌后，若你在一名角色的攻击范围内，其他角色至你距离+1。②当你造成或受到伤害后，若你不在一名角色的攻击范围内，其他角色至你距离-1。",
 
   ["#os__huiyuan-ask"] = "回援：你可展示一名角色的一张手牌，若为 %arg：你获得此牌，不为：你弃置其此牌，其摸一张牌",
   ["@os__shoushou"] = "收绶 至你",
