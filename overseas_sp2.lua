@@ -3346,13 +3346,21 @@ local os__fengpo = fk.CreateTriggerSkill{
     local to = room:getPlayerById(data.to)
     local cids = to:getCardIds(Player.Hand)
     room:fillAG(player, cids)
-    room:delay(3000)
+    room:delay(math.min(#cids, 10) * 1000)
     room:closeAG(player)
-    local updateValue = #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e) 
-      local death = e.data[1]
-      return death.damage and death.damage.from == player
-    end, Player.HistoryTurn) == 1
-    local n = updateValue and #table.filter(cids, function(id) 
+    local update = player:getMark("@@os__fengpo_update") > 0
+    --[[
+      if not update then --没有用
+      if #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e) 
+        local death = e.data[1]
+        return death.damage and death.damage.from == player
+      end, Player.HistoryGame) == 1 then
+        update = true
+        room:setPlayerMark(player, "@@os__fengpo_update", 1)
+      end
+    end
+    ]]
+    local n = update and #table.filter(cids, function(id) 
       return Fk:getCardById(id).color == Card.Red
     end) or #table.filter(cids, function(id) 
       return Fk:getCardById(id).suit == Card.Diamond
@@ -3363,6 +3371,14 @@ local os__fengpo = fk.CreateTriggerSkill{
     else
       data.additionalDamage = (data.additionalDamage or 0) + n
     end
+  end,
+
+  refresh_events = {fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.damage and data.damage.from == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@os__fengpo_update", 1)
   end,
 }
 os__mayunlu:addSkill("mashu")
@@ -3375,6 +3391,7 @@ Fk:loadTranslationTable{
 
   ["os__fengpo_draw"] = "摸%arg张牌",
   ["os__fengpo_damage"] = "令此牌的伤害值基数+%arg",
+  ["@@os__fengpo_update"] = "凤魄2级",
 
   ["$os__fengpo1"] = "看我不好好杀杀你的威风。",
   ["$os__fengpo2"] = "贼人是不是被本姑娘吓破胆了呀？",

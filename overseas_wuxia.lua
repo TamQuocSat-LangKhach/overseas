@@ -425,7 +425,7 @@ os__xia__xushu:addSkill(os__xiawang)
 Fk:loadTranslationTable{
   ["os__xia__xushu"] = "侠徐庶",
   ["os__jiange"] = "剑歌",
-  [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。<br /><font color='grey' size = 2>暂时bug：无法打出",
+  [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。",
   ["os__xiawang"] = "侠望",
   [":os__xiawang"] = "当至你距离不大于1的角色受到黑色牌造成的伤害后，你可对伤害来源使用【杀】。若此【杀】造成了伤害，则在当前伤害结束结算后结束当前阶段。",
 
@@ -523,7 +523,7 @@ local os__lvren = fk.CreateTriggerSkill{
     room:removePlayerMark(room:getPlayerById(self.cost_data[1]), "@@os__blade")
   end,
 
-  refresh_events = {fk.DamageCaused, fk.PindianCardsDisplayed},
+  refresh_events = {fk.DamageCaused, fk.PindianCardsDisplayed}, --要改
   can_refresh = function(self, event, target, player, data)
     if event == fk.DamageCaused then
       return target == player and player:hasSkill(self.name) and data.to:getMark("@@os__blade") == 0 and data.to ~= player

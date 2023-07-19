@@ -346,9 +346,10 @@ local os__shigong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local current = room.current
-    local choices = {"os__shigong_max:" .. player.id}
-    if current:getHandcardNum() >= current.hp then table.insert(choices, "os__shigong_dis:" .. player.id .. "::" .. current.hp) end
-    local choice = room:askForChoice(current, choices, self.name)
+    local all_choices = {"os__shigong_max:" .. player.id, "os__shigong_dis:" .. player.id .. "::" .. current.hp}
+    local choices = table.clone(all_choices)
+    if current:getHandcardNum() < current.hp then table.remove(choices, 2) end
+    local choice = room:askForChoice(current, choices, self.name, nil, false, all_choices)
     if choice:startsWith("os__shigong_max") then
       room:changeMaxHp(current, 1)
       room:recover({
@@ -4065,37 +4066,23 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       if not target:isNude() then room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
     end
   end,
-  --[[
-  refresh_events = {fk.AfterCardsMove}, --移出手牌区……
+  
+  refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
     return true
   end,
   on_refresh = function(self, event, target, player, data)
-    local tag = player.room:getTag("os__kujian")
-    if tag == {} then return end
-    local cids = {}
+    local room = player.room
     for _, move in ipairs(data) do
-      if move.from == player.id and (move.toArea ~= Card.PlayerHand) then
-        table.insertTable(cids, table.filter(move.moveInfo, function(info)
-          return table.contains(tag, info.cardId)
-        end))
+      if move.from == player.id and move.toArea ~= Card.Processing and move.toArea ~= Card.PlayerHand then
         for _, info in ipairs(move.moveInfo) do
-          if table.contains(tag, info.cardId) then
-            table.insert(cids, info.cardId)
+          if Fk:getCardById(info.cardId):getMark("@@os__kujian") > 0 then
+            room:setCardMark(Fk:getCardById(info.cardId), "@@os__kujian", 0)
           end
         end
       end
     end
-    if #cids > 0 then
-      local room = player.room
-      table.forEach(cids, function(cid)
-        table.removeOne(tag, cid)
-        room:setCardMark(Fk:getCardById(cid), "@@os__kujian", 0)
-      end)
-      room:setTag("os__kujian", tag)
-    end
   end,
-  --]]
 }
 os__kujian:addRelatedSkill(os__kujian_judge)
 

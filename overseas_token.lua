@@ -278,6 +278,7 @@ local underhanding = fk.CreateTrickCard{
   suit = Card.Heart,
   number = 5,
   skill = underhandingSkill,
+  multiple_targets = true,
 }
 extension:addCards{
   underhanding,
@@ -376,6 +377,7 @@ local redistribute = fk.CreateTrickCard{
   suit = Card.Spade,
   number = 6,
   special_skills = { "recast" },
+  multiple_targets = true,
 }
 extension:addCards{
   redistribute,
