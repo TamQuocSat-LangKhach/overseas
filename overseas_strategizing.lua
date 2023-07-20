@@ -751,11 +751,18 @@ local os__mouli = fk.CreateViewAsSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic then
         table.insert(allCardNames, card.name)
       end
     end
-    return UI.ComboBox { choices = allCardNames }
+    local cardNames = {}
+    for _, name in ipairs(allCardNames) do
+      local card = Fk:cloneCard(name)
+      if not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        table.insert(cardNames, name)
+      end
+    end
+    return UI.ComboBox { choices = cardNames } --, all_choices = allCardNames }
   end,
   view_as = function(self)
     local choice = self.interaction.data
@@ -765,30 +772,17 @@ local os__mouli = fk.CreateViewAsSkill{
     return c
   end,
   enabled_at_play = function(self, player)
-    if player:usedSkillTimes(self.name) > 0 then return false end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        return true
-      end
-    end
-    return false
+    return player:usedSkillTimes(self.name) == 0
   end,
   enabled_at_response = function(self, player, cardResponsing)
-    if player:usedSkillTimes(self.name) > 0 or cardResponsing then return false end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        return true
-      end
-    end
-    return false
+    return player:usedSkillTimes(self.name) == 0 and not cardResponsing
   end,
   before_use = function(self, player, use)
     local cids = player.room:getCardsFromPileByRule(".|.|.|.|" .. use.card.name)
     if #cids > 0 then
       use.card:addSubcards(cids)
     --else
+      --return false
       --use = nil
     end
   end,

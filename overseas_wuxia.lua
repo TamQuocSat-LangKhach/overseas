@@ -414,7 +414,14 @@ local os__xiawang = fk.CreateTriggerSkill{
     if event == fk.Damage then
       player.room:addPlayerMark(player, "_os__xiawang-phase")
     else
-      player.room.logic:getCurrentEvent():findParent(GameEvent.Phase):shutdown()
+      local current = player.room.logic:getCurrentEvent()
+      local use_event = current:findParent(GameEvent.UseCard)
+      if not use_event then return end
+      local phase_event = use_event:findParent(GameEvent.Phase)
+      if not phase_event then return end
+      use_event:addExitFunc(function()
+        phase_event:shutdown()
+      end)
     end
   end,
 }

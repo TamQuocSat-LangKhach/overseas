@@ -316,7 +316,7 @@ local os__zhuidu = fk.CreateActiveSkill{
     local choices = {"os__zhuidu_damage"}
     if #target:getCardIds(Player.Equip) > 0 then table.insert(choices, "os__zhuidu_discard") end
     if target.gender == General.Female and not player:isNude() then table.insert(choices, "beishui_os__zhuidu") end
-    local choice = room:askForChoice(player, choices, self.name)
+    local choice = room:askForChoice(player, choices, self.name)--, nil, false, {"os__zhuidu_damage", "os__zhuidu_discard", "beishui_os__zhuidu"})
     if choice ~= "os__zhuidu_discard" then
       room:damage{
         from = player,
@@ -527,7 +527,7 @@ local os__dingfa = fk.CreateTriggerSkill{
     local room = player.room
     local choices = {"os__dingfa_damage", "Cancel"}
     if player.hp < player.maxHp then table.insert(choices, 2, "os__dingfa_recover") end
-    local choice = room:askForChoice(player, choices, self.name)
+    local choice = room:askForChoice(player, choices, self.name, nil, false, {"os__dingfa_damage", "os__dingfa_recover", "Cancel"})
     
     if choice ~= "Cancel" then
       self.cost_data = choice
@@ -545,14 +545,14 @@ local os__dingfa = fk.CreateTriggerSkill{
         skillName = self.name,
       })
     else
-      local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
+      local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id
       end), 1, 1, "#os__dingfa-target", self.name, true)
-      if #victim > 0 then
-        victim = room:getPlayerById(victim[1]) 
+      if #target > 0 then
+        target = room:getPlayerById(target[1]) 
         room:damage{
           from = player,
-          to = victim,
+          to = target,
           damage = 1,
           skillName = self.name,
         }
@@ -718,7 +718,7 @@ local os__zhenxi = fk.CreateTriggerSkill{
       table.insert(choices, "beishui_os__zhenxi")
     end
     table.insert(choices, "Cancel")
-    local choice = room:askForChoice(player, choices, self.name)
+    local choice = room:askForChoice(player, choices, self.name, nil, false)--, {"os__zhenxi_discard:::" .. player:distanceTo(target), "os__zhenxi_move", "beishui_os__zhenxi", "Cancel"})
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -806,12 +806,13 @@ local os__moukui = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local choices = {"os__moukui_draw", "beishui_os__moukui", "Cancel"}
+    local all_choices = {"os__moukui_draw", "os__moukui_discard", "beishui_os__moukui", "Cancel"}
+    local choices = table.clone(all_choices)
     local target = room:getPlayerById(data.to)
-    if not target:isNude() then
-      table.insert(choices, 2, "os__moukui_discard")
+    if target:isNude() then
+      table.remove(choices, 2)
     end
-    local choice = room:askForChoice(player, choices, self.name)
+    local choice = room:askForChoice(player, choices, self.name)--, nil, false, all_choices)
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -912,7 +913,14 @@ local os__xuewei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local choice = room:askForChoice(target, {"os__xuewei_defence::" .. to.id, "os__xuewei_duel:" .. player.id}, self.name)
+    local all_choices = {"os__xuewei_defence::" .. to.id, "os__xuewei_duel:" .. player.id}
+    local choices = table.clone(all_choices)
+    local duel = Fk:cloneCard("duel")
+    duel.skillName = self.name
+    if player:prohibitUse(duel) or player:isProhibited(target, duel) then
+      table.remove(choices, 2)
+    end
+    local choice = room:askForChoice(target, choices, self.name, nil, false, all_choices)
     if choice:startsWith("os__xuewei_defence") then
       room:addPlayerMark(target, "_os__xuewei_defence_from-turn", 1)
       room:addPlayerMark(target, MarkEnum.MinusMaxCardsInTurn, 2)
@@ -924,8 +932,6 @@ local os__xuewei = fk.CreateTriggerSkill{
         arg = self.name
       }
     else
-      local duel = Fk:cloneCard("duel")
-      duel.skillName = self.name
       local new_use = {} ---@type CardUseStruct
       new_use.from = player.id
       new_use.tos = { {target.id} }

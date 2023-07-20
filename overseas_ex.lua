@@ -905,10 +905,11 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(data.to)
     local num = #player:getCardIds(Player.Equip)
-    local choices = {"os_ex__qingxi_draw:::" .. player.general .. ":" .. tostring(math.max(1, num))}
+    local choices = {"os_ex__qingxi_draw:::" .. player.general .. ":" .. tostring(math.max(1, num)), "os_ex__qingxi_discard"}
+    local all_choices = table.clone(choices)
     local num2 = #to:getCardIds(Player.Equip)
-    if num2 > 0 then table.insert(choices, "os_ex__qingxi_discard") end
-    local choice = room:askForChoice(to, choices, self.name)
+    if num2 == 0 then table.remove(choices, 2) end
+    local choice = room:askForChoice(to, choices, self.name, nil, false, all_choices)
     if choice == "os_ex__qingxi_discard" then
       to:throwAllCards("e")
       if #player:getCardIds(Player.Equip) > 0 then
