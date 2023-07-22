@@ -4181,12 +4181,13 @@ local os__kujian_judge = fk.CreateTriggerSkill{
           end
         end
       end
-      if not player:isNude() then room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
-      if not target:isNude() then room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__kujian-discard") end
+      room:askForDiscard(player, 1, 1, true, self.name, false, nil, "#os__kujian-discard")
+      room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__kujian-discard")
     end
   end,
   
-  refresh_events = {fk.AfterCardsMove},
+  --[[
+    refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
     return true
   end,
@@ -4202,6 +4203,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       end
     end
   end,
+  --]]
 }
 os__kujian:addRelatedSkill(os__kujian_judge)
 
