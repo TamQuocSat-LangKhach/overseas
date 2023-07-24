@@ -70,7 +70,7 @@ fengxi:addSkill(os__qingkou)
 Fk:loadTranslationTable{
   ["fengxi"] = "冯习",
   ["os__qingkou"] = "轻寇",
-  [":os__qingkou"] = "准备阶段开始时，你可视为使用一张【决斗】。此【决斗】结算后，造成伤害的角色摸一张牌，若为你，你跳过此回合的判定阶段和弃牌阶段。",
+  [":os__qingkou"] = "准备阶段开始时，你可视为使用一张【决斗】。此【决斗】结算结束后，造成伤害的角色摸一张牌，若为你，你跳过此回合的判定阶段和弃牌阶段。",
 
   ["#os__qingkou-ask"] = "轻寇：你可选择一名其他角色，视为对其使用一张【决斗】",
 
@@ -119,20 +119,18 @@ local os__fenwu = fk.CreateTriggerSkill{
     new_use.from = player.id
     new_use.tos = { {self.cost_data} }
     new_use.card = slash
-    local basic_types = 0
     local basic_cards = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(basic_cards, card.name) and card.type == Card.TypeBasic then
-        table.insert(basic_cards, card.name)
+      if not table.contains(basic_cards, card.trueName) and card.type == Card.TypeBasic then
+        table.insert(basic_cards, card.trueName)
       end
     end
-    for _, b in ipairs(basic_cards) do
-      if player:usedCardTimes(b, Player.HistoryTurn) > 0 then
-        basic_types = basic_types + 1
-      end
+    if #table.filter(basic_cards, function(b)
+      return player:usedCardTimes(b, Player.HistoryTurn) > 0 
+    end) > 1 then
+      new_use.additionalDamage = (new_use.additionalDamage or 0) + 1
     end
-    if basic_types > 1 then new_use.additionalDamage = (new_use.additionalDamage or 0) + 1 end
     room:useCard(new_use)
   end,
 }

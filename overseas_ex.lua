@@ -309,46 +309,36 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and (data.card.extra_data or {}).os_ex__jingce == player.hp
+    if target ~= player or not player:hasSkill(self.name) or player.phase ~= Player.Play then return false end 
+    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
+      local use = e.data[1]
+      return use.from == player.id
+    end, Player.HistoryPhase)
+    return #filterdEvents >= player.hp and filterdEvents[player.hp].id == player.room.logic:getCurrentEvent().id
   end,
   on_use = function(self, event, target, player, data)
     local invoke = false
-    if player:getMark("_os_ex__jingce_draw-phase") > 0 or player:getMark("_os_ex__jingce_damage-turn") > 0 then
+    local room = player.room
+    if player:getMark("_os_ex__jingce_draw-phase") > 0 then
+      invoke = true
+    end
+    if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+      local damage = e.data[5]
+      if damage and target == damage.from then
+        return true
+      end
+    end, Player.HistoryTurn) == 1 then
+      invoke = true
+    end
+    if not invoke and #room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+      local move = e.data[1]
+      return move.to == player.id and move.moveReason == fk.ReasonDraw
+    end, Player.HistoryPhase) == 1 then
       invoke = true
     end
     player:drawCards(2, self.name)
     if invoke then
-      player.room:addPlayerMark(player, "@os_ex__strategy", 1)
-    end
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared, fk.AfterCardsMove, fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardUseDeclared then
-      return target == player and player.phase == Player.Play --and player:hasSkill(self.name, true) 
-    elseif event == fk.AfterCardsMove then
-      if player.phase == Player.Play then
-        for _, move in ipairs(data) do
-          local target = move.to and player.room:getPlayerById(move.to) or nil
-          if target and move.to == player.id and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand then
-            return true
-          end
-        end
-      end
-    else
-      return target and target == player and player.phase ~= Player.NotActive and not player.dead
-    end
-    return false
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardUseDeclared then
-      player.room:addPlayerMark(player, "_os_ex__jingce_use-phase", 1)
-      data.card.extra_data = data.card.extra_data or {}
-      data.card.extra_data.os_ex__jingce = player:getMark("_os_ex__jingce_use-phase")
-    elseif event == fk.AfterCardsMove then
-      player.room:addPlayerMark(player, "_os_ex__jingce_draw-phase", 1)
-    else
-      player.room:addPlayerMark(player, "_os_ex__jingce_damage-turn", 1)
+      room:addPlayerMark(player, "@os_ex__strategy", 1)
     end
   end,
 }
@@ -378,7 +368,8 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
       }
       return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__yuzhang:::" .. phase_name_table[data.to])
     else
-      local choice = player.room:askForChoice(player, {"os_ex__yuzhang_disable", "os_ex__yuzhang_discard", "Cancel"}, self.name, "#os_ex__yuzhang-ask::" .. data.from.id)
+      local pid = data.from.id
+      local choice = player.room:askForChoice(player, {"os_ex__yuzhang_disable::" .. pid, "os_ex__yuzhang_discard::" .. pid, "Cancel"}, self.name, "#os_ex__yuzhang-ask::" .. pid)
       if choice ~= "Cancel" then
         self.cost_data = choice
         return true
@@ -397,14 +388,10 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name)
       local choice = self.cost_data
       local target = data.from
-      if choice == "os_ex__yuzhang_discard" then
-        if #target:getCardIds({Player.Hand, Player.Equip}) <= 2 then
-          target:throwAllCards("he")
-        else
-          room:askForDiscard(target, 2, 2, true, self.name, false)
-        end
+      if choice:startsWith("os_ex__yuzhang_discard") then
+        room:askForDiscard(target, 2, 2, true, self.name, false)
       else
-        room:addPlayerMark(target, "_os_ex__yuzhang_pro-turn", 1)
+        room:addPlayerMark(target, "@os_ex__yuzhang_pro-turn", 1)
       end
     end
   end,
@@ -412,10 +399,10 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
 local os_ex__yuzhang_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__yuzhang_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("_os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
   end,
 }
 
@@ -426,15 +413,15 @@ os_ex__guohuai:addSkill(os_ex__yuzhang)
 Fk:loadTranslationTable{
   ["os_ex__guohuai"] = "界郭淮",
   ["os_ex__jingce"] = "精策",
-  [":os_ex__jingce"] = "当你出牌阶段使用的第X张牌结算结束后（X为你的体力值），你可摸两张牌，然后若这不是你本阶段第一次摸牌或本回合你已造成过伤害，你获得1枚“策”。",
+  [":os_ex__jingce"] = "当你出牌阶段使用的第X张牌结算结束后（X为你的体力值），你可摸两张牌，然后若这不是你此阶段第一次摸牌或此回合你已造成过伤害，你获得1枚“策”。",
   ["os_ex__yuzhang"] = "御嶂",
   [":os_ex__yuzhang"] = "①你可弃1枚“策”，跳过一个阶段。②当你受到伤害后，你可弃1枚“策”并选择一项，令伤害来源执行：1.本回合不能使用或打出手牌；2.弃置两张牌（不足全弃）。", 
 
   ["@os_ex__strategy"] = "策",
   ["#os_ex__yuzhang"] = "御嶂：你可弃1枚“策”，跳过 %arg",
   ["#os_ex__yuzhang-ask"] = "御嶂：你可弃1枚“策”，选择一项，令 %dest 执行",
-  ["os_ex__yuzhang_disable"] = "令其本回合不能再使用或打出手牌",
-  ["os_ex__yuzhang_discard"] = "其弃置两张牌",
+  ["os_ex__yuzhang_disable"] = "令%dest本回合不能再使用或打出手牌",
+  ["os_ex__yuzhang_discard"] = "%dest弃置两张牌",
 
   ["$os_ex__jingce1"] = "方策精详，有备无患。",
   ["$os_ex__jingce2"] = "精兵拒敌，策守如山。",
@@ -970,7 +957,6 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
       local use = e.data[1]
       return use.from == player.id and use.card.trueName == "slash" 
     end, Player.HistoryTurn)
-    --player.room.logic:dumpEventStack(true)
     return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id --就是UseCard
   end,
   on_cost = function(self, event, target, player, data)

@@ -4446,7 +4446,7 @@ local os__jinglue_do = fk.CreateTriggerSkill{
           return false
         end
       end
-      return mark[1] == target.id and mark[2] == player.id
+      return mark and mark[1] == target.id and mark[2] == player.id
     elseif data.to == Player.NotActive and target:getMark("_os__jinglue_now-" .. player.id) ~= 0 then
       for _, id in ipairs(target:getMark("_os__jinglue_now-" .. player.id)) do
         if table.contains({Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}, player.room:getCardArea(id)) then
