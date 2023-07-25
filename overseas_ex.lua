@@ -310,11 +310,11 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self.name) or player.phase ~= Player.Play then return false end 
-    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
+    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
       local use = e.data[1]
       return use.from == player.id
     end, Player.HistoryPhase)
-    return #filterdEvents >= player.hp and filterdEvents[player.hp].id == player.room.logic:getCurrentEvent().id
+    return #events >= player.hp and events[player.hp].id == player.room.logic:getCurrentEvent().id
   end,
   on_use = function(self, event, target, player, data)
     local invoke = false
@@ -399,10 +399,10 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
 local os_ex__yuzhang_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__yuzhang_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 --and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
 }
 
@@ -415,7 +415,7 @@ Fk:loadTranslationTable{
   ["os_ex__jingce"] = "精策",
   [":os_ex__jingce"] = "当你出牌阶段使用的第X张牌结算结束后（X为你的体力值），你可摸两张牌，然后若这不是你此阶段第一次摸牌或此回合你已造成过伤害，你获得1枚“策”。",
   ["os_ex__yuzhang"] = "御嶂",
-  [":os_ex__yuzhang"] = "①你可弃1枚“策”，跳过一个阶段。②当你受到伤害后，你可弃1枚“策”并选择一项，令伤害来源执行：1.本回合不能使用或打出手牌；2.弃置两张牌（不足全弃）。", 
+  [":os_ex__yuzhang"] = "①你可弃1枚“策”，跳过一个阶段。②当你受到伤害后，你可弃1枚“策”并选择一项，令伤害来源执行：1.本回合不能使用或打出手牌；2.弃置两张牌。", 
 
   ["@os_ex__strategy"] = "策",
   ["#os_ex__yuzhang"] = "御嶂：你可弃1枚“策”，跳过 %arg",
@@ -953,11 +953,11 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self.name) or data.card.trueName ~= "slash" then return false end
-    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
+    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
       local use = e.data[1]
       return use.from == player.id and use.card.trueName == "slash" 
     end, Player.HistoryTurn)
-    return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id --就是UseCard
+    return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id --就是UseCard
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__qingxi::" .. data.to)

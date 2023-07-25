@@ -1280,10 +1280,10 @@ local os__xiongjun = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self.name) then return false end
-    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+    local events = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
       return e.data[1].from == player
     end, Player.HistoryTurn)
-    return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
+    return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
   end,
   on_use = function(self, event, target, player, data)
     for _, p in ipairs(player.room:getAlivePlayers()) do
@@ -1440,10 +1440,10 @@ local os__zhengrong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
       if event == fk.Damage then
-        local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+        local events = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
           return e.data[1].from == player  --local damage = e.data[1]
         end, Player.HistoryPhase)
-        return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
+        return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
       else
         if player:getMark("_os__zhengrong_card_able") > 0 then
           player.room:setPlayerMark(player, "_os__zhengrong_card_able", 0)
@@ -3549,7 +3549,7 @@ local os__jiekuang = fk.CreateTriggerSkill{
     if event == fk.TargetConfirmed then
       return player:hasSkill(self.name) and target.hp < player.hp and player:usedSkillTimes(self.name) < 1 and data.from ~= player.id and #AimGroup:getAllTargets(data.tos) == 1 
       and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and table.every(player.room.alive_players, function(p)
-        return p.hp > 0 --旧周泰？
+        return not p.dying
       end)
     else
       return data.card and (data.extra_data or {}).os__jiekuangUser == player.id and not player:prohibitUse(Fk:cloneCard(data.card.name)) and not player:isProhibited(target, Fk:cloneCard(data.card.name))

@@ -208,16 +208,16 @@ local os__yingjia = fk.CreateTriggerSkill{
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) or data.to ~= Player.NotActive then return false end
-    local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
+    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
       local use = e.data[1]
       return use.from == player.id and use.card.type == Card.TypeTrick
     end, Player.HistoryTurn)
-    if #filterdEvents > 0 then
+    if #events > 0 then
       local usedCardNames = {}     
-      table.forEach(filterdEvents, function(e)
+      table.forEach(events, function(e)
         table.insertIfNeed(usedCardNames, e.data[1].card.name)
       end)
-      return #filterdEvents > #usedCardNames
+      return #events > #usedCardNames
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -914,10 +914,10 @@ local os__jieyu = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       return player.phase == Player.Finish
     else
-      local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
+      local events = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
         return e.data[1].to == player
       end, Player.HistoryRound)
-      return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
+      return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
     end
   end,
   on_use = function(self, event, target, player, data)

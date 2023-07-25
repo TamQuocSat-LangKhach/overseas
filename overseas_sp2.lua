@@ -1771,13 +1771,13 @@ local os__gongsun = fk.CreateTriggerSkill{
 local os__gongsun_prohibit = fk.CreateProhibitSkill{
   name = "#os__gongsun_prohibit",
   prohibit_use = function(self, player, card)
-    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), "log_" .. card:getSuitString()) and table.contains(player.player_cards[Player.Hand], card.id)
+    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), card:getSuitString(true)) and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_response = function(self, player, card)
-    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), "log_" .. card:getSuitString()) and table.contains(player.player_cards[Player.Hand], card.id)
+    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), card:getSuitString(true)) and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   prohibit_discard = function(self, player, card)
-    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), "log_" .. card:getSuitString()) and table.contains(player.player_cards[Player.Hand], card.id)
+    return type(player:getMark("@os__gongsun")) == "table" and table.contains(player:getMark("@os__gongsun"), card:getSuitString(true)) and table.contains(player.player_cards[Player.Hand], card.id)
   end,
 }
 
@@ -3145,11 +3145,11 @@ local os__gezhi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) or player.phase ~= Player.Play then return false end
     if event == fk.CardUsing then
-      local filterdEvents = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
+      local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
         local use = e.data[1]
         return use.from == player.id and use.card.type == data.card.type
       end, Player.HistoryTurn)
-      return #filterdEvents == 1 and filterdEvents[1].id == player.room.logic:getCurrentEvent().id
+      return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
     else
       if player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 then return false end
       for _, p in ipairs(player.room.alive_players) do
@@ -3571,7 +3571,7 @@ local os__jichou = fk.CreateActiveSkill{
       if success then
         player:addSkillUseHistory(choice) --呃
         local card = Fk.skills["os__jichou_vs"]:viewAs(dat.cards)
-        local use = { ---@type CardUseStruct
+        local use = {
           from = effect.from,
           tos = table.map(dat.targets, function(e) return {e} end),
           card = card,
@@ -3716,7 +3716,7 @@ local os__jilun = fk.CreateTriggerSkill{ --机论的获得技能
       local success, dat = room:askForUseViewAsSkill(player, "os__jilun_vs", "#os__jilun-vs", false)
       if success then
         local card = Fk.skills["os__jilun_vs"]:viewAs(dat.cards)
-        local use = { ---@type CardUseStruct
+        local use = {
           from = player.id,
           tos = table.map(dat.targets, function(e) return {e} end),
           card = card,
@@ -4357,7 +4357,7 @@ Fk:addSkill(os__zhanyi_basic)
 Fk:loadTranslationTable{
   ["os__zhuling"] = "朱灵",
   ["os__zhanyi"] = "战意",
-  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被【无懈可击】抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌（不足则全弃），你选择其中一张获得之。<br /><font color='red'>（注：酒杀2滴，不是bug）</font>",
+  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被【无懈可击】抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：酒杀2滴，不是bug）</font>",
 
   ["@os__zhanyi-phase"] = "战意",
   ["#os__zhanyi_buff"] = "战意",
