@@ -242,7 +242,9 @@ local os__cuorui = fk.CreateTriggerSkill{
         num = num > 5 and 5 or num
     player:drawCards(num, self.name)
     player:skip(Player.Judge)
-    if player:getMark("_os__cuorui_invoked") > 0 then
+    room:addPlayerMark(player, "@@os__cuorui")
+    player:throwAllCards("j")
+    if player:getMark("@@os__cuorui") > 1 then
       local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id
       end), 1, 1, "#os__cuorui-target", self.name, true)
@@ -254,9 +256,15 @@ local os__cuorui = fk.CreateTriggerSkill{
         skillName = self.name,
       }
     end
-    room:addPlayerMark(player, "_os__cuorui_invoked", 1)
   end,
 }
+local os__cuorui_prohibit = fk.CreateProhibitSkill{
+  name = "#os__cuorui_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return to:getMark("@@os__cuorui") > 0 and card.sub_type == Card.SubtypeDelayedTrick
+  end,
+}
+os__cuorui:addRelatedSkill(os__cuorui_prohibit)
 
 local os__liewei = fk.CreateTriggerSkill{
   name = "os__liewei",
@@ -288,6 +296,7 @@ Fk:loadTranslationTable{
   ["os__liewei_draw"] = "摸两张牌",
   ["os__liewei_cuorui"] = "令〖挫锐〗于此局游戏内的发动次数上限+1",
   ["#os__cuorui-target"] = "挫锐：你可对一名其他角色造成1点伤害",
+  ["@@os__cuorui"] = "挫锐",
 
   ["$os__cuorui1"] = "区区乌合之众，如何困得住我？！",
   ["$os__cuorui2"] = "今日就让你见识见识老牛的厉害！",

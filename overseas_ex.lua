@@ -126,12 +126,23 @@ local os_ex__polu = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and ((data.damage and data.damage.from and data.damage.from.kingdom == "wu") or target.kingdom == "wu")
   end,
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    if target.kingdom == "wu" then
+      self:doCost(event, target, player, data)
+    end
+    if self.cancel_cost then return false end
+    if data.damage and data.damage.from and data.damage.from.kingdom == "wu" then
+      self:doCost(event, target, player, data)
+    end
+  end,
   on_cost = function(self, event, target, player, data)
     local targets = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, function(p) return p.id end), 1, 99, "#os_ex__polu:::" .. player:usedSkillTimes(self.name, Player.HistoryGame) + 1, self.name, true)
     if #targets > 0 then
       self.cost_data = targets
       return true
     end
+    self.cancel_cost = true
   end,
   on_use = function(self, event, target, player, data)
     local targets = self.cost_data

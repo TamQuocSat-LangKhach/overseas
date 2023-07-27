@@ -117,14 +117,16 @@ local os__wuhun = fk.CreateTriggerSkill{
       }
       room:judge(judge)
       if judge.card.name == "peach" or judge.card.name == "god_salvation" then return false end
-      local targets = room:askForChoosePlayers(player, table.map(
+      local availableTargets = table.map(
         table.filter(player.room:getOtherPlayers(player), function(p)
           return (p:getMark("@os__nightmare") > 0)
         end),
         function(p)
           return p.id
         end
-      ), 1, 99, "#os__wuhun-targets", self.name, false)
+      )
+      if #availableTargets == 0 then return false end
+      local targets = room:askForChoosePlayers(player, availableTargets, 1, 99, "#os__wuhun-targets", self.name, false)
       if #targets > 0 then
         room:sortPlayersByAction(targets)
         for _, id in ipairs(targets) do
