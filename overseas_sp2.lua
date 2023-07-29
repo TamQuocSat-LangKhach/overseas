@@ -4400,7 +4400,7 @@ local os__jinglue = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and table.every(Fk:currentRoom().alive_players, function(p)
       return table.every(p:getCardIds("ej"), function(id)
-        return Fk:getCardById(id):getMark("@@os__sishi") == 0
+        return Fk:getCardById(id):getMark("_os__sishi") == 0
       end)
     end)
   end,
@@ -4418,7 +4418,7 @@ local os__jinglue = fk.CreateActiveSkill{
     cids = room:askForGuanxing(player, cids, nil, {1, 1}, self.name, true, {target.general, "os__jinglueDo"}).bottom
     if #cids > 0 then
       local cid = cids[1]
-      room:setCardMark(Fk:getCardById(cid), "@@os__sishi", {target.id, player.id})
+      room:setCardMark(Fk:getCardById(cid), "_os__sishi", {target.id, player.id})
       local mark_name = "_os__jinglue_now-" .. tostring(player.id)
       record = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
       table.insertIfNeed(record, cid)
@@ -4438,10 +4438,10 @@ local os__jinglue_do = fk.CreateTriggerSkill{
     local mark
     if event == fk.CardUsing then
       for _, id in ipairs(data.card:isVirtual() and data.card.subcards or {data.card.id}) do
-        if Fk:getCardById(id):getMark("@@os__sishi") ~= 0 then
+        if Fk:getCardById(id):getMark("_os__sishi") ~= 0 then
           if not mark then
-            mark = Fk:getCardById(id):getMark("@@os__sishi")
-          elseif mark ~= Fk:getCardById(id):getMark("@@os__sishi") then
+            mark = Fk:getCardById(id):getMark("_os__sishi")
+          elseif mark ~= Fk:getCardById(id):getMark("_os__sishi") then
             return false
           end
         else
@@ -4473,7 +4473,7 @@ local os__jinglue_do = fk.CreateTriggerSkill{
         local id = mark[i]
         if table.contains({Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}, room:getCardArea(id)) then
           table.remove(mark, i)
-          room:setCardMark(Fk:getCardById(id), "@@os__sishi", 0)
+          room:setCardMark(Fk:getCardById(id), "_os__sishi", 0)
           dummy:addSubcard(id)
         end
       end
@@ -4527,7 +4527,6 @@ Fk:loadTranslationTable{
   ["os__shanli"] = "擅立",
   [":os__shanli"] = "觉醒技，准备阶段，若你对至少两名角色发动过〖景略〗，并且〖败移〗已发动，你减1点体力上限并选择一名角色，你从随机三个主公技中选择一个令其获得。",
 
-  ["@@os__sishi"] = "死士",
   ["os__jinglueDo"] = "“死士”",
   ["#os__jinglue_do"] = "景略",
   ["#os__shanli-ask"] = "擅立：选择一名角色，令其获得一个主公技",
