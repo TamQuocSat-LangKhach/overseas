@@ -42,30 +42,26 @@ os_ex__paoxiao:addRelatedSkill(os_ex__paoxiaoAudio)
 local os_ex__xuhe = fk.CreateTriggerSkill{
   name = "os_ex__xuhe",
   anim_type = "offensive",
-  events = {fk.CardUseFinished, fk.DamageCaused},
+  events = {fk.CardEffectCancelledOut, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if event == fk.CardUseFinished then
-      return player:hasSkill(self.name) and
-        data.card.name == "jink" and data.toCard and data.toCard.trueName == "slash" and
-        data.responseToEvent and data.responseToEvent.from == player.id and
-        not player:isNude()
-    else
-      if target == player and data.to:getMark("@@os_ex__xuhe-turn") > 0 then
-        local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-        return parentUseData and (parentUseData.data[1].extra_data or {}).os_ex__xuheUser == player.id
-      end
+    if event == fk.CardEffectCancelledOut then
+      return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
+    elseif target == player and data.to:getMark("@@os_ex__xuhe-turn") > 0 then
+      local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      return parentUseData and (parentUseData.data[1].extra_data or {}).os_ex__xuheUser == player.id
     end
   end,
   on_cost = function(self, event, target, player, data)
-    if event == fk.CardUseFinished then
-      return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__xuhe:" .. target.id)
+    if event == fk.CardEffectCancelledOut then
+      return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__xuhe:" .. data.to)
     else
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.CardUseFinished then
+    if event == fk.CardEffectCancelledOut then
+      local target = room:getPlayerById(data.to)
       local choice = room:askForChoice(target, {"os_ex__xuhe_dmg", "os_ex__xuhe_next"}, self.name, "#os_ex__xuhe-ask:" .. player.id)
       if choice == "os_ex__xuhe_dmg" then
         room:damage{

@@ -3973,6 +3973,46 @@ local os__queshi = fk.CreateTriggerSkill{
     end
     if moonSpear and not player:getEquipment(Card.SubtypeWeapon) then player.room:moveCardTo(moonSpear, Card.PlayerEquip, player, fk.ReasonJustMove, self.name) end
   end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local hold_areas = {Card.PlayerEquip, Card.Processing, Card.Void, Card.PlayerHand}
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if not table.contains(hold_areas, move.toArea) then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id).name == "moon_spear" then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
+          end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#destructDerivedCards",
+        card = ids,
+      }
+    end
+    table.insertTable(data, mirror_moves)
+  end,
 }
 
 os__zhaoxiang:addSkill(os__fanghun)

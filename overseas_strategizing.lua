@@ -203,6 +203,49 @@ local os__miaolue = fk.CreateTriggerSkill{
     end
   end,
 }
+local os__miaolue_destruct = fk.CreateTriggerSkill{
+  name = "#os__miaolue_destruct",
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if not table.contains(hold_areas, move.toArea) then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id).name == "underhanding" then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
+          end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#destructDerivedCards",
+        card = ids,
+      }
+    end
+    table.insertTable(data, mirror_moves)
+  end,
+}
+os__miaolue:addRelatedSkill(os__miaolue_destruct)
 local os__yingjia = fk.CreateTriggerSkill{
   name = "os__yingjia",
   events = {fk.EventPhaseChanging},
@@ -306,15 +349,49 @@ local os__shengxi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PreCardUse, fk.Damage},
+  refresh_events = {fk.PreCardUse, fk.Damage, fk.BeforeCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and player.phase ~= Player.NotActive
+    return event == fk.BeforeCardsMove or (player:hasSkill(self.name, true) and player.phase ~= Player.NotActive)
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.PreCardUse then
       player.room:addPlayerMark(player, "_os__shengxi_use-turn", 1)
-    else
+    elseif event == fk.Damage then
       player.room:addPlayerMark(player, "_os__shengxi_damage-turn", 1)
+    else
+      local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if not table.contains(hold_areas, move.toArea) then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id).name == "redistribute" then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
+          end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#destructDerivedCards",
+        card = ids,
+      }
+    end
+    table.insertTable(data, mirror_moves)
     end
   end,
 }
@@ -577,7 +654,49 @@ local os__weipo = fk.CreateActiveSkill{
     end
   end,
 }
-
+local os__weipo_destruct = fk.CreateTriggerSkill{
+  name = "#os__weipo_destruct",
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if not table.contains(hold_areas, move.toArea) then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id).name == "enemy_at_the_gates" then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
+          end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#destructDerivedCards",
+        card = ids,
+      }
+    end
+    table.insertTable(data, mirror_moves)
+  end,
+}
+os__weipo:addRelatedSkill(os__weipo_destruct)
 local os__chenshi = fk.CreateTriggerSkill{
   name = "os__chenshi",
   anim_type = "control",
@@ -1418,15 +1537,16 @@ local os__yilie = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.CardUseFinished, fk.TargetSpecified},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.CardUseFinished then
-      local use = data
-      if use.card.name == "jink" and use.toCard and use.toCard.trueName == "slash" and 
-      player:getMark("@os__yilie-phase") ~= 0 and string.find(player:getMark("@os__yilie-phase"), "draw") then
-        local effect = use.responseToEvent
-        return effect.from == player.id
-      end
+  
+}
+local os__yilie_do = fk.CreateTriggerSkill{
+  name = "#os__yilie_do",
+  anim_type = "drawcard",
+  events = {fk.CardEffectCancelledOut, fk.TargetSpecified},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.CardEffectCancelledOut then
+      return target == player and player:getMark("@os__yilie-phase") ~= 0 and string.find(player:getMark("@os__yilie-phase"), "draw") and data.card.trueName == "slash"
     else
       if target == player and player:hasSkill(self.name) and
       data.card.trueName == "slash" and 
@@ -1436,7 +1556,7 @@ local os__yilie = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
   end,
 }
@@ -1448,6 +1568,8 @@ local os__yilieBuff = fk.CreateTargetModSkill{
     end
   end,
 }
+os__yilie:addRelatedSkill(os__yilieBuff)
+os__yilie:addRelatedSkill(os__yilie_do)
 
 local os__fenming = fk.CreateTriggerSkill{
   name = "os__fenming",
@@ -1487,7 +1609,6 @@ local os__fenming = fk.CreateTriggerSkill{
     end
   end,
 }
-os__yilie:addRelatedSkill(os__yilieBuff)
 
 os__chenwudongxi:addSkill(os__yilie)
 os__chenwudongxi:addSkill(os__fenming)
@@ -1505,6 +1626,7 @@ Fk:loadTranslationTable{
   ["yl_times_draw"] = "摸牌 多出杀",
   ["yl_times"] = "多出杀",
   ["yl_draw"] = "摸牌",
+  ["#os__yilie_do"] = "毅烈",
   ["beishui_os__yilie"] = "背水：你失去1点体力",
   ["#os__fenming-ask"] = "你可对一名角色发动“奋命”",
   ["beishui_os__fenming"] = "背水：你进入连环状态",

@@ -692,6 +692,47 @@ local os__sidao = fk.CreateTriggerSkill{
       })
     end
   end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local hold_areas = {Card.PlayerEquip, Card.Processing, Card.Void, Card.PlayerHand}
+    local card_names = {"celestial_calabash", "horsetail_whisk", "talisman"}
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if not table.contains(hold_areas, move.toArea) then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if table.contains(card_names, Fk:getCardById(id).name) then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
+          end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#destructDerivedCards",
+        card = ids,
+      }
+    end
+    table.insertTable(data, mirror_moves)
+  end,
 }
 
 os__gexuan:addSkill(os__danfa)
@@ -1875,7 +1916,9 @@ local os__jiexun = fk.CreateTriggerSkill{
         return Fk:getCardById(id).suit == suit
       end)
     end
-    room:drawCards(target, num, self.name)
+    if num > 0 then
+      room:drawCards(target, num, self.name)
+    end
     num = player:getMark("@os__jiexun_update") == 0 and player:getMark("@os__jiexun") or player:getMark("@os__jiexun_update")
     if num > 0 then
       room:askForDiscard(target, num, num, true, self.name, false)

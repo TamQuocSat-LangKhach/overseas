@@ -5,54 +5,6 @@ Fk:loadTranslationTable{
   ["overseas_token"] = "国际服衍生牌",
 }
 
-local autoDestructEquips = {"celestial_calabash", "horsetail_whisk", "talisman", "moon_spear"}
-local autoDestructTricks = {"underhanding", "redistribute", "enemy_at_the_gates"}
-local autoDestruct = fk.CreateTriggerSkill{
-  name = "#auto_destruct",
-  global = true,
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local equip_hold_areas = {Card.PlayerEquip, Card.Processing, Card.Void} --By 心变佬！
-    local trick_hold_areas = {Card.PlayerHand, Card.Processing, Card.Void}
-    local mirror_moves = {}
-    local ids = {}
-    for _, move in ipairs(data) do
-      local move_info = {}
-      local mirror_info = {}
-      for _, info in ipairs(move.moveInfo) do
-        local id = info.cardId
-        local name = Fk:getCardById(id).name
-        if (table.contains(autoDestructEquips, name) and not table.contains(equip_hold_areas, move.toArea))
-        or (table.contains(autoDestructTricks, name) and not table.contains(trick_hold_areas, move.toArea)) then
-          table.insert(mirror_info, info)
-          table.insert(ids, id)
-        else
-          table.insert(move_info, info)
-        end
-      end
-      if #mirror_info > 0 then
-        move.moveInfo = move_info
-        local mirror_move = table.clone(move)
-        mirror_move.to = nil
-        mirror_move.toArea = Card.Void
-        mirror_move.moveInfo = mirror_info
-        table.insert(mirror_moves, mirror_move)
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#destructDerivedCards",
-        card = ids,
-      }
-    end
-    table.insertTable(data, mirror_moves)
-  end,
-}
-Fk:addSkill(autoDestruct)
-
 local celestialCalabashSkill = fk.CreateTriggerSkill{
   name = "#celestial_calabash_skill",
   attached_equip = "celestial_calabash",
