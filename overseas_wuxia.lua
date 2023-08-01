@@ -158,7 +158,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
       if target:isAlive() then
         local os__chuanshuRecord = type(target:getMark("@os__chuanshu")) == "table" and target:getMark("@os__chuanshu") or {}
         table.removeOne(os__chuanshuRecord, player:getMark("_os__chuanshu")[2])
-        os__chuanshuRecord = os__chuanshuRecord == {} and 0 or os__chuanshuRecord
+        os__chuanshuRecord = #os__chuanshuRecord == 0 and 0 or os__chuanshuRecord
         room:setPlayerMark(target, "@os__chuanshu", os__chuanshuRecord)
       end
       room:setPlayerMark(player, "_os__chuanshu", 0)
