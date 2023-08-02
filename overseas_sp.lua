@@ -727,7 +727,7 @@ local os__zhenxi = fk.CreateTriggerSkill{
     local choices = {}
     local room = player.room
     local target = room:getPlayerById(data.to)
-    if target:getHandcardNum() >= player:distanceTo(target) then
+    if not target:isKongcheng() then
       table.insert(choices, "os__zhenxi_discard:::" .. player:distanceTo(target))
     end
     if table.find(player.room.alive_players, function(p)
@@ -752,8 +752,8 @@ local os__zhenxi = fk.CreateTriggerSkill{
     local room = player.room
     local target = room:getPlayerById(data.to)
     local choice = self.cost_data
-    local n = player:distanceTo(target)
-    if choice ~= "os__zhenxi_move" and target:getHandcardNum() >= player:distanceTo(target) then
+    if choice ~= "os__zhenxi_move" and not target:isKongcheng() then
+      local n = math.min(player:distanceTo(target), target:getHandcardNum())
       local cards = room:askForCardsChosen(player, target, n, n, "h", self.name)
       room:throwCard(cards, self.name, target, player)
     end
@@ -807,7 +807,7 @@ os__tianyu:addSkill(os__yangshi)
 Fk:loadTranslationTable{
   ["os__tianyu"] = "田豫",
   ["os__zhenxi"] = "震袭",
-  [":os__zhenxi"] = "每回合限一次，当你使用【杀】指定目标后，你可选择一项：1.弃置其X张手牌（X为你至其的距离）；2.移动其场上的一张牌。若其体力值大于你或为全场最高，则你可背水。",
+  [":os__zhenxi"] = "每回合限一次，当你使用【杀】指定目标后，你可选择一项：1.弃置其X张手牌（X为你至其的距离，不足则全弃）；2.移动其场上的一张牌。若其体力值大于你或为全场最高，则你可背水。",
   ["os__yangshi"] = "扬师",
   [":os__yangshi"] = "锁定技，当你受到伤害后，你的攻击范围+1，若所有其他角色均在你的攻击范围内，则改为从牌堆获得一张【杀】。",
 
