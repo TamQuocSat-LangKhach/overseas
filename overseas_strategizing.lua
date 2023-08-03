@@ -881,7 +881,7 @@ local os__mouli = fk.CreateViewAsSkill{
         table.insert(cardNames, name)
       end
     end
-    return UI.ComboBox { choices = cardNames } --, all_choices = allCardNames }
+    return UI.ComboBox { choices = cardNames , all_choices = allCardNames }
   end,
   view_as = function(self)
     local choice = self.interaction.data

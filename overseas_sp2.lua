@@ -4154,7 +4154,6 @@ Fk:loadTranslationTable{
   ["@os__shoushou"] = "收绶 至你",
 }
 
---[[
 local qiaorui = General(extension, "qiaorui", "qun", 5)
 
 local os__xiawei = fk.CreateTriggerSkill{
@@ -4281,7 +4280,7 @@ Fk:loadTranslationTable{
   ["$os__qiongji1"] = "吾计虽穷，势不可衰！",
   ["$os__qiongji2"] = "战在其势，何妨技穷？",
   ["~qiaorui"] = "曹贼……安敢犯仲国之威……",
---]]
+}
 
 local os__zhuling = General(extension, "os__zhuling", "wei", 4)
 

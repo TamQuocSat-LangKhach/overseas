@@ -841,7 +841,7 @@ local os__moukui = fk.CreateTriggerSkill{
     if target:isNude() then
       table.remove(choices, 2)
     end
-    local choice = room:askForChoice(player, choices, self.name)--, nil, false, all_choices)
+    local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -1484,7 +1484,7 @@ local os__zhengrong = fk.CreateTriggerSkill{
     local room = player.room
     local target = room:getPlayerById(self.cost_data)
     local card = room:askForCardChosen(player, target, "he", self.name)
-    player:addToPile("os__glory", card, false, self.name)
+    player:addToPile("os__glory", card, true, self.name) --原为false
   end,
 
   refresh_events = {fk.TargetSpecified},
