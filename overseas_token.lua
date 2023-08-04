@@ -238,7 +238,7 @@ local underhandingExclude = fk.CreateMaxCardsSkill{
   name = "underhanding_exclude",
   global = true,
   exclude_from = function(self, player, card)
-    return card.name == "underhanding"
+    return card and card.name == "underhanding"
   end,
 }
 Fk:addSkill(underhandingExclude)
