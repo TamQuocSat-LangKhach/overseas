@@ -2262,10 +2262,13 @@ local os__yiju = fk.CreateTriggerSkill{
   name = "os__yiju",
   events = {fk.DamageInflicted},
   anim_type = "negative",
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and #player:getPile("os__revelation") > 0
   end,
-  on_cost = function() return true end,
+  on_cost = function(self, event, target, player, data)
+    return data.damage > 0
+  end,
   on_use = function(self, event, target, player, data)
     player.room:moveCardTo(Fk:getCardById(player:getPile("os__revelation")[1]), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__revelation")
     data.damage = data.damage + 1
@@ -2393,6 +2396,7 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
   name = "#os__zuhuo_conjure",
   mute = true,
   events = {fk.EventPhaseChanging, fk.DamageInflicted},
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventPhaseChanging then
       return player:getMark("@os__zuhuo") ~= 0 and string.sub(player:getMark("@os__zuhuo"), -1) == "0" and data.to == Player.NotActive
@@ -2400,7 +2404,6 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
       return target == player and player:getMark("@os__zuhuo_defend") ~= 0
     end
   end,
-  on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseChanging then
@@ -4211,11 +4214,11 @@ local os__xiawei = fk.CreateTriggerSkill{
 }
 local os__xiawei_presume = fk.CreateTriggerSkill{
   name = "#os__xiawei_presume",
-  events = {fk.EventPhaseChanging},
+  events = {fk.EventPhaseStart},
   anim_type = "negative",
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and data.to == Player.NotActive and player:getMark("@os__xiawei_presume-turn") > 0
+    return player == target and player.phase == Player.Finish and player:getMark("@os__xiawei_presume-turn") > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -4263,8 +4266,8 @@ qiaorui:addSkill(os__qiongji)
 Fk:loadTranslationTable{
   ["qiaorui"] = "桥蕤",
   ["os__xiawei"] = "狭威",
-  [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。" ..
-    "<br/><font color='grey'>#\"<b>妄行</b>\"：选择X的值（1至4）执行相应效果，然后此回合结束时，你需弃置X张牌，否则减1点体力上限。",
+  [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。<br /><font color='grey'>（注：暂时bug，木马牌【无懈】无法使用）</font>" ..
+    "<br/><font color='grey'>#\"<b>妄行</b>\"：选择X的值（1至4）执行相应效果，然后结束阶段开始时，你需弃置X张牌，否则减1点体力上限。", --回合结束时
   ["os__qiongji"] = "穷技",
   [":os__qiongji"] = "锁定技，当你受到伤害时，若你没有“威”，伤害值+1；每回合限一次，当你使用或打出“威”时，你摸一张牌。",
 
