@@ -1545,6 +1545,7 @@ local os__hongju = fk.CreateTriggerSkill{
           moveReason = fk.ReasonExchange,
           proposer = player.id,
           skillName = self.name,
+          moveVisible = true,
         },
         {
         ids = cards1,
@@ -1556,6 +1557,7 @@ local os__hongju = fk.CreateTriggerSkill{
           proposer = player.id,
           specialName = "os__glory",
           skillName = self.name,
+          moveVisible = true,
         }
       )
     end
