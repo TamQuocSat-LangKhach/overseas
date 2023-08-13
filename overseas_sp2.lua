@@ -3642,7 +3642,7 @@ local os__jichou = fk.CreateViewAsSkill{
     local os__jichouRecord = type(Self:getMark("@$os__jichou")) == "table" and Self:getMark("@$os__jichou") or {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
-      if card:isCommonTrick() and not table.contains(allCardNames, card.name) and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+      if card:isCommonTrick() and not table.contains(allCardNames, card.name) and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         table.insert(allCardNames, card.name)
       end
     end
@@ -3668,7 +3668,7 @@ local os__jichou = fk.CreateViewAsSkill{
     if player:usedSkillTimes(self.name) > 0 then return false end
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
-      if card:isCommonTrick() and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(player)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+      if card:isCommonTrick() and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and player:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         return true
       end
     end
@@ -3679,7 +3679,7 @@ local os__jichou = fk.CreateViewAsSkill{
     if player:usedSkillTimes(self.name) > 0 then return false end
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
-      if card:isCommonTrick() and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and card.skill:canUse(player)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+      if card:isCommonTrick() and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not player:prohibitUse(card) and ((Fk.currentResponsePattern == nil and player:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         return true
       end
     end
@@ -3746,7 +3746,7 @@ local os__jilun = fk.CreateTriggerSkill{ --机论的获得技能
     local os__jilunRecord = type(player:getMark("@$os__jilun")) == "table" and player:getMark("@$os__jilun") or {}
     for _, name in ipairs(os__jilunRecord) do
       local card = Fk:cloneCard(name)
-      if not player:prohibitUse(card) and card.skill:canUse(player) then
+      if not player:prohibitUse(card) and player:canUse(card) then
         table.insert(choices, 2, "os__jilun_use")
         break
       end
@@ -3789,7 +3789,7 @@ local os__jilun_vs = fk.CreateViewAsSkill{
     for _, name in ipairs(os__jilunRecord) do
       local card = Fk:cloneCard(name)
       card.skillName = self.name
-      if not Self:prohibitUse(card) and card.skill:canUse(Self) then
+      if not Self:prohibitUse(card) and Self:canUse(card) then
         table.insert(allCardNames, name)
       end
     end
@@ -3889,7 +3889,7 @@ local os__zhiqu = fk.CreateTriggerSkill{
           extraUse = true,
         })
       end
-      if wrestle and card.type == Card.TypeTrick and card.skill:canUse(player) and not player:prohibitUse(card) then --大有问题
+      if wrestle and card.type == Card.TypeTrick and player:canUse(card) and not player:prohibitUse(card) then --大有问题
         local targets = {}
         if (table.contains({"savage_assault", "archery_attack", "duel", "enemy_at_the_gates", "drowning", "unexpectation", "raid_and_frontal_attack"}, card.name) or
           (table.contains({"snatch", "dismantlement", "chasing_near"}, card.name) and not to:isAllNude()) or 
@@ -4321,7 +4321,7 @@ local os__zhanyi_basic = fk.CreateViewAsSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not card.is_derived and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
+      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not card.is_derived and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
         table.insert(allCardNames, card.name)
       end
     end

@@ -22,13 +22,13 @@ local os__chaofeng = fk.CreateViewAsSkill{
     else
       return false
     end
-    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
+    return (Fk.currentResponsePattern == nil and Self:canUse(c)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
   end,
   interaction = function(self)
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and (card.trueName == "slash" or card.name == "jink") and ((Fk.currentResponsePattern == nil and card.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
+      if not table.contains(allCardNames, card.name) and (card.trueName == "slash" or card.name == "jink") and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
         table.insert(allCardNames, card.name)
       end
     end
@@ -43,7 +43,7 @@ local os__chaofeng = fk.CreateViewAsSkill{
     return c
   end,
   enabled_at_play = function(self, player)
-    return Fk:cloneCard("slash").skill:canUse(player)
+    return player:canUse(Fk:cloneCard("slash"))
   end,
   enabled_at_response = function(self, player)
     return Fk.currentResponsePattern and table.find({"slash", "jink"}, function(name)

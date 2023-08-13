@@ -2879,7 +2879,7 @@ local os__wanwei = fk.CreateTriggerSkill{
       local cids = player:drawCards(1, self.name, "bottom")
       player:showCards(cids)
       local card = Fk:getCardById(cids[1])
-      if card.skill:canUse(player) and not player:prohibitUse(card) then
+      if player:canUse(card) and not player:prohibitUse(card) then
         local cardName = card.name
         local use = room:askForUseCard(player, cardName, ".|.|.|.|.|.|" .. cids[1], "#os__wanwei-use:::" .. card:toLogString(), false)
         if use then
@@ -3736,7 +3736,7 @@ local os__fanghun = fk.CreateViewAsSkill{
     else
       return false
     end
-    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
+    return (Fk.currentResponsePattern == nil and Self:canUse(c)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
   end,
   view_as = function(self, cards)
     if #cards ~= 1 then
