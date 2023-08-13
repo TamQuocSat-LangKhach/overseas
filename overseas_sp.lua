@@ -232,18 +232,17 @@ local os__cuorui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = player:getHandcardNum()
-        for hc, p in ipairs(room:getOtherPlayers(player)) do
-            hc = p:getHandcardNum()
-            if hc > num then
-                num = hc
-            end
+    for hc, p in ipairs(room:getOtherPlayers(player)) do
+        hc = p:getHandcardNum()
+        if hc > num then
+            num = hc
         end
-        num = num - player:getHandcardNum()
-        num = num > 5 and 5 or num
+    end
+    num = num - player:getHandcardNum()
+    num = num > 5 and 5 or num
     player:drawCards(num, self.name)
-    player:skip(Player.Judge)
+    room:abortPlayerArea(player, {Player.JudgeSlot})
     room:addPlayerMark(player, "@@os__cuorui")
-    player:throwAllCards("j")
     if player:getMark("@@os__cuorui") > 1 then
       local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id
@@ -258,13 +257,6 @@ local os__cuorui = fk.CreateTriggerSkill{
     end
   end,
 }
-local os__cuorui_prohibit = fk.CreateProhibitSkill{
-  name = "#os__cuorui_prohibit",
-  is_prohibited = function(self, from, to, card)
-    return to:getMark("@@os__cuorui") > 0 and card.sub_type == Card.SubtypeDelayedTrick
-  end,
-}
-os__cuorui:addRelatedSkill(os__cuorui_prohibit)
 
 local os__liewei = fk.CreateTriggerSkill{
   name = "os__liewei",
@@ -4233,14 +4225,6 @@ Fk:loadTranslationTable{
   ["$os__ruilian1"] = "公若擅进庸肆，必失民心！",
   ["$os__ruilian2"] = "外敛虚进之势，内减弊民之政。",
   ["~yanxiang"] = "若遇明主，或可青史留名……",
-}
-
-Fk:loadTranslationTable{
-  ["os__caohong"] = "曹洪",
-  ["os__yuanhu"] = "援护",
-  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离为1的一名角色区域里的一张牌；防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
-  ["os__juezhu"] = "决助",
-  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
 }
 
 return extension

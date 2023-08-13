@@ -2444,16 +2444,19 @@ local os__fengqi = fk.CreateTriggerSkill{
     local room = player.room
     local cids = room:askForDiscard(player, 1, 1, false, self.name, true, ".|.|spade,club", "#os__fengqi-ask", true)
     if #cids > 0 then
-      self.cost_data = cids
+      local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#os__fengqi-target", self.name, false)
+      self.cost_data = {cids, target[1]}
       return true
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player)
+    room:throwCard(self.cost_data[1], self.name, player)
     local num = room:askForChoice(player, {"1", "2", "3"}, self.name, "#os__fengqi-conjure")
-    room:setPlayerMark(player, "@os__fengqi", num .. "-" .. num)
+    local target = self.cost_data[2]
+    room:setPlayerMark(player, "@os__fengqi", {room:getPlayerById(target).general, num .. "-" .. num})
+    room:setPlayerMark(player, "_os__fengqi", target)
   end,
 }
 local os__fengqi_conjure = fk.CreateTriggerSkill{
@@ -2461,17 +2464,19 @@ local os__fengqi_conjure = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__fengqi") ~= 0 and string.sub(player:getMark("@os__fengqi"), -1) == "0" and data.to == Player.NotActive
+    return player:getMark("@os__fengqi") ~= 0 and string.sub(player:getMark("@os__fengqi")[2], -1) == "0" and data.to == Player.NotActive
   end,
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local nums = string.split(player:getMark("@os__fengqi"), "-")
+    local nums = string.split(player:getMark("@os__fengqi")[2], "-")
     local num = tonumber(nums[1])
+    local target = room:getPlayerById(player:getMark("_os__fengqi"))
     room:notifySkillInvoked(player, "os__fengqi")
     room:broadcastSkillInvoke("os__fengqi")
-    player:drawCards(2 * num, self.name)
+    target:drawCards(2 * num, self.name)
     room:setPlayerMark(player, "@os__fengqi", 0)
+    room:setPlayerMark(player, "_os__fengqi", 0)
   end,
 
   refresh_events = {fk.EventPhaseChanging},
@@ -2480,8 +2485,8 @@ local os__fengqi_conjure = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local nums = string.split(player:getMark("@os__fengqi"), "-")
-    room:setPlayerMark(player, "@os__fengqi", nums[1] .. "-" .. tonumber(nums[2]) - 1)
+    local nums = string.split(player:getMark("@os__fengqi")[2], "-")
+    room:setPlayerMark(player, "@os__fengqi", {player:getMark("@os__fengqi")[1], nums[1] .. "-" .. tonumber(nums[2]) - 1})
   end,
 }
 os__fengqi:addRelatedSkill(os__fengqi_conjure)
@@ -2674,7 +2679,7 @@ Fk:loadTranslationTable{
   "<font color='grey'>#\"<b>布道技能库</b>\"<br/><b>咒护</b>: 出牌阶段结束时，你可弃置一张红色手牌并施法：回复X点体力。<br/>" .. 
   "<b>咒护</b>: 出牌阶段结束时，你可弃置一张红色手牌，选择一名角色并施法：令其回复X点体力。<br/>" ..
   "<b>阻祸</b>: 出牌阶段结束时，你可弃置一张非基本牌并施法：防止你受到的下X次伤害。<br/>" ..
-  "<b>丰祈</b>: 出牌阶段结束时，你可弃置一张黑色手牌并施法：摸2X张牌。<br/>" ..
+  "<b>丰祈</b>: 出牌阶段结束时，你可弃置一张黑色手牌，选择一名角色并施法：其摸2X张牌。<br/>" ..
   "<b>黄巾</b>: 锁定技，当你成为【杀】的目标时，你判定：若结果点数与此【杀】点数差值不大于1，则此【杀】对你无效。<br/>" ..
   "（暂无）<b>鬼门</b>: 锁定技，当你因弃置而失去黑桃牌后，你判定：若结果点数与你弃置的其中一张黑桃牌点数差值不大于1，则对一名其他角色造成2点雷电伤害。<br/>" ..
   "<b>咒诅</b>: 出牌阶段限一次，你可选择一名其他角色并施法：令其弃置X张牌，若牌数不足则全部弃置并对其造成1点雷电伤害。<br/>" ..
@@ -2685,7 +2690,7 @@ Fk:loadTranslationTable{
   ["os__zuhuo"] = "阻祸",
   [":os__zuhuo"] = "出牌阶段结束时，你可弃置一张非基本牌并施法：防止你受到的下X次伤害。",
   ["os__fengqi"] = "丰祈",
-  [":os__fengqi"] = "出牌阶段结束时，你可弃置一张黑色手牌并施法：摸2X张牌。",
+  [":os__fengqi"] = "出牌阶段结束时，你可弃置一张黑色手牌，选择一名角色并施法：其摸2X张牌。",
   ["os__huangjin"] = "黄巾",
   [":os__huangjin"] = "锁定技，当你成为【杀】的目标时，你判定：若结果点数与此【杀】点数差值不大于1，则此【杀】对你无效。",
   ["os__guimen"] = "鬼门",
@@ -2714,7 +2719,8 @@ Fk:loadTranslationTable{
   ["#os__zuhuo_conjure"] = "阻祸",
   ["@os__zuhuo_defend"] = "阻祸防伤",
   ["@os__fengqi"] = "丰祈",
-  ["#os__fengqi-ask"] = "丰祈：你可弃置一张黑色手牌并施法：摸2X张牌",
+  ["#os__fengqi-ask"] = "丰祈：你可弃置一张黑色手牌，点击“确定”后选择一名角色并施法：其摸2X张牌",
+  ["#os__fengqi-target"] = "丰祈：选择一名角色，点击“确定”后施法：其摸2X张牌",
   ["#os__fengqi-conjure"] = "丰祈：施法：摸2X张牌",
   ["#os__fengqi_conjure"] = "丰祈",
   ["#os__guimen-target"] = "鬼门：对一名其他角色造成2点雷电伤害",
@@ -5062,6 +5068,133 @@ Fk:loadTranslationTable{
 
   ["os__niju_plus"] = "%dest拼点牌点数+%arg",
   ["os__niju_minus"] = "%dest拼点牌点数-%arg",
+}
+
+local caohong = General(extension, "os__caohong", "wei", 4)
+
+local os__yuanhu = fk.CreateActiveSkill{
+  name = "os__yuanhu",
+  anim_type = "support",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and #cards == 1 and Fk:currentRoom():getPlayerById(to_select):getEquipment(Fk:getCardById(cards[1]).sub_type) == nil
+  end,
+  on_use = function(self, room, use)
+    if #use.cards ~= 1 then return end
+    local player = room:getPlayerById(use.from)
+    local target = room:getPlayerById(use.tos[1])
+    room:moveCardTo(use.cards, Card.PlayerEquip, target, fk.ReasonPut, self.name, nil, true, player.id)
+    if not target.dead then
+      local cardType = Fk:getCardById(use.cards[1]).sub_type
+      if cardType == Card.SubtypeWeapon then
+        local targets = table.map(table.filter(room.alive_players, function(p)
+          return target:distanceTo(p) == 1 and not p:isAllNude() end), function (p) return p.id
+        end)
+        if #targets > 0 then
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__yuanhu:" .. target.id, self.name, false)[1]
+          local cid = room:askForCardChosen(player, to, "hej", self.name)
+          room:throwCard({cid}, self.name, to, player)
+        end
+      elseif cardType == Card.SubtypeArmor then
+        target:drawCards(1, self.name)
+      else
+        room:recover({
+          who = target,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      if (target.hp <= player.hp or target:getHandcardNum() <= player:getHandcardNum()) and not player.dead then
+        player:drawCards(1, self.name)
+        room:setPlayerMark(player, "_os__yuanhu-turn", 1)
+      end
+    end
+  end,
+}
+local os__yuanhu_finish = fk.CreateTriggerSkill{
+  name = "#os__yuanhu_finish",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("_os__yuanhu-turn") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    player.room:askForUseActiveSkill(player, "os__yuanhu", "#os__yuanhu-trg", true)
+  end,
+  on_use = function(self, event, target, player, data)
+    return false
+  end,
+}
+os__yuanhu:addRelatedSkill(os__yuanhu_finish)
+
+local os__juezhu = fk.CreateActiveSkill{
+  name = "os__juezhu",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) < 1 and (player:getAvailableEquipSlots(Card.SubtypeOffensiveRide) or player:getAvailableEquipSlots(Card.SubtypeDefensiveRide) )
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  interaction = UI.ComboBox{ choices = {"OffensiveRideSlot", "DefensiveRideSlot"} },
+  on_use = function(self, room, use)
+    local choice = self.interaction.data
+    if not choice then return false end
+    local player = room:getPlayerById(use.from)
+    local target = room:getPlayerById(use.tos[1])
+    local slot = choice == "OffensiveRideSlot" and Player.OffensiveRideSlot or Player.DefensiveRideSlot
+    room:abortPlayerArea(player, {slot})
+    room:handleAddLoseSkills(target, "feiying")
+    room:abortPlayerArea(target, {Player.JudgeSlot})
+    room:setPlayerMark(player, "@os__juezhu", target.general)
+    room:setPlayerMark(player, "_os__juezhu", {target.id, slot})
+  end
+}
+local os__juezhu_re = fk.CreateTriggerSkill{
+  name = "#os__juezhu_re",
+  mute = true,
+  events = {fk.Deathed},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("_os__juezhu") ~= 0 and player:getMark("_os__juezhu")[1] == target.id
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("os__juezhu")
+    room:notifySkillInvoked(player, "os__juezhu")
+    room:resumePlayerArea(player, player:getMark("_os__juezhu")[2])
+    room:setPlayerMark(player, "_os__juezhu", 0)
+  end,
+}
+os__juezhu:addRelatedSkill(os__juezhu_re)
+
+caohong:addSkill(os__yuanhu)
+caohong:addSkill(os__juezhu)
+caohong:addRelatedSkill("feiying")
+
+Fk:loadTranslationTable{
+  ["os__caohong"] = "曹洪",
+  ["os__yuanhu"] = "援护",
+  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离为1的一名角色区域里的一张牌；"..
+  "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
+  ["os__juezhu"] = "决助",
+  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
+
+  ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
+  ["@os__juezhu"] = "决助",
 }
 
 return extension
