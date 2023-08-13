@@ -4044,18 +4044,17 @@ local os__huiyuan = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play and table.find(player.room.alive_players, function(p) return not p:isKongcheng() end) then
-      local events = player.room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      player.room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
         local move = e.data[1]
-        return move.toArea == Card.PlayerHand and move.to == player.id
-      end, Player.HistoryPhase)
-      for _, e in ipairs(events) do
-        local move = e.data[1]
-        for _, id in ipairs(move.ids) do
-          if Fk:getCardById(id).type == data.card.type then
-            return false
+        if move.toArea == Card.PlayerHand and move.to == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if Fk:getCardById(id).type == data.card.type then
+              return false
+            end
           end
         end
-      end
+      end, Player.HistoryPhase)
       return true
     end
   end,
