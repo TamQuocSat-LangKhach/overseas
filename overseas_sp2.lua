@@ -5173,8 +5173,6 @@ local os__juezhu_re = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__juezhu")
-    room:notifySkillInvoked(player, "os__juezhu")
     room:resumePlayerArea(player, player:getMark("_os__juezhu")[2])
     room:setPlayerMark(player, "_os__juezhu", 0)
   end,
@@ -5195,6 +5193,13 @@ Fk:loadTranslationTable{
 
   ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
   ["@os__juezhu"] = "决助",
+
+  ["$os__yuanhu1"] = "将军，这件兵器可还趁手？",
+  ["$os__yuanhu2"] = "刀剑无眼，须得小心防护。",
+  ["$os__yuanhu3"] = "宝马配英雄！哈哈哈哈……",
+  ["$os__juezhu1"] = "曹君速上马，洪自断后。",
+  ["$os__juezhu2"] = "天下可无洪，不可无君。",
+  ["~os__caohong"] = "福兮祸所伏……",	
 }
 
 return extension
