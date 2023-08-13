@@ -4930,13 +4930,158 @@ Fk:loadTranslationTable{
   ["distribute_active"] = "分配牌",
 }
 --]]
+
+local caohong = General(extension, "os__caohong", "wei", 4)
+
+local os__yuanhu = fk.CreateActiveSkill{
+  name = "os__yuanhu",
+  anim_type = "support",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and #cards == 1 and Fk:currentRoom():getPlayerById(to_select):hasEmptyEquipSlot(Fk:getCardById(cards[1]).sub_type)
+  end,
+  on_use = function(self, room, use)
+    if #use.cards ~= 1 then return end
+    local player = room:getPlayerById(use.from)
+    local target = room:getPlayerById(use.tos[1])
+    room:moveCardTo(use.cards, Card.PlayerEquip, target, fk.ReasonPut, self.name, nil, true, player.id)
+    if not target.dead then
+      local cardType = Fk:getCardById(use.cards[1]).sub_type
+      if cardType == Card.SubtypeWeapon then
+        local targets = table.map(table.filter(room.alive_players, function(p)
+          return target:distanceTo(p) <= 1 and not p:isAllNude() end), function (p) return p.id
+        end)
+        if #targets > 0 then
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__yuanhu-discard:" .. target.id, self.name, false)[1]
+          to = room:getPlayerById(to)
+          local cid = room:askForCardChosen(player, to, "hej", self.name)
+          room:throwCard({cid}, self.name, to, player)
+        end
+      elseif cardType == Card.SubtypeArmor then
+        target:drawCards(1, self.name)
+      else
+        room:recover({
+          who = target,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      if player.phase == Player.Play and (target.hp <= player.hp or target:getHandcardNum() <= player:getHandcardNum()) and not player.dead then
+        player:drawCards(1, self.name)
+        room:setPlayerMark(player, "_os__yuanhu-turn", 1)
+      end
+    end
+  end,
+}
+local os__yuanhu_finish = fk.CreateTriggerSkill{
+  name = "#os__yuanhu_finish",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("_os__yuanhu-turn") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    player.room:askForUseActiveSkill(player, "os__yuanhu", "#os__yuanhu-trg", true)
+  end,
+  on_use = function(self, event, target, player, data)
+    return false
+  end,
+}
+os__yuanhu:addRelatedSkill(os__yuanhu_finish)
+
+local os__juezhu = fk.CreateActiveSkill{
+  name = "os__juezhu",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) < 1 and (#player:getAvailableEquipSlots(Card.SubtypeOffensiveRide) > 0 or #player:getAvailableEquipSlots(Card.SubtypeDefensiveRide) > 0 )
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  interaction = function()
+    local all_choices = {"OffensiveRideSlot", "DefensiveRideSlot"}
+    local choices = table.clone(all_choices)
+    if #Self:getAvailableEquipSlots(Card.SubtypeDefensiveRide) == 0 then
+      table.remove(choices)
+    end
+    if #Self:getAvailableEquipSlots(Card.SubtypeOffensiveRide) == 0 then
+      table.remove(choices, 1)
+    end
+    return UI.ComboBox{ choices = choices, all_choices = all_choices}
+  end,
+  on_use = function(self, room, use)
+    local choice = self.interaction.data
+    if not choice then return false end
+    local player = room:getPlayerById(use.from)
+    local target = room:getPlayerById(use.tos[1])
+    local slot = choice == "OffensiveRideSlot" and Player.OffensiveRideSlot or Player.DefensiveRideSlot
+    room:abortPlayerArea(player, {slot})
+    room:handleAddLoseSkills(target, "feiying")
+    room:abortPlayerArea(target, {Player.JudgeSlot})
+    room:setPlayerMark(player, "@os__juezhu", target.general)
+    room:setPlayerMark(player, "_os__juezhu", {target.id, slot})
+  end
+}
+local os__juezhu_re = fk.CreateTriggerSkill{
+  name = "#os__juezhu_re",
+  mute = true,
+  events = {fk.Deathed},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("_os__juezhu") ~= 0 and player:getMark("_os__juezhu")[1] == target.id
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:resumePlayerArea(player, player:getMark("_os__juezhu")[2])
+    room:setPlayerMark(player, "_os__juezhu", 0)
+  end,
+}
+os__juezhu:addRelatedSkill(os__juezhu_re)
+
+caohong:addSkill(os__yuanhu)
+caohong:addSkill(os__juezhu)
+caohong:addRelatedSkill("feiying")
+
+Fk:loadTranslationTable{
+  ["os__caohong"] = "曹洪",
+  ["os__yuanhu"] = "援护",
+  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离不大于1的一名角色区域里的一张牌；"..
+  "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你且此时为你的出牌阶段，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
+  ["os__juezhu"] = "决助",
+  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
+
+  ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
+  ["#os__yuanhu-discard"] = "援护：你可以弃置 %src 距离不大于1的一名角色区域内一张牌",
+  ["@os__juezhu"] = "决助",
+
+  ["$os__yuanhu1"] = "将军，这件兵器可还趁手？",
+  ["$os__yuanhu2"] = "刀剑无眼，须得小心防护。",
+  ["$os__yuanhu3"] = "宝马配英雄！哈哈哈哈……",
+  ["$os__juezhu1"] = "曹君速上马，洪自断后。",
+  ["$os__juezhu2"] = "天下可无洪，不可无君。",
+  ["~os__caohong"] = "福兮祸所伏……",	
+}
+
 local os__zhanglu = General(extension, "os__zhanglu", "qun", 3)
 local os__shijun = fk.CreateTriggerSkill{
   name = "os__shijun$",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_trigger = function(self, event, target, player, data)
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
       return player:hasSkill(self.name, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
@@ -4945,7 +5090,7 @@ local os__shijun = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(self.name, true, true)
     end
   end,
-  on_use = function(self, event, target, player, data)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     --[[local targets = table.filter(room:getOtherPlayers(player), function(p)
       return p.kingdom == "qun"
@@ -4970,7 +5115,7 @@ local os__shijun_other = fk.CreateActiveSkill{
   mute = true,
   can_use = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and player.kingdom == "qun" then
-      return table.find(Fk:currentRoom().alive_players, function(p) return p:hasSkill("os__shijun") and #p:getPile("zhanglu_mi") == 0 end)
+      return table.find(Fk:currentRoom().alive_players, function(p) return p:hasSkill("os__shijun") and p ~= player and #p:getPile("zhanglu_mi") == 0 end)
     end
     return false
   end,
@@ -4981,9 +5126,7 @@ local os__shijun_other = fk.CreateActiveSkill{
   target_num = 0,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:notifySkillInvoked(player, "os__shijun", "support")
-    room:broadcastSkillInvoke("os__shijun")
-    local targets = table.filter(room.alive_players, function(p) return p:hasSkill("os__shijun") and #p:getPile("zhanglu_mi") == 0 end)
+    local targets = table.filter(room.alive_players, function(p) return p:hasSkill("os__shijun") and p ~= player and #p:getPile("zhanglu_mi") == 0 end)
     local target
     if #targets == 1 then
       target = targets[1]
@@ -4991,6 +5134,8 @@ local os__shijun_other = fk.CreateActiveSkill{
       target = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, function(p) return p.id end), 1, 1, nil, self.name, false)[1])
     end
     if not target then return false end
+    room:notifySkillInvoked(player, "os__shijun", "support")
+    room:broadcastSkillInvoke("os__shijun")
     room:doIndicate(effect.from, { target.id })
     player:drawCards(1, self.name)
     if not (player:isNude() or player.dead) then
@@ -5070,138 +5215,99 @@ Fk:loadTranslationTable{
   ["os__niju_minus"] = "%dest拼点牌点数-%arg",
 }
 
-local caohong = General(extension, "os__caohong", "wei", 4)
+local zhangxiu = General(extension, "os__zhangxiu", "qun", 4)
 
-local os__yuanhu = fk.CreateActiveSkill{
-  name = "os__yuanhu",
-  anim_type = "support",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+local os__juxiang = fk.CreateTriggerSkill{
+  name = "os__juxiang$",
+  mute = true,
+  frequency = Skill.Compulsory,
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(self.name, true)
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == self and target == player
+    else
+      return target == player and player:hasSkill(self.name, true, true)
+    end
   end,
-  card_num = 1,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
-  end,
-  target_num = 1,
-  target_filter = function(self, to_select, selected, cards)
-    return #selected == 0 and #cards == 1 and Fk:currentRoom():getPlayerById(to_select):hasEmptyEquipSlot(Fk:getCardById(cards[1]).sub_type)
-  end,
-  on_use = function(self, room, use)
-    if #use.cards ~= 1 then return end
-    local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    room:moveCardTo(use.cards, Card.PlayerEquip, target, fk.ReasonPut, self.name, nil, true, player.id)
-    if not target.dead then
-      local cardType = Fk:getCardById(use.cards[1]).sub_type
-      if cardType == Card.SubtypeWeapon then
-        local targets = table.map(table.filter(room.alive_players, function(p)
-          return target:distanceTo(p) <= 1 and not p:isAllNude() end), function (p) return p.id
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    --[[local targets = table.filter(room:getOtherPlayers(player), function(p)
+      return p.kingdom == "qun"
+    end)]]
+    local targets = room.alive_players
+    if event == fk.GameStart or event == fk.EventAcquireSkill then
+      if player:hasSkill(self.name, true) then
+        table.forEach(targets, function(p)
+          room:handleAddLoseSkills(p, "os__juxiang_other&", nil, false, true)
         end)
-        if #targets > 0 then
-          local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__yuanhu-discard:" .. target.id, self.name, false)[1]
-          to = room:getPlayerById(to)
-          local cid = room:askForCardChosen(player, to, "hej", self.name)
-          room:throwCard({cid}, self.name, to, player)
-        end
-      elseif cardType == Card.SubtypeArmor then
-        target:drawCards(1, self.name)
-      else
-        room:recover({
-          who = target,
-          num = 1,
-          recoverBy = player,
-          skillName = self.name
-        })
       end
-      if player.phase == Player.Play and (target.hp <= player.hp or target:getHandcardNum() <= player:getHandcardNum()) and not player.dead then
-        player:drawCards(1, self.name)
-        room:setPlayerMark(player, "_os__yuanhu-turn", 1)
-      end
+    elseif event == fk.EventLoseSkill or event == fk.Deathed then
+      table.forEach(targets, function(p)
+        room:handleAddLoseSkills(p, "-os__juxiang_other&", nil, false, true)
+      end)
     end
   end,
 }
-local os__yuanhu_finish = fk.CreateTriggerSkill{
-  name = "#os__yuanhu_finish",
+local os__juxiang_other = fk.CreateActiveSkill{
+  name = "os__juxiang_other&",
   anim_type = "support",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("_os__yuanhu-turn") > 0
-  end,
-  on_cost = function(self, event, target, player, data)
-    player.room:askForUseActiveSkill(player, "os__yuanhu", "#os__yuanhu-trg", true)
-  end,
-  on_use = function(self, event, target, player, data)
-    return false
-  end,
-}
-os__yuanhu:addRelatedSkill(os__yuanhu_finish)
-
-local os__juezhu = fk.CreateActiveSkill{
-  name = "os__juezhu",
-  anim_type = "support",
-  frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) < 1 and (player:getAvailableEquipSlots(Card.SubtypeOffensiveRide) or player:getAvailableEquipSlots(Card.SubtypeDefensiveRide) )
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and player.kingdom == "qun" then
+      return table.find(Fk:currentRoom().alive_players, function(p) return p:hasSkill("os__juxiang") and p ~= player end)
+    end
   end,
+  card_num = 1,
   card_filter = function(self, to_select, selected)
-    return false
+    if #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Equip then
+      local subtype = Fk:getCardById(to_select).sub_type
+      for _, p in ipairs(Fk:currentRoom().alive_players) do
+        if p:hasSkill("os__juxiang") and p ~= Self and (p:hasEmptyEquipSlot(subtype) or #p:getAvailableEquipSlots(subtype) == 0) then
+          return true
+        end
+      end
+    end
+    return 
   end,
-  target_num = 1,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-  interaction = UI.ComboBox{ choices = {"OffensiveRideSlot", "DefensiveRideSlot"} },
+  target_num = 0,
   on_use = function(self, room, use)
-    local choice = self.interaction.data
-    if not choice then return false end
+    if #use.cards ~= 1 then return end
     local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    local slot = choice == "OffensiveRideSlot" and Player.OffensiveRideSlot or Player.DefensiveRideSlot
-    room:abortPlayerArea(player, {slot})
-    room:handleAddLoseSkills(target, "feiying")
-    room:abortPlayerArea(target, {Player.JudgeSlot})
-    room:setPlayerMark(player, "@os__juezhu", target.general)
-    room:setPlayerMark(player, "_os__juezhu", {target.id, slot})
-  end
-}
-local os__juezhu_re = fk.CreateTriggerSkill{
-  name = "#os__juezhu_re",
-  mute = true,
-  events = {fk.Deathed},
-  frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player, data)
-    return player:getMark("_os__juezhu") ~= 0 and player:getMark("_os__juezhu")[1] == target.id
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:resumePlayerArea(player, player:getMark("_os__juezhu")[2])
-    room:setPlayerMark(player, "_os__juezhu", 0)
+    local subtype = Fk:getCardById(use.cards[1]).sub_type
+    local targets = table.filter(room.alive_players, function(p) return p:hasSkill("os__juxiang") and p ~= player and (p:hasEmptyEquipSlot(subtype) or #p:getAvailableEquipSlots(subtype) == 0) end)
+    local target
+    if #targets == 1 then
+      target = targets[1]
+    else
+      target = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, function(p) return p.id end), 1, 1, nil, self.name, false)[1])
+    end
+    if not target then return false end
+    room:notifySkillInvoked(player, "os__juxiang", "support")
+    room:broadcastSkillInvoke("os__juxiang")
+    room:doIndicate(use.from, { target.id })
+    if #target:getAvailableEquipSlots(subtype) > 0 then
+      room:moveCardTo(use.cards, Card.PlayerEquip, target, fk.ReasonPut, self.name, nil, true, player.id)
+    else
+      room:moveCardTo(use.cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
+      room:resumePlayerArea(target, Util.convertSubtypeAndEquipSlot(subtype))
+    end
   end,
 }
-os__juezhu:addRelatedSkill(os__juezhu_re)
+Fk:addSkill(os__juxiang_other)
 
-caohong:addSkill(os__yuanhu)
-caohong:addSkill(os__juezhu)
-caohong:addRelatedSkill("feiying")
+zhangxiu:addSkill("xiongluan")
+zhangxiu:addSkill("congjian")
+zhangxiu:addSkill(os__juxiang)
+
 
 Fk:loadTranslationTable{
-  ["os__caohong"] = "曹洪",
-  ["os__yuanhu"] = "援护",
-  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离不大于1的一名角色区域里的一张牌；"..
-  "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你且此时为你的出牌阶段，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
-  ["os__juezhu"] = "决助",
-  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
+  ["os__zhangxiu"] = "张绣",
+  ["os__juxiang"] = "踞襄",
+  [":os__juxiang"] = "主公技，其他群势力角色出牌阶段限一次，其可以选择其装备区的一张牌置于你的装备区中，若你对应的装备栏已被废除，则改为交给你此装备牌，然后恢复你的对应装备栏。",
 
-  ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
-  ["#os__yuanhu-discard"] = "援护：你可以弃置 %src 距离不大于1的一名角色区域内一张牌",
-  ["@os__juezhu"] = "决助",
-
-  ["$os__yuanhu1"] = "将军，这件兵器可还趁手？",
-  ["$os__yuanhu2"] = "刀剑无眼，须得小心防护。",
-  ["$os__yuanhu3"] = "宝马配英雄！哈哈哈哈……",
-  ["$os__juezhu1"] = "曹君速上马，洪自断后。",
-  ["$os__juezhu2"] = "天下可无洪，不可无君。",
-  ["~os__caohong"] = "福兮祸所伏……",	
+  ["os__juxiang_other&"] = "踞襄",
+  [":os__juxiang_other&"] = "出牌阶段限一次，你可以选择装备区的一张牌置于张绣的装备区中，若其对应的装备栏已被废除，则改为交给其此装备牌，然后恢复其对应装备栏。",
 }
 
 return extension

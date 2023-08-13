@@ -1476,7 +1476,7 @@ local os__zhengrong = fk.CreateTriggerSkill{
     local room = player.room
     local target = room:getPlayerById(self.cost_data)
     local card = room:askForCardChosen(player, target, "he", self.name)
-    player:addToPile("os__glory", card, true, self.name) --原为false
+    player:addToPile("os__glory", card, false, self.name)
   end,
 
   refresh_events = {fk.TargetSpecified},
@@ -1537,7 +1537,7 @@ local os__hongju = fk.CreateTriggerSkill{
           moveReason = fk.ReasonExchange,
           proposer = player.id,
           skillName = self.name,
-          moveVisible = true,
+          --moveVisible = true,
         },
         {
         ids = cards1,
@@ -1549,7 +1549,7 @@ local os__hongju = fk.CreateTriggerSkill{
           proposer = player.id,
           specialName = "os__glory",
           skillName = self.name,
-          moveVisible = true,
+          --moveVisible = true,
         }
       )
     end
@@ -2278,8 +2278,8 @@ local os__luannian = fk.CreateTriggerSkill{
   name = "os__luannian$",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_trigger = function(self, event, target, player, data)
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
       return player:hasSkill(self.name, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
@@ -2288,11 +2288,14 @@ local os__luannian = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(self.name, true, true)
     end
   end,
-  on_use = function(self, event, target, player, data)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
+    --[[
     local targets = table.filter(room:getOtherPlayers(player), function(p)
       return (p.kingdom == "qun")
     end)
+    ]]
+    local targets = room.alive_players
     if event == fk.GameStart or event == fk.EventAcquireSkill then
       if player:hasSkill(self.name, true) then
         table.forEach(targets, function(p)
@@ -2316,7 +2319,7 @@ local os__luannian_other = fk.CreateActiveSkill{
       local room = Fk:currentRoom()
       local lord --手动
       for _, p in ipairs(room.alive_players) do
-        if p:hasSkill("os__luannian") then lord = p break end
+        if p:hasSkill("os__luannian") and p ~= player then lord = p break end
       end
       if not lord then return false end
       local target
@@ -2335,14 +2338,14 @@ local os__luannian_other = fk.CreateActiveSkill{
   card_num = function(self)
     local lord
     for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p:hasSkill("os__luannian") then lord = p break end
+      if p:hasSkill("os__luannian") and p ~= Self then lord = p break end
     end
     return lord:getMark("@os__luannian-round") + 1
   end,
   card_filter = function(self, to_select, selected)
     local lord
     for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p:hasSkill("os__luannian") then lord = p break end
+      if p:hasSkill("os__luannian") and p ~= Self then lord = p break end
     end
     return #selected < lord:getMark("@os__luannian-round") + 1
   end,
@@ -2362,7 +2365,7 @@ local os__luannian_other = fk.CreateActiveSkill{
     room:doIndicate(effect.from, { target.id })
     local lord
     for _, p in ipairs(room.alive_players) do
-      if p:hasSkill("os__luannian") then lord = p break end
+      if p:hasSkill("os__luannian") and p ~= player then lord = p break end
     end
     room:addPlayerMark(lord, "@os__luannian-round", 1)
     room:throwCard(effect.cards, self.name, player)
