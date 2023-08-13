@@ -5084,7 +5084,7 @@ local os__yuanhu = fk.CreateActiveSkill{
   end,
   target_num = 1,
   target_filter = function(self, to_select, selected, cards)
-    return #selected == 0 and #cards == 1 and Fk:currentRoom():getPlayerById(to_select):getEquipment(Fk:getCardById(cards[1]).sub_type) == nil
+    return #selected == 0 and #cards == 1 and Fk:currentRoom():getPlayerById(to_select):hasEmptyEquipSlot(Fk:getCardById(cards[1]).sub_type)
   end,
   on_use = function(self, room, use)
     if #use.cards ~= 1 then return end
@@ -5095,10 +5095,11 @@ local os__yuanhu = fk.CreateActiveSkill{
       local cardType = Fk:getCardById(use.cards[1]).sub_type
       if cardType == Card.SubtypeWeapon then
         local targets = table.map(table.filter(room.alive_players, function(p)
-          return target:distanceTo(p) == 1 and not p:isAllNude() end), function (p) return p.id
+          return target:distanceTo(p) <= 1 and not p:isAllNude() end), function (p) return p.id
         end)
         if #targets > 0 then
-          local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__yuanhu:" .. target.id, self.name, false)[1]
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__yuanhu-discard:" .. target.id, self.name, false)[1]
+          to = room:getPlayerById(to)
           local cid = room:askForCardChosen(player, to, "hej", self.name)
           room:throwCard({cid}, self.name, to, player)
         end
@@ -5112,7 +5113,7 @@ local os__yuanhu = fk.CreateActiveSkill{
           skillName = self.name
         })
       end
-      if (target.hp <= player.hp or target:getHandcardNum() <= player:getHandcardNum()) and not player.dead then
+      if player.phase == Player.Play and (target.hp <= player.hp or target:getHandcardNum() <= player:getHandcardNum()) and not player.dead then
         player:drawCards(1, self.name)
         room:setPlayerMark(player, "_os__yuanhu-turn", 1)
       end
@@ -5186,12 +5187,13 @@ caohong:addRelatedSkill("feiying")
 Fk:loadTranslationTable{
   ["os__caohong"] = "曹洪",
   ["os__yuanhu"] = "援护",
-  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离为1的一名角色区域里的一张牌；"..
-  "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
+  [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离不大于1的一名角色区域里的一张牌；"..
+  "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你且此时为你的出牌阶段，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
   ["os__juezhu"] = "决助",
   [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
 
   ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
+  ["#os__yuanhu-discard"] = "援护：你可以弃置 %src 距离不大于1的一名角色区域内一张牌",
   ["@os__juezhu"] = "决助",
 
   ["$os__yuanhu1"] = "将军，这件兵器可还趁手？",
