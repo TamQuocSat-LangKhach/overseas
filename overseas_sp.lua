@@ -419,7 +419,7 @@ local os__jimeng = fk.CreateActiveSkill{
 
     if player.dead or player:isNude() then return false end
     local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#os__jimeng-card::" .. target.id)[1]
-    room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
+    room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
 
     if target.hp >= player.hp and not player.dead then
       player:drawCards(1, self.name)
@@ -1964,7 +1964,6 @@ local os__zhian = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, { target.id })
-    room:broadcastSkillInvoke("os__lingfa")
     local choice = self.cost_data
     if choice:startsWith("os__zhian_discard") then
       local card = data.card
@@ -2005,6 +2004,8 @@ Fk:loadTranslationTable{
 
   ["$os__lingfa1"] = "吾明令在此，汝何以犯之？",
   ["$os__lingfa2"] = "法不阿贵，绳不挠曲！",
+  ["$os__zhian1"] = "此等蝼蚁不除，必溃千丈之堤！",
+  ["$os__zhian2"] = "尔等权贵贪赃枉法，岂可轻饶？！",
   ["~os_sp__caocao"] = "奸宦当道，难以匡正啊……",
 }
 
@@ -3297,7 +3298,7 @@ local os__bingde = fk.CreateActiveSkill{
   name = "os__bingde",
   anim_type = "drawcard",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and (player:getMark("_os__bingde_done-turn") == 0 or #player:getMark("_os__bingde_done-turn") < 4)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and (player:getMark("_os__bingde_done-phase") == 0 or #player:getMark("_os__bingde_done-phase") < 4)
   end,
   card_num = 1,
   card_filter = function(self, to_select, selected)
@@ -3306,9 +3307,10 @@ local os__bingde = fk.CreateActiveSkill{
   target_num = 0,
   interaction = function(self)
     local all = Self:getMark("_os__bingde_done-phase") ~= 0 and Self:getMark("_os__bingde_done-phase") or {}
-    return UI.ComboBox { choices = table.filter({"log_spade", "log_club", "log_heart", "log_diamond"}, function(s)
+    local all_choices = {"log_spade", "log_club", "log_heart", "log_diamond"}
+    return UI.ComboBox { choices = table.filter(all_choices, function(s)
       return not table.contains(all, s)
-    end) }
+    end), all_choices = all_choices }
   end,
   on_use = function(self, room, effect)
     local suit_log = self.interaction.data

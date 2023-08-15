@@ -1079,14 +1079,172 @@ Fk:loadTranslationTable{
   ["$os__jieyu2"] = "吾头可得，城不可得。",
   ["~os__huojun"] = "恨，不能与使君共成霸业……",
 }
+--[[
+local function isHandOrHpBiggest(player, room)
+  local num = player.hp
+  if table.every(room.alive_players, function(p) return p.hp <= num end) then
+    return true
+  end
+  num = player:getHandcardNum()
+  if table.every(room.alive_players, function(p) return p:getHandcardNum() <= num end) then
+    return true
+  end
+  return false
+end
+
+local os__zhouchu = General(extension, "os__zhouchu", "wu", 4)
+
+local os__guoyi = fk.CreateTriggerSkill{
+  name = "os__guoyi",
+  events = {fk.TargetSpecified},
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    local ret = target == player and (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.to and data.to ~= player.id and #AimGroup:getAllTargets(data.tos) == 1
+    if ret then
+      if player:getHandcardNum() <= player:getLostHp() + 1 then
+        return true
+      end
+      local room = player.room
+      return isHandOrHpBiggest(room:getPlayerById(data.to), room)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#os__guoyi-ask::" .. data.to)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local num = player:getLostHp() + 1
+    local target = room:getPlayerById(data.to)
+    local ret = isHandOrHpBiggest(target, room) and player:getHandcardNum() <= player:getLostHp() + 1
+    local all_choices = {"os__guoyi_prohibit", "os__guoyi_discard:::" .. num}
+    local choices = table.clone(all_choices)
+    if target:isNude() then table.remove(choices) end
+    local mark = target:getMark("_os__guoyi-turn")
+    if mark % 2 == 1 then table.remove(choices, 1) end
+    if #choices > 0 then
+      local choice = room:askForChoice(target, choices, self.name, "os__guoyi-ask:" .. player.id, false, all_choices)
+      choice = table.indexOf(all_choices, choice)
+      room:addPlayerMark(target, "_os__guoyi-turn", choice)
+      if choice == 1 then
+        room:addPlayerMark(target, "@@os__guoyi_prohibit-turn")
+      else
+        room:askForDiscard(target, num, num, true, self.name, false)
+      end
+    end
+    if ret or (mark % 2 == 1 and mark > 2) then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.os__guoyi = target.id
+    end
+  end,
+
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return data.extra_data and data.extra_data.os__guoyi
+  end,
+  on_refresh = function(self, event, target, player, data)
+    --player.room:doCardUseEffect(data)
+    player.room:useVirtualCard(data.card.name, nil, player, player.room:getPlayerById(data.extra_data.os__guoyi), self.name, true)
+    data.extra_data.os__guoyi = nil
+  end,
+}
+local os__guoyi_prohibit = fk.CreateProhibitSkill{
+  name = "#os__guoyi_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("@@os__guoyi_prohibit-turn") > 0
+  end,
+  prohibit_response = function(self, player, card)
+    return player:getMark("@@os__guoyi_prohibit-turn") > 0
+  end,
+}
+os__guoyi:addRelatedSkill(os__guoyi_prohibit)
+
+local os__chuhai = fk.CreateTriggerSkill{
+  name = "os__chuhai",
+  frequency = Skill.Quest,
+  events = {fk.EventPhaseChanging, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.EventPhaseChanging then
+      return player:getQuestSkillState(self.name) == "succeed" and data.to == Player.NotActive and player:getMark("@os__chuhai") >= 2
+    elseif player:hasSkill(self.name) and player:getQuestSkillState(self.name) ~= "succeed" then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.moveReason == fk.ReasonGive then
+          return true
+        end
+      end
+      return 
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    if event == fk.EventPhaseChanging then
+      self:doCost(event, target, player, data)
+    else
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.moveReason == fk.ReasonGive then
+          self:doCost(event, target, player, move)
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseChanging then
+      local targets = room:getOtherPlayers(player)
+      local prompt = "#os__chuhai-ask:" .. player.id
+      for _, p in ipairs(targets) do
+        if player.dead then return end
+        if not p.dead and not p:isNude() then
+          local card = room:askForCard(p, 1, 1, true, self.name, false, nil, prompt)
+          if #card > 0 then
+            room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, player.id)
+          end
+        end
+      end
+    else
+      local cards = table.filter(table.map(data, function(info) return info.cardId end), function(id) return room:getCardArea(id) == Card.PlayerHand end)
+      if #cards > 0 then
+        local c = room:askForCard(player, 1, 1, true, self.name, false, ".|.|.|.|.|.|" .. table.concat(cards, ","), "#os__chuhai-discard")
+        room:moveCardTo(c, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      end
+    end
+  end,
+
+  refresh_events = {fk.EnterDying},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.damage and data.damage.from == player and
+      player:getQuestSkillState(self.name) ~= "succeed" and target ~= player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, "@os__chuhai")
+    if player:getMark("@os__chuhai") > 1 then
+      room:updateQuestSkillState(player, self.name, false)
+    end
+  end,
+}
+
+os__zhouchu:addSkill(os__guoyi)
+os__zhouchu:addSkill(os__chuhai)
 
 Fk:loadTranslationTable{
   ["os__zhouchu"] = "周处",
   ["os__guoyi"] = "果毅",
-  [":os__guoyi"] = "当你使用【杀】或普通锦囊牌指定一名其他角色为目标后，若其体力值或手牌数为全场最高，或你的手牌数不大于X（X为你已损失体力值+1），你可以令该角色选择一项：1. 本回合不能使用或打出手牌；2. 弃置X张牌。若条件均满足，或该角色本回合两个选项均已选择，则此牌结算两次。",
+  [":os__guoyi"] = "当你使用【杀】或普通锦囊牌指定仅一名其他角色为目标后，若其体力值或手牌数为全场最高，" ..
+  "或你的手牌数不大于X（X为你已损失体力值+1），你可令其选择一项：1. 本回合不能使用或打出手牌；2. 弃置X张牌。" ..
+  "若条件均满足，或其本回合两个选项均已选择，则此牌额外结算一次。",
   ["os__chuhai"] = "除害",
-  [":os__chuhai"] = "使命技，令两名其他角色进入濒死状态。成功：当前回合结束时，废除你的判定区，然后每名其他角色依次交给你一张牌。完成前：其他角色交给你牌时，须将其中一张置入弃牌堆。",
-}
+  [":os__chuhai"] = "使命技，令两名其他角色进入濒死状态。成功：当前回合结束时，废除你的判定区，"..
+  "然后每名其他角色依次交给你一张牌。完成前：其他角色交给你牌时，须将其中一张置入弃牌堆。",
+
+  ["#os__guoyi-ask"] = "果毅：是否对 %dest 发动“果毅”？",
+  ["os__guoyi_prohibit"] = "本回合不能使用或打出手牌",
+  ["os__guoyi_discard"] = "弃置%arg张牌",
+  ["os__guoyi-ask"] = "果毅：%src 对你发动“果毅”，请选择一项",
+  ["@@os__guoyi_prohibit-turn"] = "果毅 禁止使用或打出",
+  ["@os__chuhai"] = "除害",
+  ["#os__chuhai-ask"] = "除害：交给 %src 一张牌",
+  ["#os__chuhai-discard"] = "除害：将一张交给你的牌置入弃牌堆",
+}]]
 
 local os__wujing = General(extension, "os__wujing", "wu", 4)
 
