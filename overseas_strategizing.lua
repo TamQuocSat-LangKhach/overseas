@@ -870,7 +870,7 @@ local os__mouli = fk.CreateViewAsSkill{
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic then
+      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not card.is_derived then
         table.insert(allCardNames, card.name)
       end
     end

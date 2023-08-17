@@ -638,7 +638,7 @@ local os__zhenjun = fk.CreateTriggerSkill{
     local to = self.cost_data[1]
     room:doIndicate(player.id, { to })
     local target = room:getPlayerById(to)
-    room:moveCardTo(self.cost_data[2], Player.Hand, target, fk.ReasonGive, self.name, nil, false)
+    room:moveCardTo(self.cost_data[2], Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     local use = room:askForUseCard(target, "slash", "slash|.|heart,diamond,nosuit", "#os__zhenjun_slash", true)
     if use then
       use.extra_data = use.extra_data or {}
