@@ -5009,7 +5009,7 @@ local os__juezhu = fk.CreateActiveSkill{
   end,
   target_num = 1,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
+    return #selected == 0
   end,
   interaction = function()
     local all_choices = {"OffensiveRideSlot", "DefensiveRideSlot"}
@@ -5061,7 +5061,7 @@ Fk:loadTranslationTable{
   [":os__yuanhu"] = "出牌阶段限一次，你可将一张装备牌置入一名角色的装备区，若此牌是：武器牌，你弃置其距离不大于1的一名角色区域里的一张牌；"..
   "防具牌，其摸一张牌；坐骑牌或宝物牌，其回复1点体力。若其体力值或手牌数不大于你且此时为你的出牌阶段，你摸一张牌，且可于本回合结束阶段开始时再发动此技能。",
   ["os__juezhu"] = "决助",
-  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名其他角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
+  [":os__juezhu"] = "限定技，出牌阶段，你可废除一个坐骑栏，令一名角色获得〖飞影〗并废除其判定区。其死亡后，你恢复以此法废除的坐骑栏。",
 
   ["#os__yuanhu-trg"] = "援护：你可以将一张装备牌置入一名角色的装备区",
   ["#os__yuanhu-discard"] = "援护：你可以弃置 %src 距离不大于1的一名角色区域内一张牌",
