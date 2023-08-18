@@ -867,18 +867,16 @@ local os__mouli = fk.CreateViewAsSkill{
   card_num = 0,
   pattern = ".|.|.|.|.|basic",
   interaction = function(self)
-    local allCardNames = {}
+    local allCardNames, cardNames = {}, {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not card.is_derived then
-        table.insert(allCardNames, card.name)
-      end
-    end
-    local cardNames = {}
-    for _, name in ipairs(allCardNames) do
-      local card = Fk:cloneCard(name)
-      if not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        table.insert(cardNames, name)
+      local name = card.name
+      if not table.contains(allCardNames, name) and card.type == Card.TypeBasic and not card.is_derived then
+        table.insert(allCardNames, name)
+        local card = Fk:cloneCard(name)
+        if not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+          table.insert(cardNames, name)
+        end
       end
     end
     return UI.ComboBox { choices = cardNames , all_choices = allCardNames }
