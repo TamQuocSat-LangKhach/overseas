@@ -81,6 +81,7 @@ local os__shanghe = fk.CreateTriggerSkill{
   name = "os__shanghe",
   anim_type = "support",
   events = {fk.EnterDying},
+  frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,

@@ -3644,15 +3644,18 @@ local os__jichou = fk.CreateViewAsSkill{
   prompt = "#os__jichou",
   pattern = ".|.|.|.|.|trick",
   interaction = function(self)
-    local allCardNames = {}
+    local allCardNames, cardNames = {}, {}
     local os__jichouRecord = type(Self:getMark("@$os__jichou")) == "table" and Self:getMark("@$os__jichou") or {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
-      if card:isCommonTrick() and not table.contains(allCardNames, card.name) and not table.contains(os__jichouRecord, card.name) and not card.is_derived and not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+      if card:isCommonTrick() and not table.contains(allCardNames, card.name) and not table.contains(os__jichouRecord, card.name) and not card.is_derived then
         table.insert(allCardNames, card.name)
+        if not Self:prohibitUse(card) and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+          table.insert(cardNames, card.name)
+        end
       end
     end
-    return UI.ComboBox { choices = allCardNames }
+    return UI.ComboBox { choices = cardNames, all_choices = allCardNames }
   end,
   view_as = function(self, cards)
     local choice = self.interaction.data
@@ -3662,11 +3665,10 @@ local os__jichou = fk.CreateViewAsSkill{
     return c
   end,
   before_use = function(self, player, use)
-    local mark_names = player:hasSkill("os__jilun") and {"@$os__jichou", "@$os__jilun"} or {"@$os__jichou"}
-    for _, name in ipairs(mark_names) do
-      local record = type(player:getMark(name)) == "table" and player:getMark(name) or {}
+    if player:hasSkill("os__jilun") then
+      local record = type(player:getMark("@$os__jilun")) == "table" and player:getMark("@$os__jilun") or {}
       table.insert(record, use.card.name)
-      player.room:setPlayerMark(player, name, record)
+      player.room:setPlayerMark(player, "@$os__jilun", record)
     end
   end,
   enabled_at_play = function(self, player)
@@ -3712,12 +3714,22 @@ local os__jichou_dr = fk.CreateTriggerSkill{
     table.insertIfNeed(data.disresponsiveList, player.id)
   end,
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
-    return data == os__jichou and player == target
+    if event == fk.CardUseFinished then
+      return player == target and table.contains(data.card.skillNames, "os__jichou")
+    else
+      return data == os__jichou and player == target
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, event == fk.EventAcquireSkill and "os__jichou_give&" or "-os__jichou_give&", nil, false, true)
+    if event == fk.CardUseFinished then
+      local record = type(player:getMark("@$os__jichou")) == "table" and player:getMark("@$os__jichou") or {}
+      table.insert(record, data.card.name)
+      player.room:setPlayerMark(player, "@$os__jichou", record)
+    else
+      player.room:handleAddLoseSkills(player, event == fk.EventAcquireSkill and "os__jichou_give&" or "-os__jichou_give&", nil, false, true)
+    end
   end,
 }
 local os__jichou_give = fk.CreateActiveSkill{
