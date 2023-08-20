@@ -989,15 +989,9 @@ local os__liechi = fk.CreateTriggerSkill{
     local choices = {}
     if from:getHandcardNum() > player:getHandcardNum() then table.insert(choices, "os__liechi_same") end
     if not from:isNude() then table.insert(choices, "os__liechi_one") end
-    if player:getMark("_os__liechi_dying-turn") > 0 then
-      local cids = player:getCardIds(Player.Equip)
-      table.insertTable(cids, player:getCardIds(Player.Hand))
-      for _, id in ipairs(cids) do
-        if Fk:getCardById(id).type == Card.TypeEquip then
-          table.insert(choices, "beishui_os__liechi")
-          break
-        end
-      end
+    if player:getMark("_os__liechi_dying-turn") > 0 and 
+      table.find(player:getCardIds{Player.Equip, Player.Hand}, function(id) return Fk:getCardById(id).type == Card.TypeEquip and not player:prohibitDiscard(Fk:getCardById(id)) end) then
+      table.insert(choices, "beishui_os__liechi")
     end
     if #choices == 0 then return false end
     local choice = room:askForChoice(player, choices, self.name)

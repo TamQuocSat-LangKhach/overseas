@@ -3888,8 +3888,8 @@ local os__zhiqu = fk.CreateTriggerSkill{
           use.tos = { targets }
           room:useCard(use)
         elseif #targets > 1 then
-          if table.contains({"amazing_grace", "god_salvation"}, card.name) then --有bug
-            use.tos = { targets }
+          if table.contains({"amazing_grace", "god_salvation"}, card.name) then
+            use.tos = { {player.id}, {to.id} }
             room:useCard(use)
           elseif card.skill:getMaxTargetNum(player, card) == 1 then
             local tar = room:askForChoosePlayers(player, targets, 1, 1, "#os__zhiqu-targets::" .. to.id .. ":" .. card:toLogString(), self.name, false, true)

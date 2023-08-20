@@ -22,11 +22,6 @@ local celestialCalabashSkill = fk.CreateTriggerSkill{
     local room = player.room
     --room:setEmotion(player, "./packages/overseas/image/anim/moon_spear")
     room:notifySkillInvoked(player, self.name, "support")
-    room:sendLog{
-      type = "#CelestialCalabashSkill",
-      from = player.id,
-      arg = self.attached_equip,
-    } --呃
     room:changeMaxHp(player, 1)
     room:recover({ who = player, num = 1, recoverBy = player, skillName = self.name})
   end,
@@ -45,7 +40,6 @@ Fk:loadTranslationTable{
   [":celestial_calabash"] = "装备牌·武器<br /><b>攻击范围</b>：３<br /><b>武器技能</b>：锁定技，当你造成大于1点的伤害时或一名角色死亡时，你增加1点体力上限并回复1点体力。",
   ["#celestial_calabash_skill"] = "灵宝仙葫",
   [":#celestial_calabash_skill"] = "锁定技，当你造成大于1点的伤害时或一名角色死亡时，你增加1点体力上限并回复1点体力。",
-  ["#CelestialCalabashSkill"] = "%from 发动了“%arg”",
 }
 
 local horsetailWhiskSkill = fk.CreateTriggerSkill{
