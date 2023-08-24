@@ -365,8 +365,10 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
   on_effect = function(self, room, cardEffectEvent)
     local player = room:getPlayerById(cardEffectEvent.from)
     local to = room:getPlayerById(cardEffectEvent.to)
+    local cards = {}
     for i = 1, 4, 1 do
       local id = room:getNCards(1)[1]
+      table.insert(cards, id)
       room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
       local card = Fk:getCardById(id)
       if card.trueName == "slash" and not player:prohibitUse(card) and not player:isProhibited(to, card) and to:isAlive() then
@@ -379,6 +381,8 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
         })
       end
     end
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
+    room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
   end,
 }
 local enemyAtTheGates = fk.CreateTrickCard{
