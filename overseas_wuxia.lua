@@ -78,7 +78,7 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "os__chaofeng", "offensive")
-    room:broadcastSkillInvoke("os__chaofeng")
+    player:broadcastSkillInvoke("os__chaofeng")
     local targets = table.map(self.cost_data, function(pid)
       return room:getPlayerById(pid)
     end)
@@ -164,7 +164,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "_os__chuanshu", 0)
     elseif event == fk.PindianCardsDisplayed then
       room:notifySkillInvoked(player, self.name)
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local num = 3 * #player:getMark("@os__chuanshu")
       if data.from == player then
         data.fromCard.number = math.min(data.fromCard.number + num, 13)
@@ -178,7 +178,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "_os__chuanshu_slash", 0)
     else
       room:notifySkillInvoked(player, self.name)
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       local os__chuanshuRecord = table.clone((parentUseData.data[1].extra_data or {}).os__chuanshu)
       if not table.contains(os__chuanshuRecord, data.to.id) then
@@ -541,7 +541,7 @@ local os__lvren = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, self.name)
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.DamageCaused then
       room:addPlayerMark(data.to, "@@os__blade")
     else
@@ -718,19 +718,19 @@ local os__yanshi = fk.CreateTriggerSkill{
       else
         to = room:getPlayerById(table.random(targets))
       end
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "special")
       room:setPlayerMark(player, "@os__yanshi", to.general)
       room:setPlayerMark(player, "_os__yanshi", to.id)
     elseif event == fk.Damaged then
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "masochism")
       room:addPlayerMark(data.from, "@@os__oath")
     elseif event == fk.Damage then
       player:drawCards(data.damage, self.name)
       room:removePlayerMark(data.to, "@@os__oath")
     else
-      room:broadcastSkillInvoke(self.name, 3)
+      player:broadcastSkillInvoke(self.name, 3)
       room:notifySkillInvoked(player, self.name, "offensive")
       data.damage = data.damage + 1
     end
@@ -863,7 +863,7 @@ local os__kaizeng_others = fk.CreateActiveSkill{
     if #cids > 0 then
       to:addSkillUseHistory("os__kaizeng")
       room:notifySkillInvoked(to, "os__kaizeng", "support")
-      room:broadcastSkillInvoke("os__kaizeng")
+      to:broadcastSkillInvoke("os__kaizeng")
       room:moveCardTo(cids, Player.Hand, player, fk.ReasonGive, self.name, nil, true)
       if #cids > 1 then
         to:drawCards(1, "os__kaizeng")

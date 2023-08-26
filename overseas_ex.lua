@@ -17,7 +17,7 @@ local os_ex__paoxiaoAudio = fk.CreateTriggerSkill{
       player:usedCardTimes("slash") > 1
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:broadcastSkillInvoke("os_ex__paoxiao")
+    player:broadcastSkillInvoke("os_ex__paoxiao")
     player.room:doAnimate("InvokeSkill", {
       name = "os_ex__paoxiao",
       player = player.id,
@@ -211,7 +211,7 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event ==  fk.AfterCardsMove then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "support")
       local target
       for _, move in ipairs(data) do
@@ -230,7 +230,7 @@ local os_ex__enyuan = fk.CreateTriggerSkill{
         target:drawCards(1, self.name)
       end
     else
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name)
       local cids = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#os_ex__enyuan-give:"..player.id)
       if #cids > 0 then
@@ -387,7 +387,7 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:removePlayerMark(player, "@os_ex__strategy")
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.EventPhaseChanging then
       room:notifySkillInvoked(player, self.name, "defensive")
       return true
@@ -658,7 +658,7 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os_ex__chunlao", "offensive")
+    player:broadcastSkillInvoke("os_ex__chunlao")
     if event == fk.CardUsing then
       local chengpu = room:getPlayerById(self.cost_data[1])
       room:notifySkillInvoked(chengpu, "os_ex__chunlao")
@@ -793,7 +793,7 @@ local os_ex__jiefan_re = fk.CreateTriggerSkill{
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os_ex__jiefan")
+    player:broadcastSkillInvoke("os_ex__jiefan")
     room:notifySkillInvoked(player, "os_ex__jiefan")
     room:setPlayerMark(player, "_os_ex__jiefan", 0)
     player:addSkillUseHistory("os_ex__jiefan", -1)

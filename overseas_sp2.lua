@@ -74,7 +74,7 @@ local os__wushen_trg = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__wushen")
+    player:broadcastSkillInvoke("os__wushen")
     room:notifySkillInvoked(player, "os__wushen")
     if event == fk.CardUsing then
       data.disresponsiveList = data.disresponsiveList or {}
@@ -953,12 +953,12 @@ local os__canshi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TargetConfirming then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "defensive")
       AimGroup:cancelTarget(data, data.to)
       room:removePlayerMark(room:getPlayerById(data.from), "@@os__puppet")
     else
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "special")
       room:doIndicate(player.id, self.cost_data)
       table.insert(data.tos, self.cost_data)
@@ -1495,9 +1495,9 @@ local os__feifu = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, self.name, "switch")
     if event == fk.TargetSpecified then
-      room:broadcastSkillInvoke(self.name, math.random(1, 2))
+      player:broadcastSkillInvoke(self.name, math.random(1, 2))
     else
-      room:broadcastSkillInvoke(self.name, math.random(3, 4))
+      player:broadcastSkillInvoke(self.name, math.random(3, 4))
     end
     local user = room:getPlayerById(data.from)
     local target = room:getPlayerById(data.to)
@@ -1708,7 +1708,7 @@ local os__zhenliang_defend = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__zhenliang")
+    player:broadcastSkillInvoke("os__zhenliang")
     player:addSkillUseHistory("os__zhenliang")
     room:throwCard(self.cost_data, self.name, player, player)
     data.damage = data.damage - 1
@@ -2033,7 +2033,7 @@ local os__qirang_trick = fk.CreateTriggerSkill{
     if event == fk.TargetSpecifying then
       local room = player.room
       room:notifySkillInvoked(player, "os__yuhua", "special")
-      room:broadcastSkillInvoke("os__yuhua")
+      player:broadcastSkillInvoke("os__yuhua")
       if table.contains(AimGroup:getAllTargets(data.tos), self.cost_data) then
         TargetGroup:removeTarget(data.targetGroup, self.cost_data)
       else
@@ -2105,7 +2105,7 @@ local os__yuhua_maxcards_audio = fk.CreateTriggerSkill{
     return player == target and player:hasSkill(os__yuhua.name) and player.phase == Player.Discard
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:broadcastSkillInvoke(os__yuhua.name)
+    player:broadcastSkillInvoke(os__yuhua.name)
     player.room:notifySkillInvoked(player, os__yuhua.name, "special")
   end,
 }
@@ -2170,7 +2170,7 @@ local os__fengji_conjure = fk.CreateTriggerSkill{
     local num = tonumber(nums[1])
     if #player:getPile("os__revelation") > 0 then
       room:notifySkillInvoked(player, "os__fengji")
-      room:broadcastSkillInvoke("os__fengji")
+      player:broadcastSkillInvoke("os__fengji")
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(room:getCardsFromPileByRule(Fk:getCardById(player:getPile("os__revelation")[1]).trueName, num))
       if #dummy.subcards > 0 then
@@ -2300,7 +2300,7 @@ local os__zhouhu_conjure = fk.CreateTriggerSkill{
     local num = tonumber(nums[1])
     local target = room:getPlayerById(player:getMark("_os__zhouhu"))
     room:notifySkillInvoked(player, "os__zhouhu")
-    room:broadcastSkillInvoke("os__zhouhu")
+    player:broadcastSkillInvoke("os__zhouhu")
     if target:isWounded() then room:recover({ who = target, num = num, recoverBy = player, skillName = self.name}) end
     room:setPlayerMark(player, "@os__zhouhu", 0)
     room:setPlayerMark(player, "_os__zhouhu", 0)
@@ -2359,12 +2359,12 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
       local nums = string.split(player:getMark("@os__zuhuo"), "-")
       local num = tonumber(nums[1])
       room:notifySkillInvoked(player, "os__zuhuo")
-      room:broadcastSkillInvoke("os__zuhuo")
+      player:broadcastSkillInvoke("os__zuhuo")
       room:addPlayerMark(player, "@os__zuhuo_defend", num)
       room:setPlayerMark(player, "@os__zuhuo", 0)
     else
       room:notifySkillInvoked(player, "os__zuhuo")
-      room:broadcastSkillInvoke("os__zuhuo")
+      player:broadcastSkillInvoke("os__zuhuo")
       room:removePlayerMark(player, "@os__zuhuo_defend")
       return true
     end
@@ -2422,7 +2422,7 @@ local os__fengqi_conjure = fk.CreateTriggerSkill{
     local num = tonumber(nums[1])
     local target = room:getPlayerById(player:getMark("_os__fengqi"))
     room:notifySkillInvoked(player, "os__fengqi")
-    room:broadcastSkillInvoke("os__fengqi")
+    player:broadcastSkillInvoke("os__fengqi")
     target:drawCards(2 * num, self.name)
     room:setPlayerMark(player, "@os__fengqi", 0)
     room:setPlayerMark(player, "_os__fengqi", 0)
@@ -2553,7 +2553,7 @@ local os__zhouzu_conjure = fk.CreateTriggerSkill{
     local nums = string.split(player:getMark("@os__zhouzu")[2], "-")
     local num = tonumber(nums[1])
     room:notifySkillInvoked(player, "os__zhouzu")
-    room:broadcastSkillInvoke("os__zhouzu")
+    player:broadcastSkillInvoke("os__zhouzu")
     local target = room:getPlayerById(player:getMark("_os__zhouzu"))
     if #target:getCardIds{Player.Equip, Player.Hand} < num then
       target:throwAllCards("he")
@@ -2792,11 +2792,11 @@ local os__fujian = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       room:notifySkillInvoked(player, self.name, "negative")
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:loseHp(player, 1, self.name)
     else
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       local id = room:getCardsFromPileByRule(".|.|.|.|.|weapon")
       if #id > 0 then
         room:obtainCard(player, id[1], false, fk.ReasonPrey)
@@ -2893,7 +2893,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = target.room
     room:notifySkillInvoked(player, os__jianwei.name, "special")
-    room:broadcastSkillInvoke(os__jianwei.name)
+    player:broadcastSkillInvoke(os__jianwei.name)
     local to, pd, pd_target
     if target == player then
       to = room:getPlayerById(self.cost_data)
@@ -3134,7 +3134,7 @@ local os__yujue_others = fk.CreateActiveSkill{
     end
     room:doIndicate(player.id, {to.id})
     --room:notifySkillInvoked(to, "os__yujue", "support")
-    room:broadcastSkillInvoke("os__yujue")
+    player:broadcastSkillInvoke("os__yujue")
     room:addPlayerMark(to, "_os__yujue-phase", #cards)
     room:moveCardTo(cards, Player.Hand, to, fk.ReasonGive, self.name, nil, false)
   end,
@@ -3446,16 +3446,16 @@ local os__gongge = fk.CreateTriggerSkill{
     local choice = self.cost_data
     local x = #getTrueSkills(target)
     if choice:startsWith("os__gongge_draw") then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       player:drawCards(x+1, self.name)
       room:setPlayerMark(player, "@os__gongge", "os__gonggeDraw")
     elseif choice:startsWith("os__gongge_discard") then
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       local cards = room:askForCardsChosen(player, target, x+1, x+1, "he", self.name)
       room:throwCard(cards, self.name, target, player)
       room:setPlayerMark(player, "@os__gongge", "os__gonggeDiscard")
     elseif choice:startsWith("os__gongge_damage") then
-      room:broadcastSkillInvoke(self.name, 3)
+      player:broadcastSkillInvoke(self.name, 3)
       data.additionalDamage = (data.additionalDamage or 0) + x
       room:setPlayerMark(player, "@os__gongge", "os__gonggeDamage")
     end
@@ -4214,7 +4214,7 @@ local os__qiongji = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.DamageInflicted then
       room:notifySkillInvoked(player, self.name, "negative")
       data.damage = data.damage + 1
@@ -4703,7 +4703,7 @@ local os__youye_give = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__youye")
+    player:broadcastSkillInvoke("os__youye")
     room:notifySkillInvoked(player, "os__youye")
     for _, id in ipairs(player:getPile("os__poise")) do
       room:setCardMark(Fk:getCardById(id), "toDistribute", 1)
@@ -5071,17 +5071,17 @@ local os__suizheng = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      room:broadcastSkillInvoke(self.name, "1")
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "support")
       local target = self.cost_data
       room:setPlayerMark(player, "_os__suizheng", target)
       room:setPlayerMark(player, "@os__suizheng", room:getPlayerById(target).general)
     elseif event == fk.Damage then
-      room:broadcastSkillInvoke(self.name, "2")
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:drawCards(1, self.name)
     else
-      room:broadcastSkillInvoke(self.name, "3")
+      player:broadcastSkillInvoke(self.name, 3)
       room:notifySkillInvoked(player, self.name, "support")
       if self.cost_data then
         room:throwCard(self.cost_data, self.name, player, player)
@@ -5248,7 +5248,7 @@ local os__shijun_other = fk.CreateActiveSkill{
     end
     if not target then return false end
     room:notifySkillInvoked(player, "os__shijun", "support")
-    room:broadcastSkillInvoke("os__shijun")
+    player:broadcastSkillInvoke("os__shijun")
     room:doIndicate(effect.from, { target.id })
     player:drawCards(1, self.name)
     if not (player:isNude() or player.dead) then
@@ -5397,7 +5397,7 @@ local os__juxiang_other = fk.CreateActiveSkill{
     end
     if not target then return false end
     room:notifySkillInvoked(player, "os__juxiang", "support")
-    room:broadcastSkillInvoke("os__juxiang")
+    player:broadcastSkillInvoke("os__juxiang")
     room:doIndicate(use.from, { target.id })
     if #target:getAvailableEquipSlots(subtype) > 0 then
       room:moveCardTo(use.cards, Card.PlayerEquip, target, fk.ReasonPut, self.name, nil, true, player.id)

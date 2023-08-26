@@ -1910,7 +1910,7 @@ local os__lingfa_use = fk.CreateTriggerSkill{
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__lingfa")
+    player:broadcastSkillInvoke("os__lingfa")
     room:notifySkillInvoked(player, "os__lingfa")
     room:doIndicate(player.id, { target.id })
     local cids
@@ -2043,7 +2043,7 @@ local os__xingzhui_conjure = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@os__xingzhui", num .. "-" .. tostring(num2))
     else
       room:notifySkillInvoked(player, "os__xingzhui")
-      room:broadcastSkillInvoke("os__xingzhui")
+      player:broadcastSkillInvoke("os__xingzhui")
       num = tonumber(num)
       local cids = room:getNCards(2 * num)
       room:moveCards({
@@ -2222,7 +2222,7 @@ local os__xiongzheng_judge = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     local choice = self.cost_data
     if choice == "os__xiongzheng_slash" then
       local availableTargets = table.map(
@@ -2348,7 +2348,7 @@ local os__luannian_other = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:notifySkillInvoked(player, "os__luannian")
-    room:broadcastSkillInvoke("os__luannian")
+    player:broadcastSkillInvoke("os__luannian")
     local target
     for _, p in ipairs(room.alive_players) do
       if p:getMark("_os__xiongzheng-round") > 0 then
@@ -3147,7 +3147,7 @@ local os__zhiming = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     room:notifySkillInvoked(player, self.name)
     player:drawCards(1, self.name)
     local cids = room:askForCard(player, 1, 1, true, self.name, true, nil, "#os__zhiming-ask")
@@ -3190,11 +3190,11 @@ local os__xingbu = fk.CreateTriggerSkill{
     local result
     if num > 1 then
       result = "_os__xingbu_" .. tostring(num)
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name)
     else
       result = "_os__xingbu_1"
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
     end
     local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
@@ -3708,7 +3708,7 @@ local os__fanghun_gain = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, "os__fanghun")
     if not table.contains(data.card.skillNames, "os__fanghun") or event == fk.TargetConfirmed then --避免重叠
-      room:broadcastSkillInvoke("os__fanghun")
+      player:broadcastSkillInvoke("os__fanghun")
     end
     room:addPlayerMark(player, "@meiying")
   end,
@@ -4054,7 +4054,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("os__kujian")
+    player:broadcastSkillInvoke("os__kujian")
     if event ~= fk.AfterCardsMove then
       room:notifySkillInvoked(player, "os__kujian", "drawcard")
       table.forEach(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)

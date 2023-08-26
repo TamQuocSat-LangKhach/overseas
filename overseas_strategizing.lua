@@ -18,7 +18,7 @@ local os__dianyi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if player:getMark("_os__dianyi-turn") > 0 then
       room:notifySkillInvoked(player, self.name)
       player:throwAllCards("h")
