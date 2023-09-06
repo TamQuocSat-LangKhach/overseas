@@ -251,7 +251,6 @@ local os__yulong = fk.CreateTriggerSkill{
         return false
       end
     end
-    
     return true
   end,
   on_use = function(self, event, target, player, data)
@@ -619,7 +618,7 @@ local os__xuechang_damage = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("_os__xuechang+" .. data.to.id) > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + player:getMark("_os__xuechang+" .. data.to.id)
     player.room:setPlayerMark(player, "_os__xuechang+" .. data.to.id, 0)
@@ -706,7 +705,7 @@ local os__yanshi = fk.CreateTriggerSkill{
       return target == player and data.to:getMark("@@os__oath") > 0
     end
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
@@ -1055,7 +1054,7 @@ local os__shezhong_draw = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@os__shezhong") > 0 and data.n > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.n = math.max(data.n - player:getMark("@os__shezhong"), 0)
     player.room:setPlayerMark(player, "@os__shezhong", 0)

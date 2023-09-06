@@ -765,9 +765,7 @@ local os_ex__jiefan = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) < 1
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0
   end,
@@ -790,7 +788,7 @@ local os_ex__jiefan_re = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and player:getMark("_os_ex__jiefan") == target.id
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("os_ex__jiefan")
@@ -825,9 +823,7 @@ local guyong = General(extension, "os_ex__guyong", "wu", 3)
 local os_ex__shenxing = fk.CreateActiveSkill{
   name = "os_ex__shenxing",
   anim_type = "drawcard",
-  can_use = function(self, player)
-    return true
-  end,
+  can_use = Util.TrueFunc,
   card_filter = function(self, to_select, selected)
     return #selected < math.min(Self:getMark("@os_ex__shenxing"), 2)
   end,

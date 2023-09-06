@@ -207,9 +207,7 @@ local os__miaolue = fk.CreateTriggerSkill{
 local os__miaolue_destruct = fk.CreateTriggerSkill{
   name = "#os__miaolue_destruct",
   refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
     local mirror_moves = {}
@@ -578,7 +576,7 @@ local os__chayi_using = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("_os__chayi") > 0 and (player:getMark("@os__chayi_discard") ~= 0 or player:getMark("@@os__chayi_discard") > 0) and player:getMark("_os__chayi_discarded") < 1
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "_os__chayi_discarded", 1)
@@ -658,9 +656,7 @@ local os__weipo = fk.CreateActiveSkill{
 local os__weipo_destruct = fk.CreateTriggerSkill{
   name = "#os__weipo_destruct",
   refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
     local mirror_moves = {}
@@ -746,9 +742,7 @@ local os__moushi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self.name) and data.card and data.card.color == player:getMark("_os__moushi")
   end,
-  on_use = function(self, event, target, player, data)
-    return true
-  end,
+  on_use = Util.TrueFunc,
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
@@ -913,9 +907,7 @@ local os__mouli_subcard = fk.CreateTriggerSkill{ --恃才问题
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name, true) and table.contains(data.card.skillNames, "os__mouli")
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     if #data.card.subcards == 0 then return true end
   end,
@@ -1359,7 +1351,7 @@ local os__boming = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2
   end,
-  card_filter = function() return true end,
+  card_filter = Util.TrueFunc,
   card_num = 1,
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id
@@ -1376,7 +1368,7 @@ local os__boming_draw = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("_os__boming_card-turn") > 1
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:drawCards(2, self.name)
   end,

@@ -304,7 +304,7 @@ local os__zhuidu = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):isWounded()
   end,
@@ -406,7 +406,7 @@ local os__jimeng = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isAllNude() --不能用Self
   end,
@@ -502,7 +502,7 @@ local os__beini = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select).hp >= Self.hp
   end,
@@ -1330,7 +1330,7 @@ local os__mutao = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   card_num = 0,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
@@ -1502,9 +1502,7 @@ local os__hongju = fk.CreateTriggerSkill{
   can_wake = function(self, event, target, player, data)
     return #player:getPile("os__glory") > 2
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if #player:getPile("os__glory") > 0 then
@@ -1649,7 +1647,7 @@ local os__xingwu = fk.CreateTriggerSkill{
 local os__xingwu_damage = fk.CreateActiveSkill{
   name = "#os__xingwu_damage",
   anim_type = "offensive",
-  can_use = function() return false end,
+  can_use = Util.FalseFunc,
   target_num = 1,
   card_num = 3,
   expand_pile = "os__dance",
@@ -1907,7 +1905,7 @@ local os__lingfa_use = fk.CreateTriggerSkill{
       return target:getMark("@os__lingfa") == "peach" and data.card.name == "peach"
     end
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("os__lingfa")
@@ -2017,7 +2015,7 @@ local os__xingzhui = fk.CreateActiveSkill{
   },
   on_use = function(self, room, effect)
     local num = self.interaction.data
-    if not num then return false end --权宜，ai
+    if not num then return false end -- 权宜，ai
     local player = room:getPlayerById(effect.from)
     room:loseHp(player, 1, self.name)
     if not player.dead then
@@ -2032,7 +2030,7 @@ local os__xingzhui_conjure = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:getMark("@os__xingzhui") ~= 0 and data.to == Player.NotActive
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local nums = string.split(player:getMark("@os__xingzhui"), "-")
@@ -2412,7 +2410,7 @@ local os__mouzhu = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id
   end,
@@ -2598,7 +2596,7 @@ local os__wanlan_damage = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and player:getMark("_os__wanlan") > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "_os__wanlan", 0)
@@ -2684,7 +2682,7 @@ local os__hengjiang_judge = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and (data.card.extra_data or {}).os__hengjiangUser == player.id
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:drawCards(player:getMark("_os__hengjiang_count"), self.name)
     player.room:setPlayerMark(player, "_os__hengjiang_count", 0)
@@ -3703,7 +3701,7 @@ local os__fanghun_gain = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "os__fanghun")
@@ -3807,8 +3805,7 @@ local os__queshi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name)
   end,
-  on_cost = function() return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local moonSpear = nil
     for _, id in ipairs(Fk:getAllCardIds()) do
@@ -3822,9 +3819,7 @@ local os__queshi = fk.CreateTriggerSkill{
   end,
 
   refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local hold_areas = {Card.PlayerEquip, Card.Processing, Card.Void, Card.PlayerHand}
     local mirror_moves = {}
