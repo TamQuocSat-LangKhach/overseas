@@ -326,9 +326,6 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local invoke = false
     local room = player.room
-    if player:getMark("_os_ex__jingce_draw-phase") > 0 then
-      invoke = true
-    end
     if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
       local damage = e.data[5]
       if damage and target == damage.from then
