@@ -5102,7 +5102,7 @@ local os__tuidao = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
-    if target ~= player or not player:hasSkill(self.name) or player:getMark("_os__suizheng") == 0 then return false end 
+    if target ~= player or not player:hasSkill(self.name) or player:getMark("_os__suizheng") == 0 or player.phase ~= Player.Start then return false end 
     local to = player.room:getPlayerById(player:getMark("_os__suizheng"))
     if not (to.hp <= 2 or to.dead) then return false end
     return (#player:getAvailableEquipSlots(Card.SubtypeOffensiveRide) > 0 and #to:getAvailableEquipSlots(Card.SubtypeOffensiveRide) > 0)

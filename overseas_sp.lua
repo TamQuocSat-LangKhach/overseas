@@ -233,13 +233,12 @@ local os__cuorui = fk.CreateTriggerSkill{
     local room = player.room
     local num = player:getHandcardNum()
     for hc, p in ipairs(room:getOtherPlayers(player)) do
-        hc = p:getHandcardNum()
-        if hc > num then
-            num = hc
-        end
+      hc = p:getHandcardNum()
+      if hc > num then
+        num = hc
+      end
     end
-    num = num - player:getHandcardNum()
-    num = num > 5 and 5 or num
+    num = math.min(num - player:getHandcardNum(), 5)
     player:drawCards(num, self.name)
     room:abortPlayerArea(player, {Player.JudgeSlot})
     room:addPlayerMark(player, "@@os__cuorui")
