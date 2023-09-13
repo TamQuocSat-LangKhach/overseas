@@ -3777,7 +3777,7 @@ local os__fuhan = fk.CreateTriggerSkill{
       table.insertTable(existingGenerals, {p.general, p.deputyGeneral})
     end)
     local generals = table.map(Fk:getGeneralsRandomly(5, Fk:getAllGenerals(), existingGenerals, (function(p) return (p.kingdom ~= "shu") end)), function(g) return g.name end)
-    local general = Fk.generals[room:askForGeneral(player, generals, 1)]
+    local general = Fk.generals[room:askForGeneral(player, generals, 1, true)]
     room:setPlayerMark(player, "@os__fuhan", general.name)
     local skills = general:getSkillNameList(player.role == "lord" and #room.players > 4)
     room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, false)
