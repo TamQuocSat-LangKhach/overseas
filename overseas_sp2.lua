@@ -5476,7 +5476,7 @@ local lijians = fk.CreateTriggerSkill{
     if #result.top > 0 and not target.dead then
       room:moveCardTo(result.top, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
     end
-    if #result.top > #result.bottom and room:askForChoice(player, {"os__lijians_damage::" .. target.id, "Cancel"}, self.name) ~= "Cancel" then
+    if #result.top > #result.bottom then -- and room:askForChoice(player, {"os__lijians_damage::" .. target.id, "Cancel"}, self.name) ~= "Cancel" then
       room:damage{
         from = player,
         to = target,
@@ -5557,7 +5557,7 @@ zhangzhao:addSkill(chungang)
 Fk:loadTranslationTable{
   ["zhangzhao"] = "张昭",
   ["os__lijians"] = "力谏",
-  [":os__lijians"] = "昂扬技，其他角色的弃牌阶段结束时，你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给其，若其获得的牌数大于你，则你可对其造成1点伤害。<u>激昂</u>：八张牌进入弃牌堆。" .. 
+  [":os__lijians"] = "昂扬技，其他角色的弃牌阶段结束时，你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给其，若其获得的牌数大于你，则你对其造成1点伤害。<u>激昂</u>：八张牌进入弃牌堆。" .. 
   "<br/><font color='grey'>#\"<b>昂扬技</b>\"：昂扬技发动后，技能失效直到满足<b>激昂</b>条件。",
   ["os__chungang"] = "纯刚",
   [":os__chungang"] = "锁定技，当其他角色于其摸牌阶段外获得不少于两张牌后，你令其弃置一张牌。",
