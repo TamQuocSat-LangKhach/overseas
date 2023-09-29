@@ -5419,6 +5419,154 @@ Fk:loadTranslationTable{
   [":os__juxiang_other&"] = "出牌阶段限一次，你可以选择装备区的一张牌置于张绣的装备区中，若其对应的装备栏已被废除，则改为交给其此装备牌，然后恢复其对应装备栏。",
 }
 
+local zhangzhao = General(extension, "zhangzhao", "wu", 3)
+local lijians = fk.CreateTriggerSkill{
+  name = "os__lijians",
+  anim_type = "support",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or target.phase ~= Player.Discard or target == player or player:getMark("@os__lijians") ~= 0 then return false end
+    local room = player.room
+    return #room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+      for _, move in ipairs(e.data) do
+        if move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            if room:getCardArea(info.cardId) == Card.DiscardPile then
+              return true
+            end
+          end
+        end
+      end
+      return false
+    end, Player.HistoryPhase) > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+      for _, move in ipairs(e.data) do
+        if move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.DiscardPile then
+              table.insertIfNeed(cards, id)
+            end
+          end
+        end
+      end
+      return false
+    end, Player.HistoryPhase)
+    if #cards == 0 then return end
+    if room:askForSkillInvoke(player, self.name, nil, "#os__lijians-invoke::" .. target.id) then
+      room:doIndicate(player.id, {target.id})
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = self.cost_data
+    room:setPlayerMark(player, "@os__lijians", 8)
+    local result = room:askForGuanxing(player, cards, nil, nil, self.name, true, {"os__lijiansReturn", "prey"})
+    if #result.bottom > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(result.bottom)
+      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    end
+    if #result.top > 0 and not target.dead then
+      room:moveCardTo(result.top, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
+    end
+    if #result.top > #result.bottom and room:askForChoice(player, {"os__lijians_damage::" .. target.id, "Cancel"}, self.name) ~= "Cancel" then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    end
+  end,
 
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:getMark("@os__lijians") > 0 and table.find(data, function(move) return move.toArea == Card.DiscardPile end)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local num = player:getMark("@os__lijians")
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        num = num - #move.moveInfo
+      end
+      if num <= 0 then
+        player.room:setPlayerMark(player, "@os__lijians", 0)
+        return false
+      end
+    end
+    player.room:setPlayerMark(player, "@os__lijians", num)
+  end,
+}
+local chungang = fk.CreateTriggerSkill{
+  name = "os__chungang",
+  anim_type = "control",
+  events = {fk.AfterCardsMove},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    local room = player.room
+    local guzheng_pairs = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.PlayerHand and move.to and move.to ~= player.id and room:getPlayerById(move.to).phase ~= Player.Draw then
+        guzheng_pairs[move.to] = (guzheng_pairs[move.to] or 0) + #move.moveInfo
+      end
+    end
+    for key, value in pairs(guzheng_pairs) do
+      if not player.room:getPlayerById(key):isNude() and value > 1 then
+        return true
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    local guzheng_pairs = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.PlayerHand and move.to and move.to ~= player.id and room:getPlayerById(move.to).phase ~= Player.Draw then
+        guzheng_pairs[move.to] = (guzheng_pairs[move.to] or 0) + #move.moveInfo
+      end
+    end
+    for key, value in pairs(guzheng_pairs) do
+      if not player.room:getPlayerById(key):isNude() and value > 1 then
+        table.insertIfNeed(targets, key)
+      end
+    end
+    room:sortPlayersByAction(targets)
+    for _, target_id in ipairs(targets) do
+      if not player:hasSkill(self.name) then break end
+      local skill_target = room:getPlayerById(target_id)
+      self:doCost(event, skill_target, player, data)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__chungang-discard:" .. player.id)
+  end,
+}
+zhangzhao:addSkill(lijians)
+zhangzhao:addSkill(chungang)
+
+Fk:loadTranslationTable{
+  ["zhangzhao"] = "张昭",
+  ["os__lijians"] = "力谏",
+  [":os__lijians"] = "昂扬技，其他角色的弃牌阶段结束时，你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给其，若其获得的牌数大于你，则你可对其造成1点伤害。<u>激昂</u>：八张牌进入弃牌堆。" .. 
+  "<br/><font color='grey'>#\"<b>昂扬技</b>\"：昂扬技发动后，技能失效直到满足<b>激昂</b>条件。",
+  ["os__chungang"] = "纯刚",
+  [":os__chungang"] = "锁定技，当其他角色于其摸牌阶段外获得不少于两张牌后，你令其弃置一张牌。",
+
+  ["#os__lijians-invoke"] = "力谏：你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给 %dest",
+  ["os__lijiansReturn"] = "交还",
+  ["@os__lijians"] = "力谏",
+  ["os__lijians_damage"] = "对%dest造成1点伤害",
+  ["#os__chungang-discard"] = "受到 %src “纯刚” 的影响，请弃置一张牌",
+}
 
 return extension
