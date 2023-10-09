@@ -5467,16 +5467,22 @@ local lijians = fk.CreateTriggerSkill{
     local room = player.room
     local cards = self.cost_data
     room:setPlayerMark(player, "@os__lijians", 8)
-    local result = room:askForGuanxing(player, cards, nil, nil, self.name, true, {"os__lijiansReturn", "prey"})
-    if #result.bottom > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(result.bottom)
-      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    local result = room:askForCardsChosen(player, target, 1, #cards, {
+      card_data = {
+        { "pile_discard", cards }
+      }
+    }, self.name)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(result)
+    room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    for _, c in ipairs(result) do
+      table.removeOne(cards, c)
     end
-    if #result.top > 0 and not target.dead then
-      room:moveCardTo(result.top, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
+    if #cards > 0 and not target.dead then
+      room:moveCardTo(cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
     end
-    if #result.top > #result.bottom then -- and room:askForChoice(player, {"os__lijians_damage::" .. target.id, "Cancel"}, self.name) ~= "Cancel" then
+    if target.dead then return end
+    if #cards > #result then -- and room:askForChoice(player, {"os__lijians_damage::" .. target.id, "Cancel"}, self.name) ~= "Cancel" then
       room:damage{
         from = player,
         to = target,
@@ -5567,6 +5573,126 @@ Fk:loadTranslationTable{
   ["@os__lijians"] = "力谏",
   ["os__lijians_damage"] = "对%dest造成1点伤害",
   ["#os__chungang-discard"] = "受到 %src “纯刚” 的影响，请弃置一张牌",
+}
+
+local zhanghong = General(extension, "zhanghong", "wu", 3)
+local quanqian = fk.CreateActiveSkill{
+  name = "os__quanqian",
+  anim_type = "support",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getMark("@os__quanqian") == 0
+  end,
+  target_num = 1,
+  min_card_num = 1,
+  max_card_num = 4,
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    return table.every(selected, function (id) return card:compareSuitWith(Fk:getCardById(id), true) end)
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "@os__quanqian", 6)
+    local cards = effect.cards
+    room:moveCardTo(cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+    if player.dead then return false end
+    if #cards > 1 then
+      local cids = room:getCardsFromPileByRule(".|.|.|.|.|equip")
+      if #cids > 0 then
+        room:obtainCard(player, cids[1], false, fk.ReasonPrey)
+        if player.dead then return false end
+      end
+    end
+    local choices = {"os__quanqian_draw:::" .. target:getHandcardNum(), "os__quanqian_get::" .. target.id}
+    if target:isKongcheng() then table.remove(choices) end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice:startsWith("os__quanqian_draw") then
+      local num = target:getHandcardNum() - player:getHandcardNum()
+      if num > 0 then player:drawCards(num, self.name) end
+    else
+      cards = target:getCardIds(Player.Hand)
+      local suit = "log_spade"
+      local result = room:askForCustomDialog(player, self.name,
+        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
+          cards,
+          {"log_spade", "log_club", "log_heart", "log_diamond"},
+          "#os__quanqian-choose::" .. target.id,
+          {}, 0, 0,
+        })
+      if result ~= "" then
+        local reply = json.decode(result)
+        suit = reply.choice
+      end
+      local dummy = Fk:cloneCard("dilu")
+      for _, cid in ipairs(cards) do
+        if Fk:getCardById(cid):getSuitString(true) == suit then dummy:addSubcard(cid) end
+      end
+      if #dummy.subcards > 0 then
+        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      end
+    end
+  end
+}
+local quanqian_trig = fk.CreateTriggerSkill{
+  name = "#os__quanqian_trig",
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:getMark("@os__quanqian") > 0 and table.find(data, function(move) return move.from == player.id and move.toArea == Card.DiscardPile end)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local num = player:getMark("@os__quanqian")
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            num = num - 1
+          end
+        end
+      end
+      if num <= 0 then
+        player.room:setPlayerMark(player, "@os__quanqian", 0)
+        return false
+      end
+    end
+    player.room:setPlayerMark(player, "@os__quanqian", num)
+  end,
+}
+quanqian:addRelatedSkill(quanqian_trig)
+local rouke = fk.CreateTriggerSkill{
+  name = "os__rouke",
+  frequency = Skill.Compulsory,
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.Draw then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Player.Hand and #move.moveInfo > 1 then
+          return true
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+zhanghong:addSkill(quanqian)
+zhanghong:addSkill(rouke)
+Fk:loadTranslationTable{
+  ["zhanghong"] = "张纮",
+  ["os__quanqian"] = "劝迁",
+  [":os__quanqian"] = "昂扬技，出牌阶段限一次，你可以将至多四张花色不同的手牌交给一名其他角色，若你以此法给出了不少于两张牌，你从牌堆中获得一张装备牌。然后你选择一项：1.将手牌摸至与其手牌数相同；2.观看其手牌并选择一种花色，然后获得其手牌中所有此花色的牌。<u>激昂</u>：你弃置六张手牌。" .. 
+  "<br/><font color='grey'>#\"<b>昂扬技</b>\"：昂扬技发动后，技能失效直到满足<b>激昂</b>条件。",
+  ["os__rouke"] = "柔克",
+  [":os__rouke"] = "锁定技，当你在摸牌阶段外获得不少于两张牌时，你摸一张牌。",
+
+  ["@os__quanqian"] = "劝迁",
+  ["os__quanqian_draw"] = "手牌摸至%arg张",
+  ["os__quanqian_get"] = "观看%dest手牌并选择一种花色，获得其中所有此花色的牌",
+  ["#os__quanqian-choose"] = "劝迁：选择一种花色，获得%dest手牌中所有此花色的牌",
 }
 
 return extension

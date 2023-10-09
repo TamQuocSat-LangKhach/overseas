@@ -164,12 +164,60 @@ Fk:loadTranslationTable{
 
   ["$os_ex__yinghun1"] = "义定四野，武匡海内。",
   ["$os_ex__yinghun2"] = "江东男儿，皆胸怀匡扶天下之志。",
-  ["$os_ex__polu1"] = "义定四野，武匡海内。", --其实是给英魂的，先这样
+  ["$os_ex__polu1"] = "义定四野，武匡海内。", -- 其实是给英魂的
   ["$os_ex__polu2"] = "江东男儿，皆胸怀匡扶天下之志。",
   ["~os_ex__sunjian"] = "吾身虽死，忠勇须传。",
 
   ["@os_ex__polu"] = "破虏",
   ["#os_ex__polu"] = "破虏：你可选择任意名角色，令其各摸 %arg 张牌",
+}
+
+local menghuo = General(extension, "os_ex__menghuo", "qun", 4)
+local qiushou = fk.CreateTriggerSkill{
+  name = "os_ex__qiushou$",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not (player:hasSkill(self.name) and data.card.trueName == "savage_assault") then return end
+    if data.damageDealt then
+      local num = 0
+      for _, v in pairs(data.damageDealt) do
+        num = num + v
+      end
+      if num > 3 then return true end
+    end
+    local room = player.room
+    return #room.logic:getEventsOfScope(GameEvent.Death, 1, function (e)
+      local deathData = e.data[1]
+      if deathData.damage and e:findParent(GameEvent.UseCard) and e:findParent(GameEvent.UseCard).id == room.logic:getCurrentEvent().id then
+        return true
+      end
+    end, Player.HistoryPhase) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room.alive_players, function(p) return table.contains({"shu", "qun"}, p.kingdom) end)
+    if #targets == 0 then return end
+    targets = table.map(targets, Util.IdMapper)
+    room:sortPlayersByAction(targets)
+    for _, pid in ipairs(targets) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        p:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+menghuo:addSkill("huoshou")
+menghuo:addSkill("ol_ex__zaiqi")
+menghuo:addSkill(qiushou)
+Fk:loadTranslationTable{
+  ["os_ex__menghuo"] = "界孟获",
+  ["os_ex__qiushou"] = "酋首",
+  [":os_ex__qiushou"] = "主公技，锁定技，当【南蛮入侵】的使用结算结束后，若此牌造成的伤害大于3点或有角色因此死亡，所有蜀势力和群势力角色各摸一张牌。",
+
+  ["~os_ex__menghuo"] = "我一定要赢，要赢啊……",
 }
 
 local fazheng = General(extension, "os_ex__fazheng", "shu", 3)
