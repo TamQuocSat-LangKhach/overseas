@@ -217,7 +217,52 @@ Fk:loadTranslationTable{
   ["os_ex__qiushou"] = "酋首",
   [":os_ex__qiushou"] = "主公技，锁定技，当【南蛮入侵】的使用结算结束后，若此牌造成的伤害大于3点或有角色因此死亡，所有蜀势力和群势力角色各摸一张牌。",
 
+  ["$huoshou_os_ex__menghuo1"] = "汉人，岂是我等的对手。",
+  ["$huoshou_os_ex__menghuo2"] = "定叫你们有来无回！",
+  ["$ol_ex__zaiqi_os_ex__menghuo1"] = "胜败乃常事，无妨！",
+  ["$ol_ex__zaiqi_os_ex__menghuo2"] = "汉人奸诈，还是不服，再战！",
   ["~os_ex__menghuo"] = "我一定要赢，要赢啊……",
+}
+
+local zhurong = General(extension, "os_ex__zhurong", "qun", 4, 4, General.Female)
+local lieren = fk.CreateTriggerSkill{
+  name = "os_ex__lieren",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and not player:isKongcheng() and not player.room:getPlayerById(data.to):isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local target = room:getPlayerById(data.to)
+    local pindian = player:pindian({target}, self.name)
+    if player.dead then return end
+    if pindian.results[target.id].winner == player then
+      if not target:isNude() then
+        local card = room:askForCardChosen(player, target, "he", self.name)
+        room:obtainCard(player, card, false, fk.ReasonPrey)
+      end
+    else
+      room:delay(1200)
+      room:obtainCard(player, pindian.results[target.id].toCard, true, fk.ReasonJustMove)
+      if target.dead then return end
+      room:obtainCard(target, pindian.fromCard, true, fk.ReasonJustMove)
+    end
+  end,
+}
+zhurong:addSkill(lieren)
+zhurong:addSkill("juxiang")
+
+Fk:loadTranslationTable{
+  ["os_ex__zhurong"] = "界祝融",
+  ["os_ex__lieren"] = "烈刃",
+  [":os_ex__lieren"] = "当你使用【杀】指定目标后，你可以与其拼点，若你赢，你获得其一张牌；若你没赢，你获得其拼点的牌，其获得你拼点的牌。",
+
+  ["$juxiang_os_ex__zhurong1"] = "今日，就让这群汉人长长见识。",
+  ["$juxiang_os_ex__zhurong2"] = "我的大象，终于有了用武之地。",
+  ["$os_ex__lieren1"] = "有我手中飞刀在，何惧蜀军！",
+  ["$os_ex__lieren2"] = "长矛，飞刀，烈火，都来吧！",
+  ["~os_ex__zhurong"] = "这群汉人使诈……",
 }
 
 local fazheng = General(extension, "os_ex__fazheng", "shu", 3)
