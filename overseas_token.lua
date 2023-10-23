@@ -328,7 +328,7 @@ local redistributeAction = fk.CreateTriggerSkill{
       data.extra_data.redistributeCids = nil
       return false
     end
-    local target = room:askForChoosePlayers(target, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#redistribute-give", self.name, true)
+    local target = room:askForChoosePlayers(target, table.map(room.alive_players, Util.IdMapper), 1, 1, "#redistribute-give", self.name, true)
     if #target > 0 then room:moveCardTo(cids, Player.Hand, room:getPlayerById(target[1]), fk.ReasonGive, self.name) end
     data.extra_data.redistributeCids = nil
   end,

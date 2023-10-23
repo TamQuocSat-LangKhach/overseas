@@ -263,9 +263,7 @@ local os__yingjia = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local plist, cid = player.room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, function(p)
-      return p.id
-    end), 1, 1, ".|.|.|hand", "#os__yingjia-target", self.name, true) --但是没判断可不可以弃置
+    local plist, cid = player.room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, ".|.|.|hand", "#os__yingjia-target", self.name, true) --但是没判断可不可以弃置
     if #plist > 0 then
       self.cost_data = {plist[1], cid}
       return true
@@ -412,9 +410,7 @@ local os__kuanji = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local target = room:askForChoosePlayers(
-      player, table.map(room:getOtherPlayers(player), function(p)
-        return p.id
-      end), 1, 1, "#os__kuanji-ask", self.name, true)
+      player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
       local cards = {}
       for _, move in ipairs(data) do
@@ -519,9 +515,7 @@ local os__chayi = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-        return p.id
-      end), 1, 1, "#os__chayi-ask", self.name, true)
+    local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__chayi-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1253,9 +1247,7 @@ local os__fenghan = fk.CreateTriggerSkill{
     local room = player.room
     local num = #AimGroup:getAllTargets(data.tos)
     
-    local result = room:askForChoosePlayers(player, table.map(room.alive_players, function(p)
-        return p.id
-      end), 1, num, "#os__fenghan-ask:::" .. num, self.name, true)
+    local result = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, num, "#os__fenghan-ask:::" .. num, self.name, true)
     if #result > 0 then
       self.cost_data = result
       return true
@@ -1293,9 +1285,7 @@ local os__congji = fk.CreateTriggerSkill{
     local room = player.room
     local target = room:askForChoosePlayers(
       player,
-      table.map(room:getOtherPlayers(player), function(p)
-        return p.id
-      end),
+      table.map(room:getOtherPlayers(player), Util.IdMapper),
       1,
       1,
       "#os__congji-ask",
@@ -1550,9 +1540,7 @@ local os__zhibian = fk.CreateTriggerSkill{
       table.filter(room:getOtherPlayers(player), function(p)
         return not p:isKongcheng()
       end),
-      function(p)
-        return p.id
-      end
+      Util.IdMapper
     )
     if #availableTargets == 0 then return false end
     local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__zhibian-ask", self.name, true)
@@ -1732,7 +1720,7 @@ local os__fenming = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local target = room:askForChoosePlayers(player, table.map(room.alive_players, function(p) return p.id end), 1, 1, "#os__fenming-ask", self.name, true)
+    local target = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1, "#os__fenming-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
