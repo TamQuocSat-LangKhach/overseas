@@ -845,30 +845,33 @@ local os__moukui = fk.CreateTriggerSkill{
       end
     end
   end,
-
-  refresh_events = {fk.CardUseFinished, fk.EnterDying},
-  can_refresh = function(self, event, target, player, data)
+}
+local os__moukui_delay = fk.CreateTriggerSkill{
+  name = "#os__moukui_delay",
+  events = {fk.CardUseFinished, fk.EnterDying},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
     if event == fk.EnterDying then
       return data.damage and data.damage.card and (data.damage.card.extra_data or {}).os__moukuiUser == player.id and (data.damage.card.extra_data or {}).os__moukuiTargets and table.contains((data.damage.card.extra_data or {}).os__moukuiTargets, target.id)
     else
       return player == target and (data.card.extra_data or {}).os__moukuiUser == player.id and (data.card.extra_data or {}).os__moukuiTargets
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     if event == fk.EnterDying then
       table.removeOne((data.damage.card.extra_data or {}).os__moukuiTargets, target.id)
     else
       local room = player.room
       for _, pid in ipairs((data.card.extra_data or {}).os__moukuiTargets) do
         local target = room:getPlayerById(pid)
-        if not player:isNude() then
+        if not player:isNude() and not target.dead then
           room:throwCard(room:askForCardChosen(target, player, "he", self.name), self.name, player, target)
         end
       end
     end
   end,
 }
-
+os__moukui:addRelatedSkill(os__moukui_delay)
 os__fuwan:addSkill(os__moukui)
 
 Fk:loadTranslationTable{
@@ -879,6 +882,7 @@ Fk:loadTranslationTable{
   ["os__moukui_draw"] = "摸一张牌",
   ["os__moukui_discard"] = "弃置其一张手牌",
   ["beishui_os__moukui"] = "背水：若此【杀】未令其进入濒死状态，其弃置你一张牌",
+  ["#os__moukui_delay"] = "谋溃",
 
   ["$os__moukui1"] = "你的死期到了。",
   ["$os__moukui2"] = "同归于尽吧。",
@@ -1115,6 +1119,25 @@ Fk:loadTranslationTable{
 
 local niufudongxie = General(extension, "niufudongxie", "qun", 4, 4, General.Bigender)
 
+---@param player ServerPlayer
+---@param data DamageStruct
+local function canBaonue(player, data, event)
+  if player:getMark("@os__baonue") >= 5 or player.dead then return false end
+  local num = ((data.extra_data or {}).osBaonueList or {})[tostring(player.id)]
+  return not num or (num ~= (event == fk.Damage and 1 or 2) and num ~= 3)
+end
+
+---@param room Room
+---@param player ServerPlayer
+---@param damageEvent DamageStruct
+local function addBaonue(room, player, data, event)
+  room:addPlayerMark(player, "@os__baonue", 1)
+  data.extra_data = data.extra_data or {}
+  local record = data.extra_data.osBaonueList or {}
+  record[tostring(player.id)] = (record[tostring(player.id)] or 0) + (event == fk.Damage and 1 or 2)
+  data.extra_data.osBaonueList = record
+end
+
 local os__juntun = fk.CreateTriggerSkill{
   name = "os__juntun",
   anim_type = "offensive",
@@ -1145,10 +1168,12 @@ local os__juntun = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage, fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return target and player:hasSkill(self.name) and not target.dead and (target == player or (event == fk.Damage and target:hasSkill("os__xiongjun"))) and player:getMark("@os__baonue") < 5 and not player.dead
+    return target and player:hasSkill(self.name) and
+    (target == player or (event == fk.Damage and target:hasSkill("os__xiongjun")))
+    and canBaonue(player, data, event)
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "@os__baonue", 1)
+    addBaonue(player.room, player, data, event)
   end,
 }
 
@@ -1160,10 +1185,10 @@ local os__xiongxi = fk.CreateActiveSkill{
   end,
   card_num = function() return 5 - Self:getMark("@os__baonue") end,
   card_filter = function(self, to_select, selected)
-    return #selected < 5 - Self:getMark("@os__baonue")
+    return #selected < 5 - Self:getMark("@os__baonue") and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
-  target_filter = function(self, to_select, selected)
-    return to_select ~= Self.id
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected_cards == 5 - Self:getMark("@os__baonue") and to_select ~= Self.id
   end,
   target_num = 1,
   on_use = function(self, room, effect)
@@ -1178,10 +1203,21 @@ local os__xiongxi = fk.CreateActiveSkill{
     }
   end,
 }
+local os__xiongxi_trig = fk.CreateTriggerSkill{
+  name = "#os__xiongxi_trig",
+  refresh_events = {fk.Damage, fk.Damaged},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and canBaonue(player, data, event)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    addBaonue(player.room, player, data, event)
+  end,
+}
+os__xiongxi:addRelatedSkill(os__xiongxi_trig)
 
 local os__xiafeng = fk.CreateTriggerSkill{
   name = "os__xiafeng",
-  anim_type = "offensive", --哈哈
+  anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and player.phase == Player.Play and player:getMark("@os__baonue") > 0
@@ -1212,12 +1248,18 @@ local os__xiafeng = fk.CreateTriggerSkill{
     }
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared},
+  refresh_events = {fk.AfterCardUseDeclared, fk.Damage, fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player == target
+    if player ~= target then return end
+    if event == fk.AfterCardUseDeclared then return true
+    else return player:hasSkill(self.name) and canBaonue(player, data, event) end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__xiafeng_count-turn", 1)
+    if event == fk.AfterCardUseDeclared then 
+      player.room:addPlayerMark(player, "_os__xiafeng_count-turn", 1)
+    else
+      addBaonue(player.room, player, data, event)
+    end
   end,
 }
 local os__xiafeng_disres = fk.CreateTriggerSkill{
@@ -1320,7 +1362,7 @@ local os__mutao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local to = target
-    while true do --判断有没有没有杀，又要考虑给出杀后又来杀的情况
+    while true do -- 判断有没有没有杀，又要考虑给出杀后又来杀的情况
       local cids = table.filter(target:getCardIds(Player.Hand), function(id)
         return Fk:getCardById(id).trueName == "slash"
       end)
