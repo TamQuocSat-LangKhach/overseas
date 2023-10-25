@@ -864,7 +864,7 @@ local os__moukui_delay = fk.CreateTriggerSkill{
       local room = player.room
       for _, pid in ipairs((data.card.extra_data or {}).os__moukuiTargets) do
         local target = room:getPlayerById(pid)
-        if not player:isNude() and not target.dead then
+        if target and not player:isNude() and not target.dead then
           room:throwCard(room:askForCardChosen(target, player, "he", self.name), self.name, player, target)
         end
       end
