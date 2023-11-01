@@ -3989,7 +3989,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
     if not player:hasSkill(self.name) then return false end
     if event ~= fk.AfterCardsMove then
       if player == target then return false end
-      return table.find(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+      return table.find(Card:getIdList(data.card), function(id)
         return Fk:getCardById(id):getMark("@@os__kujian") > 0
       end)
     else
@@ -4035,7 +4035,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("os__kujian")
     if event ~= fk.AfterCardsMove then
       room:notifySkillInvoked(player, "os__kujian", "drawcard")
-      table.forEach(data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+      table.forEach(Card:getIdList(data.card), function(id)
         return room:setCardMark(Fk:getCardById(id), "@@os__kujian", 0)
       end)
       room:doIndicate(player.id, {target.id})

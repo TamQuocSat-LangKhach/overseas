@@ -291,11 +291,16 @@ local os__gongxin = fk.CreateActiveSkill{
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num = #card_suits
-    cids = room:askForGuanxing(player, cids, nil, {0, 1}, self.name, true, {target.general, "os__gongxinDo"}).bottom
+    cids = room:askForCardsChosen(player, target, 0, 1, {
+      card_data = {
+        { "$Hand", target:getCardIds(Player.Hand) }
+      }
+    }, self.name)
     if #cids > 0 then
       local id = cids[1]
       target:showCards(cids)
-      local choice = room:askForChoice(player, {"os__gongxin_discard:::" .. Fk:getCardById(id):toLogString(), "os__gongxin_put:::" .. Fk:getCardById(id):toLogString()}, self.name, "#os__gongxin-treat::" .. target.id .. ":" .. Fk:getCardById(id):toLogString())
+      local card_log = Fk:getCardById(id):toLogString()
+      local choice = room:askForChoice(player, {"os__gongxin_discard:::" .. card_log, "os__gongxin_put:::" .. card_log}, self.name, "#os__gongxin-treat::" .. target.id .. ":" .. card_log)
       if choice:startsWith("os__gongxin_discard") then
         room:throwCard({id}, self.name, target, player)
       else
@@ -350,7 +355,6 @@ Fk:loadTranslationTable{
   ["#os__shelie_extra"] = "涉猎",
   ["#os__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
   ["#os__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
-  ["os__gongxinDo"] = "弃置或置于牌堆顶",
   ["#os__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
   ["os__gongxin_discard"] = "弃置%arg",
   ["os__gongxin_put"] = "将%arg置于牌堆顶",
@@ -475,11 +479,16 @@ local gundam__gongxin = fk.CreateActiveSkill{
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num = #card_suits
-    cids = room:askForGuanxing(player, cids, nil, {0, 1}, self.name, true, {target.general, "gundam__gongxinDo"}).bottom
+    cids = room:askForCardsChosen(player, target, 0, 1, {
+      card_data = {
+        { "$Hand", target:getCardIds(Player.Hand) }
+      }
+    }, self.name)
     if #cids > 0 then
       local id = cids[1]
       target:showCards(cids)
-      local choice = room:askForChoice(player, {"gundam__gongxin_discard:::" .. Fk:getCardById(id):toLogString(), "gundam__gongxin_put:::" .. Fk:getCardById(id):toLogString()}, self.name, "#gundam__gongxin-treat::" .. target.id .. ":" .. Fk:getCardById(id):toLogString())
+      local card_log = Fk:getCardById(id):toLogString()
+      local choice = room:askForChoice(player, {"gundam__gongxin_discard:::" .. card_log, "gundam__gongxin_put:::" .. card_log}, self.name, "#gundam__gongxin-treat::" .. target.id .. ":" .. card_log)
       if choice:startsWith("gundam__gongxin_discard") then
         room:throwCard({id}, self.name, target, player)
       else
@@ -531,7 +540,6 @@ Fk:loadTranslationTable{
   ["#gundam__shelie_extra"] = "涉猎",
   ["#gundam__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
   ["#gundam__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
-  ["gundam__gongxinDo"] = "弃置或置于牌堆顶",
   ["#gundam__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
   ["gundam__gongxin_discard"] = "弃置%arg",
   ["gundam__gongxin_put"] = "将%arg置于牌堆顶",
@@ -623,20 +631,27 @@ local os__lingbao = fk.CreateActiveSkill{
         local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__lingbao-black", self.name, false)
         if #target > 0 then
           target = room:getPlayerById(target[1])
-          local id = room:askForCardChosen(player, target, "hej", self.name)
-          local flagTable = {"h", "e", "j"}
-          table.remove(flagTable, room:getCardArea(id))
-          room:throwCard({id}, self.name, target, player)
-          local areas = {}
-          if table.contains(flagTable, "h") then table.insert(areas, Player.Hand) end
-          if table.contains(flagTable, "e") then table.insert(areas, Player.Equip) end
-          if table.contains(flagTable, "j") then table.insert(areas, Player.Judge) end
-          local cards = target:getCardIds(areas)
-          if #cards == 0 then return end
-          if room:askForChoice(player, {"os__lingbao_black_discard:" .. target.id, "Cancel"}, self.name) ~= "Cancel" then --为什么askfor...==0不会截停
-            id = room:askForCardChosen(player, target, table.concat(flagTable), self.name)
-            if id then room:throwCard({id}, self.name, target, player) end
+          local card_data = {}
+          if target:getHandcardNum() > 0 then
+            local handcards = {}
+            for i = 1, target:getHandcardNum(), 1 do
+              table.insert(handcards, -1) -- 手牌不可见
+            end
+            table.insert(card_data, {"$Hand", handcards})
           end
+          local areas = {["$Equip"] = Player.Equip, ["$Judge"] = Player.Judge}
+          for k, v in pairs(areas) do
+            if #target.player_cards[v] > 0 then
+              table.insert(card_data, {k, target:getCardIds(v)})
+            end
+          end
+          local ret = room:askForPoxi(player, "os__lingbao_discard", card_data, nil, false)
+          local new_ret = table.filter(ret, function(id) return id ~= -1 end)
+          local hand_num = #ret - #new_ret
+          if hand_num > 0 then
+            table.insertTable(new_ret, table.random(target:getCardIds(Player.Hand), hand_num))
+          end
+          room:throwCard(new_ret, self.name, target, player)
         end
       end
     else
@@ -649,6 +664,31 @@ local os__lingbao = fk.CreateActiveSkill{
         end
       end
     end
+  end,
+}
+Fk:addPoxiMethod{
+  name = "os__lingbao_discard",
+  card_filter = Util.TrueFunc,
+  feasible = function(selected, data)
+    if #selected < 1 or #selected > 2 then return false end
+    local areas = {}
+    for _, id in ipairs(selected) do
+      for _, v in ipairs(data) do
+        if table.contains(v[2], id) then
+          table.insertIfNeed(areas, v[2])
+          break
+        end
+      end
+    end
+    return #areas == #selected
+  end,
+  prompt = function ()
+    return "灵宝：弃置其至多两个不同区域各一张牌"
+  end,
+  default_choice = function(data)
+    if not data then return false end
+    local cids = table.map(data, function(v) return v[2][1] end)
+    return table.random(cids, 1)
   end,
 }
 
@@ -765,8 +805,7 @@ Fk:loadTranslationTable{
   ["@os__danfa-turn"] = "丹法",
   ["#os__lingbao-red"] = "灵宝：选择一名角色，令其回复1点体力",
   ["#os__lingbao-black"] = "灵宝：选择一名角色，弃置其至多两个不同区域的各一张牌",
-  --["#os__lingbao-black_2"] = "灵宝：你可弃置 %src 另一个区域的一张牌",
-  ["os__lingbao_black_discard"] = "弃置%src另一个区域的一张牌",
+  ["os__lingbao_discard"] = "灵宝",
   ["#os__lingbao-black_red"] = "灵宝：选择两名角色，先选的摸一张牌，后选的弃置一张牌",
   ["#os__sidao-ask"] = "司道：选择一件法宝并使用之",
 
@@ -1407,12 +1446,15 @@ local os__fuzuan_trg = fk.CreateTriggerSkill{
     if target ~= player or not player:hasSkill(self.name) then return false end
     return event == fk.Damaged or data.to ~= player
   end,
-  on_trigger = function(self, event, target, player, data)
-    return player.room:askForUseActiveSkill(player, "os__fuzuan", "#os__fuzuan-trg", true)
+  on_cost = function(self, event, target, player, data)
+    local _, ret = player.room:askForUseActiveSkill(player, "os__fuzuan", "#os__fuzuan-trg", true)
+    if ret then
+      local target = ret.targets[1]
+      player.room:doIndicate(player.id, {target})
+      return true
+    end 
   end,
-  on_use = function(self, event, target, player, data)
-    return false
-  end,
+  on_use = Util.FalseFunc,
 }
 os__fuzuan:addRelatedSkill(os__fuzuan_trg)
 
@@ -1484,9 +1526,9 @@ local os__feifu = fk.CreateTriggerSkill{
     if #cids > 0 then
       room:moveCardTo(cids, Player.Hand, user, fk.ReasonGive, self.name, nil, false)
       local card = Fk:getCardById(cids[1])
-      if card.type == Card.TypeEquip then
+      if card.type == Card.TypeEquip and room:getCardOwner(card) == user and room:getCardArea(card) == Card.PlayerHand then
         local cardName = card.name
-        local use = room:askForUseCard(user, cardName, cardName .. "|.|.|.|.|.|" .. cids[1], "#os__feifu-use:::" .. cardName, true)
+        local use = room:askForUseCard(user, cardName, cardName .. "|.|.|.|.|.|" .. cids[1], "#os__feifu-use:::" .. card:toLogString(), true)
         if use then room:useCard(use) end
       end
     end
@@ -1511,7 +1553,7 @@ Fk:loadTranslationTable{
   ["#os__fuzuan-trg"] = "你可对一名有转换技的角色发动“复纂”",
   ["#os__chongqi-ask"] = "宠齐：你可减1点体力上限，令一名其他角色获得〖复纂〗",
   ["#os__feifu-give"] = "非服：请交给 %src 一张牌",
-  ["#os__feifu-use"] = "非服：你可使用【%arg】",
+  ["#os__feifu-use"] = "非服：你可使用%arg",
 
   ["$os__fuzuan1"] = "望陛下听臣忠言，勿信资等无知之论。",
   ["$os__fuzuan2"] = "前朝王莽之乱，可为今事之鉴。",
@@ -2828,7 +2870,6 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
   name = "#os__jianwei_pd",
   events = {fk.EventPhaseStart},
   mute = true,
-  priority = 0.9, --…………
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
     if target == player then
@@ -2875,18 +2916,46 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
     if pd.results[pd_target.id].winner == player then
       if to:isAllNude() then return end
       local dummy = Fk:cloneCard("dilu")
-      local areas = {Player.Hand, Player.Equip, Player.Judge}
-      for i = 1, 3, 1 do
-        if #to.player_cards[areas[i]] > 0 then
-          local flag = {"h", "e", "j"}
-          local id = room:askForCardChosen(player, to, flag[i], self.name)
-          dummy:addSubcard(id)
+      local card_data = {}
+      if to:getHandcardNum() > 0 then
+        local handcards = {}
+        for i = 1, to:getHandcardNum(), 1 do
+          table.insert(handcards, -1) -- 手牌不可见
+        end
+        table.insert(card_data, {"$Hand", handcards})
+      end
+      local areas = {["$Equip"] = Player.Equip, ["$Judge"] = Player.Judge}
+      for k, v in pairs(areas) do
+        if #to.player_cards[v] > 0 then
+          table.insert(card_data, {k, to:getCardIds(v)})
         end
       end
+      local ret = room:askForPoxi(player, "os__jianwei_get", card_data, nil, false)
+      local new_ret = table.filter(ret, function(id) return id ~= -1 end)
+      local hand_num = #ret - #new_ret
+      if hand_num > 0 then
+        table.insertTable(new_ret, table.random(to:getCardIds(Player.Hand), hand_num))
+      end
+      dummy:addSubcards(new_ret)
       room:obtainCard(player, dummy, false, fk.ReasonPrey)
     else
       if player:getEquipment(Card.SubtypeWeapon) then room:obtainCard(to, player:getEquipment(Card.SubtypeWeapon), false, fk.ReasonPrey) end
     end
+  end,
+}
+Fk:addPoxiMethod{
+  name = "os__jianwei_get",
+  card_filter = Util.TrueFunc,
+  feasible = function(selected, data)
+    return data and #data == #selected
+  end,
+  prompt = function ()
+    return "剑威：获得其每个区域各一张牌"
+  end,
+  default_choice = function(data)
+    if not data then return false end
+    local cids = table.map(data, function(v) return v[2][1] end)
+    return cids
   end,
 }
 os__jianwei:addRelatedSkill(os__jianwei_pd)
@@ -2904,6 +2973,7 @@ Fk:loadTranslationTable{
   ["#os__jianwei_pd"] = "剑威",
   ["#os__jianwei-target"] = "剑威：你可与一名攻击范围内的角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌",
   ["#os__jianwei-ask"] = "剑威：你可与 %src 拼点：若其没赢，你获得其装备区里的武器牌；若其赢，其获得你每个区域各一张牌",
+  ["os__jianwei_get"] = "剑威",
 
   ["$os__fujian1"] = "得此宝剑，如虎添翼！",
   ["$os__fujian2"] = "丞相至宝，汝岂配用之？啊！……",
@@ -4197,7 +4267,7 @@ qiaorui:addSkill(os__qiongji)
 Fk:loadTranslationTable{
   ["qiaorui"] = "桥蕤",
   ["os__xiawei"] = "狭威",
-  [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。<br /><font color='grey'>（注：暂时bug，木马牌【无懈】无法使用）</font>" ..
+  [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。" ..
     "<br/><font color='grey'>#\"<b>妄行</b>\"：选择X的值（1至4）执行相应效果，然后结束阶段开始时，你需弃置X张牌，否则减1点体力上限。", --回合结束时
   ["os__qiongji"] = "穷技",
   [":os__qiongji"] = "锁定技，当你受到伤害时，若你没有“威”，伤害值+1；每回合限一次，当你使用或打出“威”时，你摸一张牌。",
@@ -4389,17 +4459,17 @@ local os__jinglue = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local cids = target:getCardIds(Player.Hand)
     local record
-    cids = room:askForGuanxing(player, cids, nil, {1, 1}, self.name, true, {target.general, "os__jinglueDo"}).bottom
-    if #cids > 0 then
-      local cid = cids[1]
-      room:setCardMark(Fk:getCardById(cid), "_os__sishi", {target.id, player.id})
-      local mark_name = "_os__jinglue_now-" .. tostring(player.id)
-      record = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
-      table.insertIfNeed(record, cid)
-      room:setPlayerMark(target, mark_name, record)
-    end
+    local cid = room:askForCardChosen(player, target, {
+      card_data = {
+        { "$Hand", target:getCardIds(Player.Hand) }
+      }
+    }, self.name)
+    room:setCardMark(Fk:getCardById(cid), "_os__sishi", {target.id, player.id})
+    local mark_name = "_os__jinglue_now-" .. tostring(player.id)
+    record = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
+    table.insertIfNeed(record, cid)
+    room:setPlayerMark(target, mark_name, record)
     record = type(player:getMark("_os__jinglue")) == "table" and player:getMark("_os__jinglue") or {}
     table.insertIfNeed(record, target.id)
     room:setPlayerMark(player, "_os__jinglue", record)
@@ -5580,7 +5650,7 @@ local quanqian = fk.CreateActiveSkill{
       if num > 0 then player:drawCards(num, self.name) end
     else
       cards = target:getCardIds(Player.Hand)
-      local suit = "log_spade"
+      local suit = "log_spade" -- default
       local result = room:askForCustomDialog(player, self.name,
         "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
           cards,
