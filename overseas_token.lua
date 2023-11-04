@@ -11,7 +11,7 @@ local celestialCalabashSkill = fk.CreateTriggerSkill{
   events = {fk.DamageCaused, fk.Death},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) then return false end
+    if not player:hasSkill(self) then return false end
     if event == fk.DamageCaused then
       return target == player and data.damage > 1
     else
@@ -47,7 +47,7 @@ local horsetailWhiskSkill = fk.CreateTriggerSkill{
   attached_equip = "horsetail_whisk",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -85,7 +85,7 @@ local talismanSkill = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and type(player:getMark("@$talisman")) == "table" and table.contains(player:getMark("@$talisman"), data.card.trueName)
+    return target == player and player:hasSkill(self) and data.card and type(player:getMark("@$talisman")) == "table" and table.contains(player:getMark("@$talisman"), data.card.trueName)
   end,
   on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, self.name, "defensive")
@@ -94,7 +94,7 @@ local talismanSkill = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card
+    return target == player and player:hasSkill(self) and data.card
   end,
   on_refresh = function(self, event, target, player, data)
     local talismanRecorded = type(player:getMark("@$talisman")) == "table" and player:getMark("@$talisman") or {}
@@ -127,7 +127,7 @@ local moonSpearSkill = fk.CreateTriggerSkill{
   attached_equip = "moon_spear",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) or player.phase ~= Player.NotActive or player:getMark("_moon_spear-turn") ~= 1 then return false end
+    if not player:hasSkill(self) or player.phase ~= Player.NotActive or player:getMark("_moon_spear-turn") ~= 1 then return false end
     for _, move in ipairs(data) do
       if move.from == player.id then
         return table.find(move.moveInfo, function(info)
