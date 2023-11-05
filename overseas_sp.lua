@@ -2575,35 +2575,28 @@ local os__wanlan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:throwAllCards("h")
-    room:recover({
-      who = target,
-      num = 1 - target.hp,
-      recoverBy = player,
-      skillName = self.name,
-    })
-    room:setPlayerMark(player, "_os__wanlan", 1)
+    if not target.dead then
+      room:recover({
+        who = target,
+        num = 1 - target.hp,
+        recoverBy = player,
+        skillName = self.name,
+      })
+    end
+    local current = room.logic:getCurrentEvent()
+    local death_event = current:findParent(GameEvent.Dying, true)
+    death_event:addExitFunc(function ()
+      if not room.current.dead then
+        room:damage{
+          from = player,
+          to = room.current,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end)
   end,
 }
-local os__wanlan_damage = fk.CreateTriggerSkill{
-  name = "#os__wanlan_damage",
-  mute = true,
-  events = {fk.AfterDying},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player:getMark("_os__wanlan") > 0
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "_os__wanlan", 0)
-    room:damage{
-      from = player,
-      to = room.current,
-      damage = 1,
-      skillName = self.name,
-    }
-  end,
-}
-os__wanlan:addRelatedSkill(os__wanlan_damage)
 
 os__jiakui:addSkill(os__zhongzuo)
 os__jiakui:addSkill(os__wanlan)
