@@ -1,6 +1,8 @@
 local extension = Package("overseas_sp2")
 extension.extensionName = "overseas"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["overseas_sp2"] = "国际服专属2",
   ["os_xing"] = "国际星",
@@ -3385,12 +3387,9 @@ local os__fengpo = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(data.to)
     local cids = to:getCardIds(Player.Hand)
-    room:fillAG(player, cids)
-    room:delay(math.min(#cids, 10) * 1000)
-    room:closeAG(player)
+
     local update = player:getMark("@@os__fengpo_update") > 0
-    --[[
-      if not update then --没有用
+    if not update then
       if #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e) 
         local death = e.data[1]
         return death.damage and death.damage.from == player
@@ -3399,13 +3398,25 @@ local os__fengpo = fk.CreateTriggerSkill{
         room:setPlayerMark(player, "@@os__fengpo_update", 1)
       end
     end
-    ]]
     local n = update and #table.filter(cids, function(id) 
       return Fk:getCardById(id).color == Card.Red
     end) or #table.filter(cids, function(id) 
       return Fk:getCardById(id).suit == Card.Diamond
     end)
-    local choice = room:askForChoice(player,{"os__fengpo_draw:::" .. n, "os__fengpo_damage:::" .. n}, self.name)
+
+    local choice = "os__fengpo_draw:::" .. n -- default
+    local result = room:askForCustomDialog(player, self.name,
+      "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
+        cids,
+        {"os__fengpo_draw:::" .. n, "os__fengpo_damage:::" .. n},
+        "#os__fengpo-choose::" .. data.to,
+        {}, 0, 0,
+      })
+    if result ~= "" then
+      local reply = json.decode(result)
+      choice = reply.choice
+    end
+
     if choice:startsWith("os__fengpo_draw") then
       player:drawCards(n, self.name)
     else
@@ -3429,6 +3440,7 @@ Fk:loadTranslationTable{
   ["os__fengpo"] = "凤魄",
   [":os__fengpo"] = "当你使用【杀】或【决斗】仅指定一名角色为目标后，你可观看其手牌然后选择一项：1. 摸X张牌；2. 令此牌的伤害值基数+X（X为其<font color='red'>♦</font>手牌数，若你于本局游戏内杀死过角色，则修改为“其红色手牌数”）。",
 
+  ["#os__fengpo-choose"] = "凤魄：观看%dest的手牌并选择",
   ["os__fengpo_draw"] = "摸%arg张牌",
   ["os__fengpo_damage"] = "令此牌的伤害值基数+%arg",
   ["@@os__fengpo_update"] = "凤魄2级",

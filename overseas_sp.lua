@@ -631,7 +631,14 @@ local os__zhenjun = fk.CreateTriggerSkill{
       use.extra_data = use.extra_data or {}
       use.extra_data.os__zhenjunUser = player.id
       room:useCard(use)
-      player:drawCards(player:getMark("_os__zhenjun_damage-phase") + 1, self.name)
+      local num = 0
+      if use.damageDealt then
+        
+        for _, v in pairs(use.damageDealt) do
+          num = num + v
+        end
+      end
+      player:drawCards(num + 1, self.name)
     else
       room:setPlayerMark(target, "_os__zhenjun_target", 0)
       local victim = room:askForChoosePlayers(
@@ -658,15 +665,6 @@ local os__zhenjun = fk.CreateTriggerSkill{
         }
       end
     end
-  end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-    return parentUseData and (parentUseData.data[1].extra_data or {}).os__zhenjunUser == player.id
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__zhenjun_damage-phase", data.damage)
   end,
 }
 os_sp__yujin:addSkill(os__zhenjun)
