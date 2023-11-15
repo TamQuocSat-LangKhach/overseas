@@ -5252,7 +5252,7 @@ local os__shijun = fk.CreateTriggerSkill{
     --[[local targets = table.filter(room:getOtherPlayers(player), function(p)
       return p.kingdom == "qun"
     end)]]
-    local targets = room.alive_players
+    local targets = room:getOtherPlayers(player)
     if event == fk.GameStart or event == fk.EventAcquireSkill then
       if player:hasSkill(self.name, true) then
         table.forEach(targets, function(p)

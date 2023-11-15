@@ -633,7 +633,6 @@ local os__zhenjun = fk.CreateTriggerSkill{
       room:useCard(use)
       local num = 0
       if use.damageDealt then
-        
         for _, v in pairs(use.damageDealt) do
           num = num + v
         end

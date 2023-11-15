@@ -220,7 +220,7 @@ local underhandingAction = fk.CreateTriggerSkill{
     for _, pid in ipairs(data.extra_data.underhandingTargets) do
       local target = room:getPlayerById(pid)
       if not player:isNude() and not target.dead then
-        local c = room:askForCard(player, 1, 1, true, self.name, false, "", "#underhanding-card::" .. pid)[1]
+        local c = room:askForCard(player, 1, 1, true, self.name, false, nil, "#underhanding-card::" .. pid)[1]
         room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
       end
     end
