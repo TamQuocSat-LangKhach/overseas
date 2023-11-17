@@ -955,23 +955,23 @@ local os__bingzhao = fk.CreateTriggerSkill{
 local os__canshi = fk.CreateTriggerSkill{
   name = "os__canshi",
   events = {fk.TargetConfirming, fk.AfterCardTargetDeclared},
-  mute = "true",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0)
     or (event == fk.AfterCardTargetDeclared and data.tos and #data.tos == 1)) 
-    and (data.card.type == Card.TypeBasic or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick))
+    and (data.card.type == Card.TypeBasic or data.card:isCommonTrick())
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.TargetConfirming then
       return player.room:askForSkillInvoke(player, self.name, data, "#os__canshi::" .. data.from .. ":" .. data.card.name)
     else
-      local availableTargets = table.map(table.filter(player.room.alive_players, function(p)
+      local targets = table.filter(player.room.alive_players, function(p)
         return p:getMark("@@os__puppet") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id)
-      end), Util.IdMapper)
-      if #availableTargets == 0 then return false end
-      local targets = player.room:askForChoosePlayers(player, availableTargets, 1, #availableTargets, "#os__canshi-targets", self.name, true)
-      if #targets > 0 then
-        self.cost_data = targets
+        and not player:isProhibited(p, data.card)
+      end)
+      if #targets == 0 then return false end
+      local tos = player.room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, #targets, "#os__canshi-targets", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos
         return true
       end
     end
@@ -987,11 +987,19 @@ local os__canshi = fk.CreateTriggerSkill{
     else
       player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "special")
-      room:doIndicate(player.id, self.cost_data)
-      table.insert(data.tos, self.cost_data)
-      table.forEach(self.cost_data, function(pid) 
+      local tos = self.cost_data
+      room:doIndicate(player.id, tos)
+      for _, pid in ipairs(tos) do
+        table.insert(data.tos, {pid})
         room:removePlayerMark(room:getPlayerById(pid), "@@os__puppet")
-      end)
+      end
+      room:sendLog{
+        type = "#AddTargetsBySkill",
+        from = player.id,
+        to = tos,
+        arg = self.name,
+        arg2 = data.card:toLogString()
+      }
     end
   end,
 }
@@ -1023,6 +1031,7 @@ Fk:loadTranslationTable{
   ["@os__bingzhao"] = "秉诏",
   ["#os__canshi"] = "蚕食：你可取消【%arg】的目标，然后 %dest 弃“傀”",
   ["#os__canshi-targets"] = "蚕食：你可令任意名有“傀”的角色也成为目标，然后这些角色弃“傀”",
+  ["#AddTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 增加了目标 %to",
 
   ["$os__zongkui1"] = "不要抵抗，接受我的操纵吧。",
   ["$os__zongkui2"] = "当我的傀儡，你将受益良多。",
