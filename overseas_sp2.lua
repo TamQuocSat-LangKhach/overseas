@@ -293,21 +293,13 @@ local os__gongxin = fk.CreateActiveSkill{
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num = #card_suits
-    cids = room:askForCardsChosen(player, target, 0, 1, {
-      card_data = {
-        { "$Hand", target:getCardIds(Player.Hand) }
-      }
-    }, self.name)
-    if #cids > 0 then
-      local id = cids[1]
-      target:showCards(cids)
-      local card_log = Fk:getCardById(id):toLogString()
-      local choice = room:askForChoice(player, {"os__gongxin_discard:::" .. card_log, "os__gongxin_put:::" .. card_log}, self.name, "#os__gongxin-treat::" .. target.id .. ":" .. card_log)
-      if choice:startsWith("os__gongxin_discard") then
-        room:throwCard({id}, self.name, target, player)
-      else
-        room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
-      end
+    local cards, choice = U.askforChooseCardsAndChoice(player, cids, {"os__gongxin_discard", "os__gongxin_put"}, self.name, "#os__gongxin-ask::" .. target.id, {"Cancel"})
+    if #cards == 0 then return end
+    target:showCards(cards)
+    if choice == "os__gongxin_discard" then
+      room:throwCard(cards, self.name, target, player)
+    else
+      room:moveCardTo(cards, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
     end
     card_suits = {}
     cids = target:getCardIds(Player.Hand)
@@ -351,15 +343,15 @@ Fk:loadTranslationTable{
   ["os__shelie"] = "涉猎",
   [":os__shelie"] = "①摸牌阶段，你可改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。②每轮限一次，结束阶段开始时，若你本回合使用过四种花色的牌，你选择执行一个额外的摸牌阶段或出牌阶段且不能与上次选择相同。",
   ["os__gongxin"] = "攻心",
-  [":os__gongxin"] = "出牌阶段限一次，你可观看一名其他角色的手牌，然后你可展示其中一张牌，选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶，然后若其手牌中花色数因此减少，其不能响应你本回合使用的下一张牌。",
+  [":os__gongxin"] = "出牌阶段限一次，你可观看一名其他角色的手牌，然后你可展示其中一张牌并选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶，然后若其手牌中花色数因此减少，其不能响应你本回合使用的下一张牌。",
 
   ["@os__shelie-turn"] = "涉猎",
   ["#os__shelie_extra"] = "涉猎",
   ["#os__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
   ["#os__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
-  ["#os__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
-  ["os__gongxin_discard"] = "弃置%arg",
-  ["os__gongxin_put"] = "将%arg置于牌堆顶",
+  ["os__gongxin_discard"] = "弃置所选牌",
+  ["os__gongxin_put"] = "将所选牌置于牌堆顶",
+  ["#os__gongxin-ask"] = "攻心：观看%dest的手牌，可展示其中一张牌并选择一项",
   ["@@os__gongxin_dr-turn"] = "攻心",
   ["#os__gongxin_dr"] = "攻心",
 
@@ -481,21 +473,13 @@ local gundam__gongxin = fk.CreateActiveSkill{
       table.insertIfNeed(card_suits, Fk:getCardById(id).suit)
     end)
     local num = #card_suits
-    cids = room:askForCardsChosen(player, target, 0, 1, {
-      card_data = {
-        { "$Hand", target:getCardIds(Player.Hand) }
-      }
-    }, self.name)
-    if #cids > 0 then
-      local id = cids[1]
-      target:showCards(cids)
-      local card_log = Fk:getCardById(id):toLogString()
-      local choice = room:askForChoice(player, {"gundam__gongxin_discard:::" .. card_log, "gundam__gongxin_put:::" .. card_log}, self.name, "#gundam__gongxin-treat::" .. target.id .. ":" .. card_log)
-      if choice:startsWith("gundam__gongxin_discard") then
-        room:throwCard({id}, self.name, target, player)
-      else
-        room:moveCardTo({id}, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
-      end
+    local cards, choice = U.askforChooseCardsAndChoice(player, cids, {"gundam__gongxin_discard", "gundam__gongxin_put"}, self.name, "#gundam__gongxin-ask::" .. target.id, {"Cancel"})
+    if #cards == 0 then return end
+    target:showCards(cards)
+    if choice == "gundam__gongxin_discard" then
+      room:throwCard(cards, self.name, target, player)
+    else
+      room:moveCardTo(cards, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
     end
     card_suits = {}
     cids = target:getCardIds(Player.Hand)
@@ -504,7 +488,7 @@ local gundam__gongxin = fk.CreateActiveSkill{
     end)
     local num2 = #card_suits
     if num > num2 and not player.dead and not target.dead then
-      local choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-ask::" .. target.id)
+      local choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-dis::" .. target.id)
       if choice ~= "Cancel" then
         local pattern = type(target:getMark("@gundam__gongxin-turn")) == "table" and target:getMark("@gundam__gongxin-turn") or {}
         table.insertIfNeed(pattern, choice)
@@ -534,18 +518,18 @@ os__gundameng:addSkill(gundam__gongxin)
 Fk:loadTranslationTable{
   ["os__gundameng"] = "高达二号",
   ["gundam__shelie"] = "涉猎",
-  [":gundam__shelie"] = "摸牌阶段，你可以改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。每轮限一次，结束阶段开始时，若你本回合使用牌花色数不小于你的体力值，你选择执行一个额外的摸牌阶段或出牌阶段。",
+  [":gundam__shelie"] = "摸牌阶段，你可改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。每轮限一次，结束阶段开始时，若你本回合使用牌花色数不小于你的体力值，你选择执行一个额外的摸牌阶段或出牌阶段。",
   ["gundam__gongxin"] = "攻心",
-  [":gundam__gongxin"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后你可以展示其中一张牌，选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶。然后若其手牌中花色数因此减少，你可令其本回合无法使用或打出一种颜色的牌。",
+  [":gundam__gongxin"] = "出牌阶段限一次，你可观看一名其他角色的手牌，然后你可展示其中一张牌并选择一项：1. 你弃置其此牌；2. 将此牌置于牌堆顶。然后若其手牌中花色数因此减少，你可令其本回合无法使用或打出一种颜色的牌。",
 
   ["@gundam__shelie-turn"] = "涉猎",
   ["#gundam__shelie_extra"] = "涉猎",
   ["#gundam__shelie_extra-ask"] = "涉猎：选择执行一个额外的阶段",
   ["#gundam__shelie_extra_log"] = "%from 发动“%arg”，执行一个额外的 %arg2",
-  ["#gundam__gongxin-treat"] = "攻心：对 %dest 的 %arg 选择一项",
-  ["gundam__gongxin_discard"] = "弃置%arg",
-  ["gundam__gongxin_put"] = "将%arg置于牌堆顶",
-  ["#gundam__gongxin-ask"] = "攻心：你可令 %dest 本回合无法使用或打出一种颜色的牌",
+  ["gundam__gongxin_discard"] = "弃置所选牌",
+  ["gundam__gongxin_put"] = "将所选牌置于牌堆顶",
+  ["#gundam__gongxin-ask"] = "攻心：观看%dest的手牌，可展示其中一张牌并选择一项",
+  ["#gundam__gongxin-dis"] = "攻心：你可令 %dest 本回合无法使用或打出一种颜色的牌",
   ["@gundam__gongxin-turn"] = "攻心",
 
   ["$gundam__shelie1"] = "尘世之间，岂有吾所未闻之事？",
@@ -954,6 +938,7 @@ local os__bingzhao = fk.CreateTriggerSkill{
 
 local os__canshi = fk.CreateTriggerSkill{
   name = "os__canshi",
+  mute = true,
   events = {fk.TargetConfirming, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and ((event == fk.TargetConfirming and #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.from):getMark("@@os__puppet") > 0)
