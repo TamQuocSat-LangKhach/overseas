@@ -1818,11 +1818,11 @@ local os__gongsun = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local target = room:getPlayerById(self.cost_data[1])
-    local targets = type(player:getMark("_os__gongsun")) == "type" and player:getMark("_os__gongsun") or {}
+    local targets = U.getMark(player, "_os__gongsun")
     table.insertIfNeed(targets, target.id)
     room:setPlayerMark(player, "_os__gongsun", targets)
     for _, p in ipairs({player, target}) do
-      local suitsRecorded = type(p:getMark("@os__gongsun")) == "table" and p:getMark("@os__gongsun") or {}
+      local suitsRecorded = U.getMark(p, "@os__gongsun")
       table.insert(suitsRecorded, self.cost_data[2])
       room:setPlayerMark(p, "@os__gongsun", suitsRecorded)
     end
@@ -2755,6 +2755,10 @@ local zhilue_buff = fk.CreateTargetModSkill{
 zhilue:addRelatedSkill(zhilue_draw)
 zhilue:addRelatedSkill(zhilue_buff)
 
+local zhanghe_win = fk.CreateActiveSkill{ name = "os_xing__zhanghe_win_audio" }
+zhanghe_win.package = extension
+Fk:addSkill(zhanghe_win)
+
 zhanghe:addSkill(zhilue)
 
 Fk:loadTranslationTable{
@@ -2767,9 +2771,11 @@ Fk:loadTranslationTable{
   ["#os_xing__zhilue-movecard"] = "知略：移动场上的一张牌，若此牌为：装备牌，你失去1点体力；延时锦囊牌，你此回合手牌上限-1",
   ["@@os_xing__zhilue-turn"] = "知略",
 
-  ["$os_xing__zhilue1"] = "将者，上不制天，下不制地，中不制人。",
-  ["$os_xing__zhilue2"] = "料敌之计，明敌之意，因况反制。",
-  ["~os_xing__zhanghe"] = "若非小人作梗，何至官渡之败……",
+  ["$os_xing__zhilue1"] = "时以进而取之，无则磨锋以待。",
+  ["$os_xing__zhilue2"] = "知敌之薄弱，略我之计谋。",
+  ["~os_xing__zhanghe"] = "吾筹划而思，奈何还是慢了一步。",
+  ["os_xing__zhanghe_win_audio"] = "胜利语音",
+  ["$os_xing__zhanghe_win_audio"] = "天易之理可胜，知略更甚以往。",
 }
 
 local xiahouen = General(extension, "xiahouen", "wei", 5)
@@ -3285,7 +3291,7 @@ local os__gezhi = fk.CreateTriggerSkill{
       else
         choices = allChoices
       end
-      local record = type(target:getMark("_os__gezhi")) == "table" and target:getMark("_os__gezhi") or {}
+      local record = U.getMark(target, "_os__gezhi")
       local choice = room:askForChoice(target, choices, self.name)
       if choice == "os__gezhi_lordskill" then
         local skills = {}
