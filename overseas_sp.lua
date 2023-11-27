@@ -3114,26 +3114,19 @@ local os__qiaozhou = General(extension, "os__qiaozhou", "shu", 3)
 local os__zhiming = fk.CreateTriggerSkill{
   name = "os__zhiming",
   anim_type = "drawcard",
-  mute = true,
   events = {fk.EventPhaseStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
       ((event == fk.EventPhaseStart and player.phase == Player.Start) or (event == fk.EventPhaseEnd and player.phase == Player.Discard))
   end,
-  on_cost = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(self.name)
-    room:notifySkillInvoked(player, self.name)
     player:drawCards(1, self.name)
     local cids = room:askForCard(player, 1, 1, true, self.name, true, nil, "#os__zhiming-ask")
     if #cids > 0 then
-      self.cost_data = cids
-      return true
+      room:moveCardTo(cids, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
     end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:moveCardTo(self.cost_data, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
   end,
 }
 
@@ -3176,6 +3169,7 @@ local os__xingbu = fk.CreateTriggerSkill{
     if #target > 0 then
       room:setPlayerMark(room:getPlayerById(target[1]), "@os__xingbu", result)
     end
+    room:moveCardTo(cids, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
   end,
 }
 local os__xingbu_do = fk.CreateTriggerSkill{
