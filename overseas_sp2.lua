@@ -1135,9 +1135,6 @@ local os__renshe = fk.CreateTriggerSkill{
   name = "os__renshe",
   events = {fk.Damaged},
   anim_type = "masochism",
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     local choices = {"os__waishi_times"}
     local room = player.room
@@ -1173,15 +1170,14 @@ local os__renshe = fk.CreateTriggerSkill{
         player.kingdom = room:askForChoice(player, kingdoms, self.name, "#os__chijie-choose")
         room:broadcastProperty(player, "kingdom")
     else
-      local target = room:askForChoosePlayers(player, table.map(
+      local tos = room:askForChoosePlayers(player, table.map(
         table.filter(room.alive_players, function(p)
           return (p ~= data.from and p ~= player)
         end), Util.IdMapper
       ), 1, 1, "#os__renshe-target", self.name, false)
-      if #target > 0 then
-        local to = room:getPlayerById(target[1])
+      if #tos > 0 then
         for _, p in ipairs(room:getAlivePlayers()) do --顺序
-          if p == to or p == player then
+          if not p.dead and (p.id == tos[1] or p == player) then
             p:drawCards(1, self.name)
           end
         end
