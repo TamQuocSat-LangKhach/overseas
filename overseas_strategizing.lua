@@ -887,26 +887,12 @@ local os__mouli = fk.CreateViewAsSkill{
     local cids = player.room:getCardsFromPileByRule(".|.|.|.|" .. use.card.name)
     if #cids > 0 then
       use.card:addSubcards(cids)
-    --else
-      --return false
-      --use = nil
+    else
+      player.room:doBroadcastNotify("ShowToast", Fk:translate("os__mouliFailed"))
+      return self.name
     end
   end,
 }
-local os__mouli_subcard = fk.CreateTriggerSkill{ --恃才问题
-  name = "#os__mouli_subcard",
-  events = {fk.PreCardUse, fk.PreCardRespond},
-  mute = true,
-  priority = 10,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and table.contains(data.card.skillNames, "os__mouli")
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    if #data.card.subcards == 0 then return true end
-  end,
-}
-os__mouli:addRelatedSkill(os__mouli_subcard)
 
 os__wangling:addSkill(os__mibei)
 os__wangling:addSkill(os__xingqi)
@@ -920,10 +906,11 @@ Fk:loadTranslationTable{
   ["os__xingqi"] = "星启",
   [":os__xingqi"] = "觉醒技，准备阶段开始时，若场上的牌数大于你的体力值，则你回复1点体力，然后若〖秘备〗未完成，你从牌堆中获得每种类别的牌各一张；若〖秘备〗已完成，本局游戏你使用牌无距离限制。",
   ["os__mouli"] = "谋立",
-  [":os__mouli"] = "每回合限一次，当你需要使用基本牌时，你可使用牌堆中（系统选择）的基本牌。<font color='grey'>暂无：若牌堆中没有想使用的牌，可以返回响应。</font>",
+  [":os__mouli"] = "每回合限一次，当你需要使用基本牌时，你可使用牌堆中（系统选择）的基本牌。",
 
   ["@os__mibei"] = "秘备",
   ["@os__xingqi_nodistance"] = "星启无距离限制",
+  ["os__mouliFailed"] = "谋立失败，牌堆中没有该基本牌",
 
   ["$os__mibei1"] = "密为之备，不可有失。",
   ["$os__mibei2"] = "事以密成，语以泄败！",
@@ -2082,6 +2069,8 @@ Fk:loadTranslationTable{
   ["$os__zaoli1"] = "喜怒不形于色，诈伪要明之徒。",
   ["$os__zaoli2"] = "摇舌鼓唇，竖子是之也！",
   ["~os__sunyi"] = "叛我贼子，虽死亦不饶之……",
+
+  ["#qinggang_sword_skill"] = "青釭剑", -- 搞一下
 }
 
 return extension

@@ -116,7 +116,7 @@ local talisman = fk.CreateArmor{
 extension:addCard(talisman)
 Fk:loadTranslationTable{
   ["talisman"] = "冲应神符",
-  [":talisman"] = "装备牌·武器<br /><b>武器技能</b>：锁定技，当你受到一种牌名的牌造成的伤害后，本局游戏同牌名的牌对你造成的伤害-1。",
+  [":talisman"] = "装备牌·防具<br /><b>防具技能</b>：锁定技，①当你受到伤害后，记录造成此伤害的牌的牌名；②当你受到伤害时，若造成此伤害的牌的牌名被记录过，此伤害-1。",
   ["#talisman_skill"] = "冲应神符",
   [":#talisman_skill"] = "锁定技，当你受到一种牌名的牌造成的伤害后，本局游戏同牌名的牌对你造成的伤害-1。",
   ["@$talisman"] = "神符",

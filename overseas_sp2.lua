@@ -31,10 +31,7 @@ local os__wushen = fk.CreateFilterSkill{
   name = "os__wushen",
   anim_type = "offensive",
   card_filter = function(self, to_select, player)
-    return player:hasSkill(self) and to_select.suit == Card.Heart and
-    not table.contains(player.player_cards[Player.Equip], to_select.id) and
-    not table.contains(player.player_cards[Player.Judge], to_select.id)
-    -- table.contains(player.player_cards[Player.Hand], to_select.id) --不能用getCardArea！
+    return player:hasSkill(self) and to_select.suit == Card.Heart and table.contains(player.player_cards[Player.Hand], to_select.id)
   end,
   view_as = function(self, to_select)
     local card = Fk:cloneCard("slash", Card.Heart, to_select.number)
@@ -76,14 +73,14 @@ local os__wushen_trg = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("os__wushen")
-    room:notifySkillInvoked(player, "os__wushen")
     if event == fk.CardUsing then
       data.disresponsiveList = data.disresponsiveList or {}
       for _, target in ipairs(player.room.alive_players) do
         table.insertIfNeed(data.disresponsiveList, target.id)
       end
     else
+      player:broadcastSkillInvoke("os__wushen")
+      room:notifySkillInvoked(player, "os__wushen")
       local targets = {}
       for _, p in ipairs(player.room:getOtherPlayers(player)) do
         if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) then
