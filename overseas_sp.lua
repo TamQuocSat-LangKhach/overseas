@@ -2038,9 +2038,9 @@ local os__xingzhui = fk.CreateActiveSkill{
 local os__xingzhui_conjure = fk.CreateTriggerSkill{
   name = "#os__xingzhui_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__xingzhui") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__xingzhui") ~= 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -3174,13 +3174,15 @@ local os__xingbu = fk.CreateTriggerSkill{
 }
 local os__xingbu_do = fk.CreateTriggerSkill{
   name = "#os__xingbu_do",
-  events = {fk.CardUseFinished, fk.DrawNCards},
+  events = {fk.CardUseFinished, fk.DrawNCards, fk.EventPhaseChanging},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if target ~= player or player:getMark("@os__xingbu-turn") == 0 then return false end
-    if event == fk.CardUseFinished then 
+    if event == fk.CardUseFinished then
       return player:getMark("@os__xingbu-turn") == "_os__xingbu_2" and player:getMark("_os__xingbu_2-phase") == 0
-    else
+    elseif event == fk.EventPhaseChanging then
+      return player:getMark("@os__xingbu-turn") == "_os__xingbu_3" and data.to == Player.Discard
+    elseif event == fk.DrawNCards then
       return player:getMark("@os__xingbu-turn") == "_os__xingbu_3"
     end
   end,
@@ -3195,20 +3197,22 @@ local os__xingbu_do = fk.CreateTriggerSkill{
         player:drawCards(2, self.name)
       end
       room:addPlayerMark(player, "_os__xingbu_2-phase")
-    else
+    elseif event == fk.EventPhaseChanging then
+      player:skip(data.to)
+      return true
+    elseif event == fk.DrawNCards then
       data.n = data.n + 2
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("@os__xingbu") ~= 0 and data.from == Player.NotActive
+    return target == player and player:getMark("@os__xingbu") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@os__xingbu-turn", player:getMark("@os__xingbu"))
     room:setPlayerMark(player, "@os__xingbu", 0)
-    if player:getMark("@os__xingbu-turn") ~= 0 and player:getMark("@os__xingbu-turn") == "_os__xingbu_3" then player:skip(Player.Discard) end
   end,
 }
 local os__xingbu_buff = fk.CreateTargetModSkill{
@@ -3234,7 +3238,10 @@ Fk:loadTranslationTable{
   ["os__zhiming"] = "知命",
   [":os__zhiming"] = "准备阶段开始时或弃牌阶段结束时，你摸一张牌，然后你可将一张牌置于牌堆顶。",
   ["os__xingbu"] = "星卜",
-  [":os__xingbu"] = "结束阶段开始时，你可亮出牌堆顶的三张牌，然后你可选择一名其他角色，令其根据其中红色牌的数量获得以下效果之一：<br/>为3：<font color='#CC3131'>«五星连珠»</font>，其下个回合摸牌阶段额定摸牌数+2、使用【杀】的次数上限+1、跳过弃牌阶段；<br/>为2：«白虹贯日»，其下个回合出牌阶段使用第一张牌结算结束后，弃置一张牌，摸两张牌；<br/>不大于1：<font color='grey'>«荧惑守心»</font>，其下个回合使用【杀】的次数上限-1。",
+  [":os__xingbu"] = "结束阶段开始时，你可亮出牌堆顶的三张牌，然后你可选择一名其他角色，令其根据其中红色牌的数量获得以下效果之一：<br/>"..
+  "为3：<font color='#CC3131'>«五星连珠»</font>，其下个回合摸牌阶段额定摸牌数+2、使用【杀】的次数上限+1、跳过弃牌阶段；<br/>"..
+  "为2：«白虹贯日»，其下个回合出牌阶段使用第一张牌结算结束后，弃置一张牌，摸两张牌；<br/>"..
+  "不大于1：<font color='grey'>«荧惑守心»</font>，其下个回合使用【杀】的次数上限-1。",
 
   ["#os__zhiming-ask"] = "知命：你可将一张牌置于牌堆顶",
   ["#os__xingbu-target"] = "星卜：你可选择一名其他角色，令其获得“%arg”",
@@ -4065,10 +4072,10 @@ os__kujian:addRelatedSkill(os__kujian_judge)
 
 local os__ruilian = fk.CreateTriggerSkill{
   name = "os__ruilian",
-  events = {fk.RoundStart, fk.EventPhaseChanging},
+  events = {fk.RoundStart, fk.TurnEnd},
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and (event == fk.RoundStart or (tonumber(target:getMark("@os__ruilian-turn")) > 1 and data.to == Player.NotActive and table.contains(target:getMark("_os__ruilianGiver"), player.id)))
+    return player:hasSkill(self) and (event == fk.RoundStart or (tonumber(target:getMark("@os__ruilian-turn")) > 1 and table.contains(target:getMark("_os__ruilianGiver"), player.id)))
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.RoundStart then
@@ -4112,7 +4119,7 @@ local os__ruilian = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.EventPhaseChanging},
+  refresh_events = {fk.AfterCardsMove, fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
     if player ~= player.room.current then return false end
     if event == fk.AfterCardsMove then
@@ -4133,7 +4140,7 @@ local os__ruilian = fk.CreateTriggerSkill{
       end
       return false
     else
-      return target == player and player:getMark("@@os__ruilian") ~= 0 and data.from == Player.NotActive
+      return target == player and player:getMark("@@os__ruilian") ~= 0
     end
   end,
   on_refresh = function(self, event, target, player, data)

@@ -484,11 +484,11 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
     else
       room:notifySkillInvoked(player, self.name)
       local choice = self.cost_data
-      local target = data.from
+      local tar = data.from
       if choice:startsWith("os_ex__yuzhang_discard") then
-        room:askForDiscard(target, 2, 2, true, self.name, false)
+        room:askForDiscard(tar, 2, 2, true, self.name, false)
       else
-        room:addPlayerMark(target, "@os_ex__yuzhang_pro-turn", 1)
+        room:addPlayerMark(tar, "@os_ex__yuzhang_pro-turn", 1)
       end
     end
   end,
@@ -552,17 +552,17 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
     end
   end,
 
-  refresh_events = {fk.Damage, fk.EventPhaseChanging, fk.EventPhaseStart},
+  refresh_events = {fk.Damage, fk.AfterTurnEnd, fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Damage then return target == player and not data.to.dead and player:getMark("_os_ex__qianxi_target-turn") == data.to.id and data.card and data.card.trueName == "slash" and player.phase ~= Player.NotActive 
-    elseif event == fk.EventPhaseChanging then return target == player and data.to == Player.NotActive and player:getMark("@os_ex__qianxi") ~= 0 
+    elseif event == fk.AfterTurnEnd then return target == player and player:getMark("@os_ex__qianxi") ~= 0
     else return target == player and player.phase == Player.Finish and player:getMark("_os_ex__qianxi_done-turn") > 0 end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.Damage then room:setPlayerMark(player, "_os_ex__qianxi_done-turn", 1)
-    elseif event == fk.EventPhaseChanging then room:setPlayerMark(player, "@os_ex__qianxi", 0)
-    else 
+    elseif event == fk.AfterTurnEnd then room:setPlayerMark(player, "@os_ex__qianxi", 0)
+    else
       local p = room:getPlayerById(player:getMark("_os_ex__qianxi_target-turn"))
       player.room:setPlayerMark(p, "@os_ex__qianxi", p:getMark("@qianxi-turn") == "red" and "black" or "red")
     end
@@ -590,7 +590,7 @@ Fk:loadTranslationTable{
   ["os_ex__madai"] = "界马岱",
   ["os_ex__qianxi"] = "潜袭",
   [":os_ex__qianxi"] = "准备阶段开始时，你可摸一张牌，然后弃置一张牌，令距离为1的一名角色本回合不能使用或打出与你以此法弃置的牌颜色相同的手牌，然后结束阶段开始时，若你于本回合使用【杀】对其造成过伤害，你令其不能使用或打出另一种颜色的牌至其下回合结束。",
-  
+
   ["#os_ex__qianxi-choose"] = "潜袭：选择距离为1的一名角色，令其本回合不能使用或打出 %arg 的手牌",
   ["@qianxi-turn"] = "潜袭",
   ["@os_ex__qianxi"] = "潜袭",

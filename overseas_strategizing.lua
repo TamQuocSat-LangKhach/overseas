@@ -12,9 +12,9 @@ local os__dianyi = fk.CreateTriggerSkill{
   anim_type = "negative",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self) and data.to == Player.NotActive
+    return player == target and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -247,9 +247,9 @@ local os__miaolue_destruct = fk.CreateTriggerSkill{
 os__miaolue:addRelatedSkill(os__miaolue_destruct)
 local os__yingjia = fk.CreateTriggerSkill{
   name = "os__yingjia",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) or data.to ~= Player.NotActive then return false end
+    if not player:hasSkill(self) then return false end
     local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e) 
       local use = e.data[1]
       return use.from == player.id and use.card.type == Card.TypeTrick
@@ -539,9 +539,9 @@ local os__chayi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:getMark("_os__chayi") > 0 and data.from == Player.NotActive
+    return player == target and player:getMark("_os__chayi") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

@@ -810,10 +810,9 @@ local os__himiko = General(extension, "os__himiko", "qun", 3, 3, General.Female)
 local os__zongkui = fk.CreateTriggerSkill{
   name = "os__zongkui",
   anim_type = "control",
-  events = {fk.RoundStart, fk.EventPhaseChanging},
+  events = {fk.RoundStart, fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return false end
-    if event == fk.EventPhaseChanging and (target ~= player or data.from ~= Player.NotActive)then return false end
+    if not player:hasSkill(self) or (event == fk.TurnStart and target ~= player) then return false end
     local targets = table.filter(player.room.alive_players, function(p)
       return p:getMark("@@os__puppet") == 0 and p ~= player
     end)
@@ -824,7 +823,7 @@ local os__zongkui = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging then
+    if event == fk.TurnStart then
       local target = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function(p)
         return p:getMark("@@os__puppet") == 0 and p ~= player
       end), Util.IdMapper), 1, 1, "#os__zongkui-ask", self.name,true)
@@ -1264,7 +1263,7 @@ local os__kunsi_prohibit = fk.CreateProhibitSkill{
 local os__kunsi_trig = fk.CreateTriggerSkill{
   name = "#os__kunsi_trig",
   mute = true,
-  refresh_events = {fk.Damaged, fk.CardUseFinished, fk.EventPhaseChanging},
+  refresh_events = {fk.Damaged, fk.CardUseFinished, fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
       return target == player and (data.extra_data or {}).os__kunsiUser == player.id
@@ -1272,7 +1271,7 @@ local os__kunsi_trig = fk.CreateTriggerSkill{
       local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       return parentUseData and (parentUseData.data[1].extra_data or {}).os__kunsiUser == player.id
     else
-      return target == player and player:getMark("_os__linglu") ~= 0 and data.from == Player.NotActive
+      return target == player and player:getMark("_os__linglu") ~= 0
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -1336,9 +1335,9 @@ local os__linglu = fk.CreateTriggerSkill{
 }
 local os__linglu_do = fk.CreateTriggerSkill{
   name = "#os__linglu_do",
-  refresh_events = {fk.Damage, fk.EventPhaseChanging},
+  refresh_events = {fk.Damage, fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return target == player and (player:getMark("@os__linglu") ~= 0 or player:getMark("@os__linglu_twice") ~=0) and (event == fk.Damage or data.to == Player.NotActive)
+    return target == player and (player:getMark("@os__linglu") ~= 0 or player:getMark("@os__linglu_twice") ~=0)
   end,
   on_refresh = function(self, event, target, player, data)
     local mark_names = {"@os__linglu", "@os__linglu_twice"}
@@ -1824,9 +1823,9 @@ local os__gongsun = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.Death},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("_os__gongsun") ~= 0 and (event == fk.Death or data.from == Player.NotActive)
+    return target == player and player:getMark("_os__gongsun") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2167,9 +2166,9 @@ local os__fengji = fk.CreateTriggerSkill{
 local os__fengji_conjure = fk.CreateTriggerSkill{
   name = "#os__fengji_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__fengji") ~= 0 and string.sub(player:getMark("@os__fengji"), -1) == "0" and data.to == Player.NotActive
+    return player:getMark("@os__fengji") ~= 0 and string.sub(player:getMark("@os__fengji"), -1) == "0"
   end,
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
@@ -2189,9 +2188,9 @@ local os__fengji_conjure = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@os__fengji", 0)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@os__fengji") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__fengji") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2295,9 +2294,9 @@ local os__zhouhu = fk.CreateTriggerSkill{
 local os__zhouhu_conjure = fk.CreateTriggerSkill{
   name = "#os__zhouhu_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__zhouhu") ~= 0 and string.sub(player:getMark("@os__zhouhu")[2], -1) == "0" and data.to == Player.NotActive
+    return player:getMark("@os__zhouhu") ~= 0 and string.sub(player:getMark("@os__zhouhu")[2], -1) == "0"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -2312,9 +2311,9 @@ local os__zhouhu_conjure = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__zhouhu", 0)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@os__zhouhu") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__zhouhu") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2350,18 +2349,18 @@ local os__zuhuo = fk.CreateTriggerSkill{
 local os__zuhuo_conjure = fk.CreateTriggerSkill{
   name = "#os__zuhuo_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging, fk.DamageInflicted},
+  events = {fk.TurnEnd, fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    if event == fk.EventPhaseChanging then
-      return player:getMark("@os__zuhuo") ~= 0 and string.sub(player:getMark("@os__zuhuo"), -1) == "0" and data.to == Player.NotActive
+    if event == fk.TurnEnd then
+      return player:getMark("@os__zuhuo") ~= 0 and string.sub(player:getMark("@os__zuhuo"), -1) == "0"
     else
       return target == player and player:getMark("@os__zuhuo_defend") ~= 0
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging then
+    if event == fk.TurnEnd then
       local nums = string.split(player:getMark("@os__zuhuo"), "-")
       local num = tonumber(nums[1])
       room:notifySkillInvoked(player, "os__zuhuo")
@@ -2376,9 +2375,9 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@os__zuhuo") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__zuhuo") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2417,9 +2416,9 @@ local os__fengqi = fk.CreateTriggerSkill{
 local os__fengqi_conjure = fk.CreateTriggerSkill{
   name = "#os__fengqi_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__fengqi") ~= 0 and string.sub(player:getMark("@os__fengqi")[2], -1) == "0" and data.to == Player.NotActive
+    return player:getMark("@os__fengqi") ~= 0 and string.sub(player:getMark("@os__fengqi")[2], -1) == "0"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -2434,9 +2433,9 @@ local os__fengqi_conjure = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__fengqi", 0)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@os__fengqi") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__fengqi") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2547,9 +2546,9 @@ local os__zhouzu = fk.CreateActiveSkill{
 local os__zhouzu_conjure = fk.CreateTriggerSkill{
   name = "#os__zhouzu_conjure",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("@os__zhouzu") ~= 0 and string.sub(player:getMark("@os__zhouzu")[2], -1) == "0" and data.to == Player.NotActive
+    return player:getMark("@os__zhouzu") ~= 0 and string.sub(player:getMark("@os__zhouzu")[2], -1) == "0"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -2575,9 +2574,9 @@ local os__zhouzu_conjure = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__zhouzu", 0)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@os__zhouzu") ~= 0 and data.to == Player.NotActive
+    return player:getMark("@os__zhouzu") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -4002,11 +4001,11 @@ local os__xianfeng_others_distance = fk.CreateDistanceSkill{
 }
 local os__xianfeng_cleaner = fk.CreateTriggerSkill{
   name = "#os__xianfeng_cleaner",
-  refresh_events = {fk.EventPhaseChanging, fk.Death},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if target ~= player then return false end
-    if event == fk.EventPhaseChanging then
-      return data.from == Player.NotActive and (player:getMark("@os__xianfeng") ~= 0 or player:getMark("_os__xianfeng_others") ~= 0)
+    if event == fk.TurnStart then
+      return player:getMark("@os__xianfeng") ~= 0 or player:getMark("_os__xianfeng_others") ~= 0
     else
       return player:getMark("_os__xianfeng_others") ~= 0
     end
@@ -4170,13 +4169,13 @@ local qiaorui = General(extension, "qiaorui", "qun", 5)
 
 local os__xiawei = fk.CreateTriggerSkill{
   name = "os__xiawei",
-  events = {fk.GameStart, fk.EventPhaseChanging, fk.EventPhaseStart},
+  events = {fk.GameStart, fk.TurnStart, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     if event == fk.GameStart then
       return true
-    elseif event == fk.EventPhaseChanging then
-      return target == player and data.from == Player.NotActive and #player:getPile("os__pomp&") > 0
+    elseif event == fk.TurnStart then
+      return target == player and #player:getPile("os__pomp&") > 0
     else
       return target == player and player.phase == Player.Start
     end
@@ -4200,7 +4199,7 @@ local os__xiawei = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging then
+    if event == fk.TurnStart then
       player:setMark("_os__pomp", 0)
       room:moveCardTo(player:getPile("os__pomp&"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__pomp&")
     else
@@ -4486,7 +4485,7 @@ local os__jinglue = fk.CreateActiveSkill{
 local os__jinglue_do = fk.CreateTriggerSkill{
   name = "#os__jinglue_do",
   anim_type = "control",
-  events = {fk.CardUsing, fk.EventPhaseChanging},
+  events = {fk.CardUsing, fk.TurnEnd},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     local mark
@@ -4503,7 +4502,7 @@ local os__jinglue_do = fk.CreateTriggerSkill{
         end
       end
       return mark and mark[1] == target.id and mark[2] == player.id
-    elseif data.to == Player.NotActive and target:getMark("_os__jinglue_now-" .. player.id) ~= 0 and not player.dead then
+    elseif target:getMark("_os__jinglue_now-" .. player.id) ~= 0 and not player.dead then
       for _, id in ipairs(target:getMark("_os__jinglue_now-" .. player.id)) do
         if table.contains({Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}, player.room:getCardArea(id)) then
           return true

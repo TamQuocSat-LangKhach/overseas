@@ -129,14 +129,14 @@ local os__chuanshu = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "_os__chuanshu", {target.id, player.general})
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death}, --要改
+  refresh_events = {fk.TurnStart, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death}, --要改
   can_refresh = function(self, event, target, player, data)
     if event == fk.PindianCardsDisplayed then
       return player:getMark("@os__chuanshu") ~= 0 and (data.from == player or table.contains(data.tos, player))
     end
     if target ~= player then return false end
-    if event == fk.EventPhaseChanging then
-      return data.from == Player.NotActive and player:getMark("_os__chuanshu") ~= 0
+    if event == fk.TurnStart then
+      return player:getMark("_os__chuanshu") ~= 0
     elseif event == fk.Death then
       return player:getMark("_os__chuanshu") ~= 0
     elseif event == fk.PreCardUse then
@@ -150,7 +150,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging or event == fk.Death then
+    if event == fk.TurnStart or event == fk.Death then
       local target = room:getPlayerById(player:getMark("_os__chuanshu")[1])
       if target:isAlive() then
         local os__chuanshuRecord = type(target:getMark("@os__chuanshu")) == "table" and target:getMark("@os__chuanshu") or {}
