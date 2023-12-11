@@ -459,7 +459,7 @@ Fk:loadTranslationTable{
   ["$os__shengxi2"] = "外却骆谷之师，内保宁缉之实。",
   ["$os__kuanji1"] = "功以才成，业由才广，弃才不用，非长计也。",
   ["$os__kuanji2"] = "舍此不任而防后患，是备风波而废舟楫也。",
-  ["~os__feiyi"] = "安南重任，万不可轻之。",
+  ["~os__feiyi"] = "臣请告陛下，宦权日盛，必乱社稷也。",
 }
 
 local os__chenzhen = General(extension, "os__chenzhen", "shu", 3)
