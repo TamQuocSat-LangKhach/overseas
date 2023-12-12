@@ -4786,37 +4786,9 @@ Fk:loadTranslationTable{
   ["#os__youye-give"] = "定镇：将至少一张“蓄”分配给 %dest，点击“确定”后再将剩余牌分配给任意角色",
   ["#os__youye-give2"] = "定镇：分配任意张“蓄”给任意角色，直到所有“蓄”分配完毕",
 }
+--]]
 
-
-local fanchou = General(extension, "fanchou", "qun", 4)
-
-local distribute_active = fk.CreateActiveSkill{
-  name = "distribute_active",
-  mute = true,
-  min_card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    return Fk:getCardById(to_select):getMark("toDistribute") > 0
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    for _, id in ipairs(effect.cards) do
-      room:setCardMark(Fk:getCardById(id), "toDistribute", 0)
-    end
-    local fakemove = {
-      from = player.id,
-      toArea = Card.Processing,
-      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-      moveReason = fk.ReasonGive,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-  end,
-}
-
+local os__fanchou = General(extension, "os__fanchou", "qun", 4)
 local os__xingluan = fk.CreateTriggerSkill{
   name = "os__xingluan",
   anim_type = "special",
@@ -4834,100 +4806,69 @@ local os__xingluan = fk.CreateTriggerSkill{
       skillName = self.name,
       proposer = player.id,
     })
+    if player.dead then return end
     local choices = {}
+    local cardsMap = {}
     for _, cid in ipairs(cids) do
-      table.insertIfNeed(choices, Fk:getCardById(cid):getTypeString())
-    end
-    
-    local cards = {}
-    local choices = {}
-    for _, id in ipairs(cids) do
-      local card = Fk:getCardById(id)
-      local cardType = card:getTypeString()
-      if cards[cardType] == nil then
-        table.insert(choices, cardType)
-      end
-      cards[cardType] = cards[cardType] or {}
-      table.insert(cards[cardType], id)
+      local cardType = Fk:getCardById(cid):getTypeString()
+      table.insertIfNeed(choices, cardType)
+      cardsMap[cardType] = cardsMap[cardType] or {}
+      table.insert(cardsMap[cardType], cid)
     end
     local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
-    cards = cards[choice]
-    local fakemove = {
-      toArea = Card.PlayerHand,
-      to = player.id,
-      moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.Processing} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:sendFootnote(cards, {
-      type = self.name, --?
-      from = player.id,
+    local cards = cardsMap[choice]
+    player.special_cards["os__xingluan"] = table.simpleClone(cards)
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
     })
-    room:notifyMoveCards({player}, {fakemove})
-    for _, id in ipairs(cards) do
-      room:setCardMark(Fk:getCardById(id), "toDistribute", 1)
-    end
-    local distributeIds = {}
-    
-    while table.find(cards, function(id) return Fk:getCardById(id):getMark("toDistribute") > 0 end) do
-      local _, ret = room:askForUseActiveSkill(player, "distribute_active", "#os__xingluan-give:::" .. choice, true)
-      if ret then
-        local p = ret.targets[1]
-        distributeIds[p] = distributeIds[p] or {}
-        table.insertTable(distributeIds[p], ret.cards)
-      else
-        for _, id in ipairs(cards) do
-          room:setCardMark(Fk:getCardById(id), "toDistribute", 0)
-        end
-        cards = table.filter(cards, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
-        fakemove = {
-          from = player.id,
-          toArea = Card.Processing,
-          moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-          moveReason = fk.ReasonGive,
-        }
-        room:notifyMoveCards({player}, {fakemove})
-        room:moveCards({
-          fromArea = Card.Processing,
-          ids = cards,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonGive,
-          skillName = self.name,
-        })
+    local move = U.askForDistribution(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", self.name, true, 3)
+    player.special_cards["os__xingluan"] = {}
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
+    local num = #move[string.format("%.0f", player.id)] or 0
+    local victims = {}
+    for p, c in pairs(move) do
+      if #c >= num and #c > 0 then
+        table.insert(victims, tonumber(p))
       end
     end
-
-    local moveInfos = {}
-    for p, ids in pairs(distributeIds) do
-      table.insert(moveInfos, {
-        ids = ids,
-        fromArea = Card.Processing,
-        toArea = Card.PlayerHand,
-        to = p,
-        moveReason = fk.ReasonJustMove,
+    U.doDistribution(room, move, player.id, self.name)
+    room:sortPlayersByAction(victims)
+    for _, pid in ipairs(victims) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        room:loseHp(p, 1, self.name)
+      end
+    end
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
         skillName = self.name,
-        moveVisible = true
-      })
-      table.insert(fakemoves, {
-        from = player.id,
-        toArea = Card.Void,
-        moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-        moveReason = fk.ReasonGive,
+        proposer = player.id,
       })
     end
-    room:notifyMoveCards({player}, {fakemove})
-    room:moveCards(table.unpack(moveInfos))
   end,
 }
+os__fanchou:addSkill(os__xingluan)
 Fk:loadTranslationTable{
-  ["fanchou"] = "樊稠",
+  ["os__fanchou"] = "樊稠",
   ["os__xingluan"] = "兴乱",
-  [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌交给任意名角色（每名角色至多三张），以此法获得牌数大于等于你的角色各失去1点体力。",
-
+  [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌分配给任意名角色（每名角色至多三张），以此法获得牌数大于0且不小于你的角色依次失去1点体力。",
+  ["#os__xingluan-ask"] = "兴乱：选择其中一种类别的牌并分配",
   ["#os__xingluan-give"] = "兴乱：将 %arg 分配给任意名角色（每名角色至多三张）",
   ["distribute_active"] = "分配牌",
+  ["$os__xingluan1"] = "既朝廷不赦，何不反击一搏？",
+  ["$os__xingluan2"] = "反扑长安，势要天翻地覆！",
+  ["~os__fanchou"] = "我无谋反之心！啊……",
 }
---]]
 
 local caohong = General(extension, "os__caohong", "wei", 4)
 
