@@ -5554,6 +5554,12 @@ Fk:loadTranslationTable{
   ["@os__lijians"] = "力谏",
   ["os__lijians_damage"] = "对%dest造成1点伤害",
   ["#os__chungang-discard"] = "受到 %src “纯刚” 的影响，请弃置一张牌",
+
+  ["$os__lijians1"] = "陛下欲复昔日桓公之事乎？",
+  ["$os__lijians2"] = "君者当御贤于后，安可校勇于猛兽！",
+  ["$os__chungang1"] = "陛下若此，天下何以观之！",
+  ["$os__chungang2"] = "偏听谄谀之言，此为万民所仰之君乎？",
+  ["~zhangzhao"] = "哼哼！此皆老臣罪责，陛下岂会有过……",	
 }
 
 local zhanghong = General(extension, "zhanghong", "wu", 3)
@@ -5674,6 +5680,12 @@ Fk:loadTranslationTable{
   ["os__quanqian_draw"] = "手牌摸至%arg张",
   ["os__quanqian_get"] = "观看%dest手牌并选择一种花色，获得其中所有此花色的牌",
   ["#os__quanqian-choose"] = "劝迁：选择一种花色，获得%dest手牌中所有此花色的牌",
+
+  ["$os__quanqian1"] = "欲承奕世之基，当迁龙兴之地。",
+  ["$os__quanqian2"] = "吴郡僻远，宜迁都秣陵，以承王业。",
+  ["$os__rouke1"] = "宽以待人，柔能克刚，则英雄莫敌。",
+  ["$os__rouke2"] = "务崇宽惠，顺天命以行诛。",
+  ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",	
 }
 
 return extension
