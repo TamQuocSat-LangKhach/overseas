@@ -4590,70 +4590,8 @@ Fk:loadTranslationTable{
   ["$os__shanli2"] = "效伊尹霍光，以返天下清明。",
   ["~os__simashi"] = "吾家夙愿，得偿与否，尽看子上……",	
 }
---[[
-local distribute = fk.CreateTriggerSkill{
-  name = "distribute",
-  anim_type = "masochism",
-  events = {fk.Damaged},
-  on_trigger = function(self, event, target, player, data)
-    self.cancel_cost = false
-    for i = 1, data.damage do
-      if self.cancel_cost then break end
-      self:doCost(event, target, player, data)
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if room:askForSkillInvoke(player, self.name, data) then
-      return true
-    end
-    self.cancel_cost = true
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local ids = room:getNCards(2)
-    local fakemove = {
-      toArea = Card.PlayerHand,
-      to = player.id,
-      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:sendFootnote(ids, {
-      type = "##ShowCard", --
-      from = player.id,
-    })
-    room:notifyMoveCards({player}, {fakemove})
-    for _, id in ipairs(ids) do
-      room:setCardMark(Fk:getCardById(id), "toDistribute", 1)
-    end
-    while table.find(ids, function(id) return Fk:getCardById(id):getMark("toDistribute") > 0 end) do
-      if not room:askForUseActiveSkill(player, "yiji_active", "#yiji-give", true) then
-        for _, id in ipairs(ids) do
-          room:setCardMark(Fk:getCardById(id), "toDistribute", 0)
-        end
-        ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
-        fakemove = {
-          from = player.id,
-          toArea = Card.Void,
-          moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-          moveReason = fk.ReasonGive,
-        }
-        room:notifyMoveCards({player}, {fakemove})
-        room:moveCards({
-          fromArea = Card.Void,
-          ids = ids,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonGive,
-          skillName = self.name,
-        })
-      end
-    end
-  end,
-}
 
 local zhangjih = General(extension, "zhangjih", "wei", 3)
-
 local os__dingzhen = fk.CreateTriggerSkill{
   name = "os__dingzhen",
   anim_type = "defensive",
@@ -4682,15 +4620,17 @@ local os__dingzhen = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, pid in ipairs(self.cost_data) do
+    local targets = self.cost_data
+    room:sortPlayersByAction(targets)
+    for _, pid in ipairs(targets) do
       local p = room:getPlayerById(pid)
       if not p.dead then
-        local discard = room:askForDiscard(p, 1, 1, true, self.name, true, "slash|.", "#os__dingzhen-discard::" .. pid)
+        local discard = room:askForDiscard(p, 1, 1, true, self.name, true, "slash", "#os__dingzhen-discard::" .. player.id)
         if #discard == 0 then
-          room:addPlayerMark(p, "@@os__dingzhen-round", 1)
-          local record = type(player:getMark("_os__dingzhen_to-round")) == "table" and player:getMark("_os__dingzhen_to-round") or {}
+          room:setPlayerMark(p, "@@os__dingzhen-round", 1)
+          local record = U.getMark(p, "_os__dingzhen_to-round")
           table.insert(record, player.id)
-          room:addPlayerMark(p, "_os__dingzhen_to-round", record)
+          room:setPlayerMark(p, "_os__dingzhen_to-round", record)
         end
       end
     end
@@ -4701,92 +4641,84 @@ local os__dingzhen = fk.CreateTriggerSkill{
     return target == player and player:getMark("@@os__dingzhen-round") > 0 and player.phase ~= Player.NotActive and player:getMark("_os__dingzhen_use-turn") == 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__dingzhen_use-turn", 1)
+    player.room:setPlayerMark(player, "_os__dingzhen_use-turn", 1)
   end,
 }
 local os__dingzhen_prohibit = fk.CreateProhibitSkill{
   name = "#os__dingzhen_prohibit",
   is_prohibited = function(self, from, to, card)
-    return from:getMark("@@os__dingzhen-round") > 0 and from:getMark("_os__dingzhen_to-round") == to.id and from:getMark("_os__dingzhen_use-turn") == 0
+    return from:getMark("@@os__dingzhen-round") > 0 and table.contains(U.getMark(from, "_os__dingzhen_to-round"), to.id)
+    and from:getMark("_os__dingzhen_use-turn") == 0
   end,
 }
 os__dingzhen:addRelatedSkill(os__dingzhen_prohibit)
-
+zhangjih:addSkill(os__dingzhen)
 local os__youye = fk.CreateTriggerSkill{
   name = "os__youye",
-  anim_type = "drawcard",
-  events = {fk.EventPhaseEnd},
-  frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player, data)
-    return target.phase == Player.Finish and player:hasSkill(self) and target ~= player and #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
-      local damage = e.data[5]
-      if damage and target == damage.from and player == damage.to then
-        return true
-      end
-    end, Player.HistoryTurn) == 0 and #player:getPile("os__poise") < 5
-  end,
-  on_use = function(self, event, target, player, data)
-    player:addToPile("os__poise", player.room:getNCards(1)[1], true, self.name)
-  end,
-}
-local os__youye_give = fk.CreateTriggerSkill{
-  name = "#os__youye_give",
   mute = true,
-  events = {fk.Damage, fk.Damaged},
-  anim_type = "support",
+  events = {fk.EventPhaseEnd, fk.Damage, fk.Damaged},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill("os__youye") and #player:getPile("os__poise") > 0
+    if event == fk.EventPhaseEnd then
+      return target.phase == Player.Finish and player:hasSkill(self) and target ~= player and #player:getPile("os__poise") < 5
+      and #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == player end) == 0
+    else
+      return player == target and player:hasSkill(self) and #player:getPile("os__poise") > 0
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("os__youye")
-    room:notifySkillInvoked(player, "os__youye")
-    for _, id in ipairs(player:getPile("os__poise")) do
-      room:setCardMark(Fk:getCardById(id), "toDistribute", 1)
-    end
-    local distributeIds = {}
-    local current = room.current.id
-    local ids = room:askForCard(player, 1, #player:getPile("os__poise"), false, self.name, false, ".|.|.|os__poise", "#os__youye-give::" .. room.current.id, "os__poise")
-    distributeIds[current] = distributeIds[current] or {}
-    table.insertTable(distributeIds[current], ids)
-    while table.find(player:getPile("os__poise"), function(id) return Fk:getCardById(id):getMark("toDistribute") > 0 end) do
-      if not room:askForUseActiveSkill(player, "distribute_active", "#os__youye-give2", true) then
-        for _, id in ipairs(player:getPile("os__poise")) do
-          room:setCardMark(Fk:getCardById(id), "toDistribute", 0)
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.EventPhaseEnd then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:addToPile("os__poise", room:getNCards(1)[1], true, self.name)
+    else
+      room:notifySkillInvoked(player, self.name, "support")
+      local cards = player:getPile("os__poise")
+      local current = room.current
+      local toCurrent = {}
+      if not current.dead then
+        if #cards == 1 then
+          toCurrent = cards
+        else
+          toCurrent = room:askForCard(player, 1, #cards, false, self.name, false, ".|.|.|os__poise", "#os__youye-give::" ..current.id, "os__poise")
         end
-        room:moveCards({
-          fromArea = Card.PlayerSpecial,
-          ids = player:getPile("os__poise"),
-          to = current,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonGive,
-          skillName = self.name,
-        })
+      end
+      local residue = table.filter(cards, function(id) return not table.contains(toCurrent, id) end)
+      if #residue == 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(toCurrent)
+        room:obtainCard(current, dummy, true, fk.ReasonGive)
+      else
+        local move = U.askForDistribution(player, residue, room.alive_players, self.name, #residue, #residue, "#os__youye-give2", "os__poise", true)
+        local str = string.format("%.0f", current.id)
+        move[str] = move[str] or {}
+        table.insertTable(move[str], toCurrent)
+        U.doDistribution(room, move, player.id, self.name)
       end
     end
   end,
 }
-os__youye:addRelatedSkill(os__youye_give)
-
 zhangjih:addSkill(os__youye)
-zhangjih:addSkill(os__dingzhen)
-
 Fk:loadTranslationTable{
   ["zhangjih"] = "张既",
   ["os__dingzhen"] = "定镇",
   [":os__dingzhen"] = "每轮开始时，你可选择至你距离为X以内的任意名角色（X为你当前体力值），令这些角色弃置一张【杀】，否则本轮中其回合内使用的第一张牌不能指定你为目标。",
   ["os__youye"] = "攸业",
-  [":os__youye"] = "锁定技，其他角色的结束阶段开始时，若其本回合没有对你造成过伤害，则你将牌堆顶的一张牌置于你的武将牌上，称为“蓄”（至多5张）。当你造成或受到伤害后，你将所有“蓄”分配给任意角色，且当前回合角色至少须获得一张。",
-  
+  [":os__youye"] = "锁定技，其他角色的结束阶段开始时，若其本回合没有对你造成过伤害，则你将牌堆顶的一张牌置于你的武将牌上，称为“蓄”（至多5张）。当你造成或受到伤害后，你将所有“蓄”分配给任意角色，若当前回合角色存活，其至少须获得一张。",
   ["#os__dingzhen-ask"] = "你可对任意名至你距离 %arg 以内的角色发动“定镇”",
   ["#os__dingzhen-discard"] = "定镇：弃置一张【杀】，否则本轮中回合内使用的第一张牌不能指定 %dest 为目标",
   ["@@os__dingzhen-round"] = "定镇",
   ["os__poise"] = "蓄",
   ["#os__youye-give"] = "定镇：将至少一张“蓄”分配给 %dest，点击“确定”后再将剩余牌分配给任意角色",
   ["#os__youye-give2"] = "定镇：分配任意张“蓄”给任意角色，直到所有“蓄”分配完毕",
+
+  ["$os__dingzhen1"] = "招抚流民，兴复县邑。",
+  ["$os__dingzhen2"] = "容民畜众，群羌归土。",
+  ["$os__youye1"] = "筑城西疆，开万代太平。",
+  ["$os__youye2"] = "镇边戍卫，许万民攸业。",
+  ["~zhangjih"] = "恨不见四海肃眘，羌胡徕服。",
 }
---]]
 
 local os__fanchou = General(extension, "os__fanchou", "qun", 4)
 local os__xingluan = fk.CreateTriggerSkill{
