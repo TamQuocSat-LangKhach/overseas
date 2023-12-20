@@ -674,7 +674,7 @@ Fk:addPoxiMethod{
     return table.random(cids, 1)
   end,
 }
-
+local sidao_derivecards = {{"celestial_calabash", Card.Heart, 1}, {"horsetail_whisk", Card.Heart, 1}, {"talisman", Card.Heart, 1}}
 local os__sidao = fk.CreateTriggerSkill{
   name = "os__sidao",
   events = {fk.GameStart, fk.EventPhaseStart},
@@ -682,48 +682,45 @@ local os__sidao = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return false end
     if event == fk.GameStart then
       return true
-    elseif player.phase == Player.Start and type(player:getMark("_os__sidao")) == "string" then
-      --local id = player.room:getCardsFromPileByRule(player:getMark("_os__sidao"), 1, "allPiles") --为什么不行？
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local c = Fk:getCardById(id)
-        if c.name == player:getMark("_os__sidao") and table.contains({Card.DiscardPile, Card.DrawPile, Card.Void}, player.room:getCardArea(id)) then
-          return true
-        end
-      end
+    else
+      return player.phase == Player.Start and player:getMark("_os__sidao") ~= 0
+      and table.contains({Card.DiscardPile, Card.DrawPile, Card.Void}, player.room:getCardArea(player:getMark("_os__sidao")))
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.GameStart then self.cost_data = player.room:askForChoice(player, {"celestial_calabash", "horsetail_whisk", "talisman"}, self.name, "#os__sidao-ask", true) end
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card
-    if event == fk.GameStart then 
-      room:setPlayerMark(player, "_os__sidao", self.cost_data)
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local c = Fk:getCardById(id)
-        if c.name == self.cost_data then
-          card = c
-          break
+    if event == fk.GameStart then
+      local cards = {}
+      for _, name in ipairs({"celestial_calabash", "horsetail_whisk", "talisman"}) do
+        local card = Fk:cloneCard(name, Card.Heart, 1)
+        if U.canUseCardTo(room, player, player, card) then
+          table.insert(cards, room:printCard(name, Card.Heart, 1).id)
         end
       end
-    else
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local c = Fk:getCardById(id)
-        if c.name == player:getMark("_os__sidao") and table.contains({Card.DiscardPile, Card.DrawPile, Card.Void}, player.room:getCardArea(id)) then
-          card = c
-          room:obtainCard(player, card, true, fk.ReasonPrey)
-          break
-        end
-      end
-    end
-    if card then
-      room:useCard({
-        from = player.id,
-        tos = { {player.id} },
-        card = card,
+      if #cards == 0 then return false end
+      player.special_cards["os__sidao"] = table.simpleClone(cards)
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
       })
+      local chosen = room:askForCard(player, 1, 1, false, self.name, false, ".|.|.|os__sidao", "#os__sidao-ask", "os__sidao")
+      player.special_cards["os__sidao"] = {}
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      local cardId = #chosen > 0 and chosen[1] or table.random(cards)
+      room:setPlayerMark(player, "_os__sidao", cardId)
+      room:useCard({ from = player.id, tos = { {player.id} }, card = Fk:getCardById(cardId) })
+    else
+      local cardId = player:getMark("_os__sidao")
+      room:obtainCard(player, cardId, true, fk.ReasonPrey)
+      if table.contains(player:getCardIds("he"), cardId) and U.canUseCardTo(room, player, player, Fk:getCardById(cardId)) then
+        room:useCard({ from = player.id, tos = { {player.id} }, card = Fk:getCardById(cardId) })
+      end
     end
   end,
 

@@ -7,6 +7,8 @@ Fk:loadTranslationTable{
   ["os_sp"] = "国际SP",
 }
 
+local U = require "packages/utility/utility"
+
 local fengxi = General(extension, "fengxi", "shu", 4)
 local os__qingkou = fk.CreateTriggerSkill{
   name = "os__qingkou",
@@ -3672,7 +3674,7 @@ local os__zhaoxiang = General(extension, "os__zhaoxiang", "shu", 4, 4, General.F
 
 local os__fanghun_gain = fk.CreateTriggerSkill{
   name = "#os__fanghun_gain",
-  events ={fk.TargetSpecified, fk.TargetConfirmed},
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash"
@@ -3749,28 +3751,25 @@ local os__fuhan = fk.CreateTriggerSkill{
     local room = player.room
     local num = player:getMark("@meiying")
     room:setPlayerMark(player, "@meiying", 0)
-    local existingGenerals = {}
-    table.forEach(room.players, function(p)
-      table.insertTable(existingGenerals, {p.general, p.deputyGeneral})
+    local generals = table.filter(room.general_pile, function (general_name)
+      local general = Fk.generals[general_name]
+      return general.kingdom == "shu"
     end)
-    local generals = table.map(Fk:getGeneralsRandomly(5, Fk:getAllGenerals(), existingGenerals, (function(p) return (p.kingdom ~= "shu") end)), function(g) return g.name end)
-    local general = Fk.generals[room:askForGeneral(player, generals, 1, true)]
-    room:setPlayerMark(player, "@os__fuhan", general.name)
-    local skills = general:getSkillNameList(player.role == "lord" and #room.players > 4)
-    room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, false)
-    local maxHp = math.min(math.max(num, 2), 8)
-    room:changeMaxHp(player, maxHp - player.maxHp)
-    room:recover({ who = player, num = 1, skillName = self.name })
+    if #generals > 0 then
+      generals = table.random(generals, 5)
+      local general = Fk.generals[room:askForGeneral(player, generals, 1, true)]
+      room:setPlayerMark(player, "@os__fuhan", general.name)
+      local skills = general:getSkillNameList(player.role == "lord" and #room.players > 4)
+      room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, false)
+      local maxHp = math.min(math.max(num, 2), 8)
+      room:changeMaxHp(player, maxHp - player.maxHp)
+      room:recover({ who = player, num = 1, skillName = self.name })
+    end
     if player:hasSkill("os__queshi") then
-      local moonSpear = nil
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
-        if card.name == "moon_spear" and table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile, Card.Void}, room:getCardArea(card)) then
-          moonSpear = card
-          break
-        end
+      local cardId = U.prepareDeriveCards(room, {{"moon_spear", Card.Diamond, 12}}, "os__queshi_spear")[1]
+      if table.contains({Card.PlayerEquip, Card.PlayerJudge, Card.DiscardPile, Card.DrawPile, Card.Void}, room:getCardArea(cardId)) then
+        room:obtainCard(player, cardId, true, fk.ReasonPrey)
       end
-      if moonSpear then room:obtainCard(player, moonSpear, true, fk.ReasonPrey) end
     end
   end,
 }
@@ -3783,15 +3782,11 @@ local os__queshi = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local moonSpear = nil
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.name == "moon_spear" then
-        moonSpear = card
-        break
-      end
+    local room = player.room
+    local cardId = U.prepareDeriveCards(room, {{"moon_spear", Card.Diamond, 12}}, "os__queshi_spear")[1]
+    if U.canMoveCardIntoEquip(player, cardId, true) then
+      U.moveCardIntoEquip(room, player, cardId, self.name, true, player)
     end
-    if moonSpear and not player:getEquipment(Card.SubtypeWeapon) then player.room:moveCardTo(moonSpear, Card.PlayerEquip, player, fk.ReasonJustMove, self.name) end
   end,
 
   refresh_events = {fk.BeforeCardsMove},
