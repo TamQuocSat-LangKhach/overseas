@@ -1217,7 +1217,10 @@ local xinghan_prohibit = fk.CreateProhibitSkill{
   name = "#os__xinghan_prohibit",
   prohibit_use = function (self, player, card)
     return (not player:hasSkill(xinghan) or (not player:isKongcheng() and not player.dying and player:getMark("os__xinghan_card") == 0)) and player:getPileNameOfId(card.id) == "os__chivalry&"
-  end
+  end,
+  prohibit_response = function(self, player, card)
+    return (not player:hasSkill(xinghan) or (not player:isKongcheng() and not player.dying)) and player:getPileNameOfId(card.id) == "os__chivalry&"
+  end,
 }
 xinghan:addRelatedSkill(xinghan_delay)
 xinghan:addRelatedSkill(xinghan_prohibit)
@@ -1241,6 +1244,12 @@ Fk:loadTranslationTable{
   ["#os__xinghan-ask"] = "兴汉：你可依次使用“侠义”牌，然后此回合结束时，你弃置所有手牌并失去X点体力（X为你的体力值-1且至少为1）",
   ["#os__xinghan-use"] = "兴汉：使用“侠义”牌 %arg",
   ["os__xinghan_viewas"] = "兴汉",
+
+  ["$os__shenyi1"] = "施仁德于天下，伸大义于四海！",
+  ["$os__shenyi2"] = "汉道虽衰，亦不容汝等奸祟放肆！",
+  ["$os__xinghan1"] = "继先汉之荣，开万世泰平！",
+  ["$os__xinghan2"] = "立此兴汉之志，终不可渝！",
+  ["~os__xia__liubei"] = "楼桑羽葆，终是一梦……",
 }
 
 local xiahoudun = General(extension, "os__xia__xiahoudun", "qun", 4)
@@ -1322,6 +1331,10 @@ Fk:loadTranslationTable{
   [":os__danlie"] = "出牌阶段限一次，你可以与至多三名角色共同拼点，若你：赢，你对没赢的角色造成1点伤害；没赢，你失去1点体力。你的拼点牌点数+X（X为你已损失的体力值）。" ..
   "<br/><font color='grey'>#\"<b>共同拼点</b>\"<br/>所有角色一起比大小（而非“同时拼点”：发起者和其余角色两两各比大小）。",
   ["#danlie_pd"] = "胆烈",
+
+  ["$os__danlie1"] = "师者如父，辱师之仇亦如辱父！",
+  ["$os__danlie2"] = "壮士自怀豪烈胆，初生幼虎敢搏龙！",
+  ["~os__xia__xiahoudun"] = "英雄烈胆，何惧泉台一战……",
 }
 
 local zhangwei = General(extension, "zhangwei", "qun", 3, 3, General.Female)
@@ -1427,9 +1440,9 @@ local fenwang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(self.name)
     if event == fk.DamageInflicted then
       room:notifySkillInvoked(player, self.name, "negative")
+      player:broadcastSkillInvoke(self.name, 1)
       if #self.cost_data > 0 then
         room:throwCard(self.cost_data, self.name, player)
       else
@@ -1437,6 +1450,7 @@ local fenwang = fk.CreateTriggerSkill{
       end
     else
       room:notifySkillInvoked(player, self.name, "offensive")
+      player:broadcastSkillInvoke(self.name, 2)
       data.damage = data.damage + 1
     end
   end,
@@ -1457,6 +1471,12 @@ Fk:loadTranslationTable{
   ["#os__huzhong_delay"] = "护众",
   ["@os__huzhong-phase"] = "护众",
   ["#os__fenwang-discard"] = "焚亡：弃置一张手牌，否则此伤害+1",
+
+  ["$os__huzhong1"] = "此难当头，吾誓保百姓无恙！",
+  ["$os__huzhong2"] = "天崩于前，吾必先众人而死！",
+  ["$os__fenwang1"] = "洛阳逢此大难，吾，亦难脱身。",
+  ["$os__fenwang2"] = "大火之下，黑影，已无所遁形！",
+  ["~zhangwei"] = "百姓……安否……",
 }
 
 local xiahouzieh = General(extension, "xiahouzieh", "qun", 3, 3, General.Female)
@@ -1535,6 +1555,9 @@ Fk:loadTranslationTable{
 
   ["@os__chengxi"] = "承袭",
   ["#chengxi_do"] = "承袭",
+
+  ["$os__chengxi1"] = "从今日始，血婆娑由我继之。",
+  ["$os__chengxi2"] = "夏侯之名，吾师之愿，子萼定不相负！",
 }
 
 return extension

@@ -4156,7 +4156,13 @@ Fk:loadTranslationTable{
   [":os__shoushou"] = "①当你获得其他角色的牌后，若你在一名角色的攻击范围内，其他角色至你距离+1。②当你造成或受到伤害后，若你不在一名角色的攻击范围内，其他角色至你距离-1。",
 
   ["#os__huiyuan-ask"] = "回援：你可展示一名角色的一张手牌，若为 %arg：你获得此牌，不为：你弃置其此牌，其摸一张牌",
-  ["@os__shoushou"] = "收绶 至你",
+  ["@os__shoushou"] = "收绶 至",
+
+  ["$os__huiyuan1"] = "起渤海之兵，襄吾兄成事！",
+  ["$os__huiyuan2"] = "发一州之力，随手足之势！",
+  ["$os__shoushou1"] = "此印既授，吾自当收之！",
+  ["$os__shoushou2"] = "本初虽已示弱，此仇亦不能饶！",
+  ["~gongsunfan"] = "公孙氏之业，终付之一炬……",
 }
 
 local qiaorui = General(extension, "qiaorui", "qun", 5)
