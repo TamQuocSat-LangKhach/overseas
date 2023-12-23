@@ -4958,36 +4958,19 @@ local os__suizheng = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
-    return event == fk.GameStart or (player:getMark("_os__suizheng") == target.id and not player.dead)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart then
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
-      local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__suizheng-ask", self.name)
-      if #target > 0 then
-        self.cost_data = target[1]
-        return true
-      end
-    elseif event == fk.Damage then
-      return true
-    else
-      local cards = room:askForDiscard(player, 2, 2, true, self.name, player.hp > 0, ".|.|.|.|.|basic", "#os__suizheng-discard::" .. target.id, true)
-      self.cost_data = nil
-      if #cards > 0 then
-        self.cost_data = cards
-      end
-      return true
-    end
+    return event == fk.GameStart or (target and player:getMark("_os__suizheng") == target.id and not player.dead)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
       player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "support")
-      local target = self.cost_data
-      room:setPlayerMark(player, "_os__suizheng", target)
-      room:setPlayerMark(player, "@os__suizheng", room:getPlayerById(target).general)
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__suizheng-ask", self.name, false)
+      if #tos > 0 then
+        local to = room:getPlayerById(tos[1])
+        room:setPlayerMark(player, "_os__suizheng", to.id)
+        room:setPlayerMark(player, "@os__suizheng", to.general)
+      end
     elseif event == fk.Damage then
       player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "drawcard")
@@ -4995,8 +4978,8 @@ local os__suizheng = fk.CreateTriggerSkill{
     else
       player:broadcastSkillInvoke(self.name, 3)
       room:notifySkillInvoked(player, self.name, "support")
-      if self.cost_data then
-        room:throwCard(self.cost_data, self.name, player, player)
+      local cards = room:askForDiscard(player, 2, 2, true, self.name, player.hp > 0, ".|.|.|.|.|basic", "#os__suizheng-discard::" .. target.id)
+      if #cards == 2 then
         if not target.dead then
           room:recover({ who = target, num = 1, recoverBy = player, skillName = self.name})
         end
