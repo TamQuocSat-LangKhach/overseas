@@ -33,8 +33,8 @@ local os_ex__paoxiao = fk.CreateTargetModSkill{
       return 999
     end
   end,
-  distance_limit_func = function(self, player, skill, scope)
-    return player:hasSkill(self) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryPhase) > 0 and 999 or 0
+  bypass_distances = function(self, player, skill, scope)
+    return player:hasSkill(self) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryPhase) > 0
   end,
 }
 os_ex__paoxiao:addRelatedSkill(os_ex__paoxiaoAudio)
@@ -230,7 +230,7 @@ local lieren = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not player:isKongcheng() and not player.room:getPlayerById(data.to):isKongcheng()
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and player:canPindian(player.room:getPlayerById(data.to))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

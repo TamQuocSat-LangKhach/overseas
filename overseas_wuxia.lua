@@ -63,7 +63,7 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local availableTargets = table.map(
       table.filter(player.room:getOtherPlayers(player), function(p)
-        return not p:isKongcheng()
+        return player:canPindian(p)
       end),
       Util.IdMapper
     )
@@ -1378,9 +1378,12 @@ local huzhong = fk.CreateTriggerSkill{
     if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
     if choice == "os__huzhong_own" then
-      local victim = room:askForChoosePlayers(player, targets, 1, 1, nil, self.name, false)[1]
-      AimGroup:addTargets(room, data, victim)
-      AimGroup:setTargetDone(data.tos, victim)
+      local victims = room:askForChoosePlayers(player, targets, 1, 1, "#os__huzhong-extra", self.name, false)
+      if #victims > 0 then
+        local victim = victims[1]
+        AimGroup:addTargets(room, data, victim)
+        AimGroup:setTargetDone(data.tos, victim)
+      end
     else
       local cid = room:askForCardChosen(player, to, "h", self.name)
       room:throwCard({cid}, self.name, to, player)
@@ -1460,6 +1463,7 @@ Fk:loadTranslationTable{
 
   ["os__huzhong_own"] = "此【杀】可额外选择一个目标",
   ["os__huzhong_other"] = "弃置%dest一张手牌，若此【杀】造成伤害，你本阶段使用【杀】次数+1",
+  ["#os__huzhong-extra"] = "护众：此【杀】可额外选择一个目标",
   ["#os__huzhong_delay"] = "护众",
   ["@os__huzhong-phase"] = "护众",
   ["#os__fenwang-discard"] = "焚亡：弃置一张手牌，否则此伤害+1",
