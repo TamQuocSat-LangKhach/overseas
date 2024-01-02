@@ -911,7 +911,7 @@ local os__bingzhao = fk.CreateTriggerSkill{
   name = "os__bingzhao$",
   events = {fk.GameStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self)
+    return player:hasSkill(self) and table.find(player.room.alive_players, function(p) return p.kingdom ~= player.kingdom end)
   end,
   on_cost = function(self, event, target, player, data)
     local kingdoms = {}
@@ -3811,12 +3811,8 @@ local os__jilun_vs = fk.CreateViewAsSkill{
     table.removeOne(os__jilunRecord, use.card.name)
     player.room:setPlayerMark(player, "@$os__jilun", os__jilunRecord)
   end,
-  enabled_at_play = function(self, player)
-    return false
-  end,
-  enabled_at_response = function(self, player)
-    return false
-  end,
+  enabled_at_play = Util.FalseFunc,
+  enabled_at_response = Util.FalseFunc,
 }
 Fk:addSkill(os__jilun_vs)
 
@@ -5232,11 +5228,11 @@ local os__juxiang = fk.CreateTriggerSkill{
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self and target == player
     else
-      return target == player and player:hasSkill(self.name, true, true)
+      return target == player and player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -5246,7 +5242,7 @@ local os__juxiang = fk.CreateTriggerSkill{
     end)]]
     local targets = room:getOtherPlayers(player)
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         table.forEach(targets, function(p)
           room:handleAddLoseSkills(p, "os__juxiang_other&", nil, false, true)
         end)

@@ -1097,11 +1097,15 @@ local shenyi = fk.CreateTriggerSkill{
     table.insert(record, choice)
     room:setPlayerMark(player, "@$os__shenyi", record)
     local card = room:getCardsFromPileByRule(choice)
+    if #card == 0 then
+      card = room:getCardsFromPileByRule(".|.|.|.|.|" .. Fk:cloneCard(choice):getTypeString())
+    end
     if #card > 0 then
       player:addToPile("os__chivalry&", card[1], true, self.name)
     end
     if target ~= player then
-      local cards = player:getCardIds(Player.Hand)
+      local cards = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, nil, "#os__shenyi-give::" .. target.id)
+      if #cards == 0 then return end
       room:moveCardTo(cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
       for _, id in ipairs(cards) do
         if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == target then
@@ -1144,6 +1148,16 @@ local shenyi_delay = fk.CreateTriggerSkill{
   end,
 }
 shenyi:addRelatedSkill(shenyi_delay)
+local shenyi_prohibit = fk.CreateProhibitSkill{
+  name = "#os__shenyi_prohibit",
+  prohibit_use = function (self, player, card)
+    return player:hasSkill(shenyi) and not player:hasSkill("os__xinghan") and player:getPileNameOfId(card.id) == "os__chivalry&"
+  end,
+  prohibit_response = function(self, player, card)
+    return player:hasSkill(shenyi) and not player:hasSkill("os__xinghan") and player:getPileNameOfId(card.id) == "os__chivalry&"
+  end,
+}
+shenyi:addRelatedSkill(shenyi_prohibit)
 
 local xinghan_vs = fk.CreateViewAsSkill{
   name = "os__xinghan_viewas",
@@ -1216,10 +1230,10 @@ local xinghan_delay = fk.CreateTriggerSkill{
 local xinghan_prohibit = fk.CreateProhibitSkill{
   name = "#os__xinghan_prohibit",
   prohibit_use = function (self, player, card)
-    return (not player:hasSkill(xinghan) or (not player:isKongcheng() and not player.dying and player:getMark("os__xinghan_card") == 0)) and player:getPileNameOfId(card.id) == "os__chivalry&"
+    return (not player:hasSkill(xinghan) or (player.phase ~= Player.NotActive and not player.dying and player:getMark("os__xinghan_card") == 0)) and player:getPileNameOfId(card.id) == "os__chivalry&"
   end,
   prohibit_response = function(self, player, card)
-    return (not player:hasSkill(xinghan) or (not player:isKongcheng() and not player.dying)) and player:getPileNameOfId(card.id) == "os__chivalry&"
+    return (not player:hasSkill(xinghan) or (player.phase ~= Player.NotActive and not player.dying)) and player:getPileNameOfId(card.id) == "os__chivalry&"
   end,
 }
 xinghan:addRelatedSkill(xinghan_delay)
@@ -1231,12 +1245,13 @@ liubei:addSkill(xinghan)
 Fk:loadTranslationTable{
   ["os__xia__liubei"] = "侠刘备",
   ["os__shenyi"] = "伸义",
-  [":os__shenyi"] = "每回合限一次，当你或你攻击范围内的角色此回合首次受到其他角色造成的伤害后，你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后将牌堆中一张此牌名的牌置于你的武将牌上，称为“侠义”，然后若受到伤害的角色不为你，你将所有手牌交给其，当其失去一张你以此法交给其的牌时，你摸一张牌。",
+  [":os__shenyi"] = "每回合限一次，当你或你攻击范围内的角色此回合首次受到其他角色造成的伤害后，你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后将牌堆中一张此牌名的牌置于你的武将牌上（没有则改为该类别的一张牌），称为“侠义”，然后你可以将任意张手牌交给其，当其失去一张你以此法交给其的牌时，你摸一张牌。",
   ["os__xinghan"] = "兴汉",
-  [":os__xinghan"] = "当你没有手牌或处于濒死状态时，你可如手牌般使用或打出“侠义”牌。准备阶段开始时，若“侠义”牌的数量大于存活角色数，你可依次使用“侠义”牌，然后此回合结束时，你弃置所有手牌并失去X点体力（X为你的体力值-1且至少为1）。",
+  [":os__xinghan"] = "你的回合外或当你处于濒死状态时，你可如手牌般使用或打出“侠义”牌。准备阶段开始时，若“侠义”牌的数量大于存活角色数，你可依次使用“侠义”牌，然后此回合结束时，你弃置所有手牌并失去X点体力（X为你的体力值-1且至少为1）。",
 
   ["#os__shenyi-ask_own"] = "伸义：你可选择一种基本牌或锦囊牌的牌名（每种限一次）",
-  ["#os__shenyi-ask_other"] = "伸义：你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后将所有手牌交给 %dest",
+  ["#os__shenyi-ask_other"] = "伸义：你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后可将任意张手牌交给 %dest",
+  ["#os__shenyi-give"] = "伸义：你可将任意张手牌交给 %dest",
   ["os__chivalry&"] = "侠义",
   ["@@os__shenyi"] = "伸义",
   ["#os__shenyi_delay"] = "伸义",
@@ -1347,65 +1362,42 @@ local huzhong = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget and data.card.name == "slash" and U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and
     ((#U.getUseExtraTargets(player.room, data, true, true) > 0 and table.find(player:getCardIds("h"), function(c) return not player:prohibitDiscard(Fk:getCardById(c)) end)) or not player.room:getPlayerById(data.to):isKongcheng())
   end,
-  on_cost = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    local all_choices = {"os__huzhong_own", "os__huzhong_other::" .. data.to, "Cancel"}
+    player:drawCards(1, self.name)
+    local all_choices = {"os__huzhong_own", "os__huzhong_other::" .. data.to}
     local choices = table.simpleClone(all_choices)
-    if not table.find(player:getCardIds("h"), function(c) return not player:prohibitDiscard(Fk:getCardById(c)) end) or #U.getUseExtraTargets(player.room, data, true, true) == 0 then
+    local targets = U.getUseExtraTargets(room, data, true, true)
+    if #targets == 0 then
       table.remove(choices, 1)
     end
-    if room:getPlayerById(data.to):isKongcheng() then
-      table.removeOne(choices, "os__huzhong_other::" .. data.to)
+    local to = room:getPlayerById(data.to)
+    if to:isKongcheng() then
+      table.remove(choices)
     end
+    if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
-    if choice ~= "Cancel" then
-      self.cost_data = choice
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local choice = self.cost_data
     if choice == "os__huzhong_own" then
-      room:askForDiscard(player, 1, 1, false, self.name, false)
-      local targets = U.getUseExtraTargets(room, data, true, true)
-      if #targets == 0 then return false end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, nil, self.name, false)[1]
-      AimGroup:addTargets(room, data, to)
-      AimGroup:setTargetDone(data.tos, to)
+      local victim = room:askForChoosePlayers(player, targets, 1, 1, nil, self.name, false)[1]
+      AimGroup:addTargets(room, data, victim)
+      AimGroup:setTargetDone(data.tos, victim)
     else
-      local to = room:getPlayerById(data.to)
-      room:askForDiscard(to, 1, 1, false, self.name, false)
+      local cid = room:askForCardChosen(player, to, "h", self.name)
+      room:throwCard({cid}, self.name, to, player)
       data.extra_data = data.extra_data or {}
-      data.extra_data.os__huzhongTo = to.id
+      data.extra_data.os__huzhong = true
     end
   end,
-}
-local huzhong_delay = fk.CreateTriggerSkill{
-  name = "#os__huzhong_delay",
-  events = {fk.CardUseFinished},
-  mute = true,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and (data.extra_data or {}).os__huzhongTo and (data.damageDealt or not player.room:getPlayerById(data.extra_data.os__huzhongTo).dead)
+
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and (data.extra_data or {}).os__huzhong and data.damageDealt
   end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(huzhong.name)
-    if data.damageDealt then
-      room:notifySkillInvoked(player, huzhong.name, "drawcard")
-      player:drawCards(1, huzhong.name)
-      room:addPlayerMark(player, "@os__huzhong-phase")
-    else
-      room:notifySkillInvoked(player, huzhong.name, "negative")
-      local to = room:getPlayerById(data.extra_data.os__huzhongTo)
-      room:damage{
-        from = to,
-        to = player,
-        damage = 1,
-        skillName = self.name,
-      }
-    end
+    player:broadcastSkillInvoke(self.name)
+    room:notifySkillInvoked(player, self.name, "offensive")
+    room:addPlayerMark(player, "@os__huzhong-phase")
   end,
 }
 local huzhong_buff = fk.CreateTargetModSkill{
@@ -1416,13 +1408,13 @@ local huzhong_buff = fk.CreateTargetModSkill{
     end
   end,
 }
-huzhong:addRelatedSkill(huzhong_delay)
 huzhong:addRelatedSkill(huzhong_buff)
 
 local fenwang = fk.CreateTriggerSkill{
   name = "os__fenwang",
   mute = true,
   events = {fk.DamageInflicted, fk.DamageCaused},
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self) then return end
     if event == fk.DamageInflicted then
@@ -1462,12 +1454,12 @@ zhangwei:addSkill(fenwang)
 Fk:loadTranslationTable{
   ["zhangwei"] = "张葳", -- 泪目
   ["os__huzhong"] = "护众",
-  [":os__huzhong"] = "当你使用普【杀】于出牌阶段指定其他角色为唯一目标时，你可选择一项：1.弃置一张手牌，此【杀】可额外选择一个目标；2.其弃置一张手牌，若此【杀】造成伤害/未造成伤害，你摸一张牌且本阶段使用【杀】次数+1/你受到其造成的1点伤害。",
+  [":os__huzhong"] = "当你使用普【杀】于出牌阶段指定其他角色为唯一目标时，你可摸一张牌并选择一项：1.此【杀】可额外选择一个目标；2.你弃置其一张手牌，若此【杀】造成伤害，你本阶段使用【杀】次数+1。",
   ["os__fenwang"] = "焚亡",
-  [":os__fenwang"] = "①当你受到属性伤害时，你须弃置一张手牌，否则此伤害+1。②当你对其他角色造成普通伤害时，若你的手牌数大于其手牌数，此伤害+1。",
+  [":os__fenwang"] = "锁定技，①当你受到属性伤害时，你须弃置一张手牌，否则此伤害+1。②当你对其他角色造成普通伤害时，若你的手牌数大于其手牌数，此伤害+1。",
 
-  ["os__huzhong_own"] = "弃置一张手牌，此【杀】可额外选择一个目标",
-  ["os__huzhong_other"] = "%dest弃置一张手牌，若此【杀】造成伤害/未造成伤害，你摸一张牌且本阶段使用【杀】次数+1/你受到其造成的1点伤害",
+  ["os__huzhong_own"] = "此【杀】可额外选择一个目标",
+  ["os__huzhong_other"] = "弃置%dest一张手牌，若此【杀】造成伤害，你本阶段使用【杀】次数+1",
   ["#os__huzhong_delay"] = "护众",
   ["@os__huzhong-phase"] = "护众",
   ["#os__fenwang-discard"] = "焚亡：弃置一张手牌，否则此伤害+1",
