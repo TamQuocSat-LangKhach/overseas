@@ -1378,7 +1378,7 @@ local huzhong = fk.CreateTriggerSkill{
     if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
     if choice == "os__huzhong_own" then
-      local victims = room:askForChoosePlayers(player, targets, 1, 1, "#os__huzhong-extra", self.name, false)
+      local victims = room:askForChoosePlayers(player, targets, 1, 1, "#os__huzhong-extra", self.name, true)
       if #victims > 0 then
         local victim = victims[1]
         AimGroup:addTargets(room, data, victim)
