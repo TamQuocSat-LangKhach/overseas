@@ -1795,31 +1795,50 @@ local os__kaiji = fk.CreateTriggerSkill{
     local room = player.room
     local targets = self.cost_data
     local invoke = false
-    for _, id in ipairs(targets) do
-      local cid = room:getPlayerById(id):drawCards(1, self.name)[1]
-      if not invoke and Fk:getCardById(cid).type ~= Card.TypeBasic then
-        invoke = true
-      end 
+    room:sortPlayersByAction(targets)
+    for _, pid in ipairs(targets) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        local cid = p:drawCards(1, self.name)[1]
+        if not invoke and Fk:getCardById(cid).type ~= Card.TypeBasic then
+          invoke = true
+        end
+      end
     end
-    if invoke then
+    if invoke and not player.dead then
       player:drawCards(1, self.name)
     end
   end,
 
-  refresh_events = {fk.EnterDying},
+  refresh_events = {fk.EnterDying, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and target:getMark("_os__kaiji_enterdying") < 1
+    if event == fk.EnterDying then
+      return player:hasSkill(self, true) and target:getMark("_os__kaiji_enterdying") < 1
+    else
+      return target == player and data == self
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(target, "_os__kaiji_enterdying", 1)
-    player.room:addPlayerMark(player, "@os__kaiji", 1)
+    local room = player.room
+    if event == fk.EnterDying then
+      room:addPlayerMark(target, "_os__kaiji_enterdying", 1)
+      room:addPlayerMark(player, "@os__kaiji", 1)
+    else
+      local events = room.logic.event_recorder[GameEvent.Dying] or Util.DummyTable
+      local targets = {}
+      for i = #events, 1, -1 do
+        local e = events[i]
+        table.insertIfNeed(targets, e.data[1].who)
+      end
+      room:addPlayerMark(player, "@os__kaiji", #targets)
+    end
   end,
 }
 
 local os__shepan = fk.CreateTriggerSkill{
   name = "os__shepan",
   anim_type = "defensive",
-  events = {fk.TargetConfirming},    
+  events = {fk.TargetConfirming},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) < 1 and data.from ~= player.id
   end,
@@ -1848,6 +1867,9 @@ local os__shepan = fk.CreateTriggerSkill{
       player:addSkillUseHistory(self.name, -1)
       if room:askForChoice(player, {"os__shepan_nullify", "Cancel"}, self.name, "#os__shepan_nullify:::" .. data.card.name) == "os__shepan_nullify" then
         table.insertIfNeed(data.nullifiedTargets, player.id)
+        if data.card.sub_type == Card.SubtypeDelayedTrick then
+          AimGroup:cancelTarget(data, player.id)
+        end
       end
     end
   end,
