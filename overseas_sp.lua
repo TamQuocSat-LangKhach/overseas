@@ -1815,7 +1815,7 @@ local os__kaiji = fk.CreateTriggerSkill{
     if event == fk.EnterDying then
       return player:hasSkill(self, true) and target:getMark("_os__kaiji_enterdying") < 1
     else
-      return target == player and data == self
+      return target == player and data == self and player.room:getTag("RoundCount")
     end
   end,
   on_refresh = function(self, event, target, player, data)
