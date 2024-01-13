@@ -79,27 +79,12 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, "os__chaofeng", "offensive")
     player:broadcastSkillInvoke("os__chaofeng")
-    local targets = table.map(self.cost_data, function(pid)
-      return room:getPlayerById(pid)
-    end)
-    local pd = player:pindian(targets, self.name)
-    local pdNum = {}
-    pdNum[player.id] = pd.fromCard.number
-    table.forEach(self.cost_data, function(pid) pdNum[pid] = pd.results[pid].toCard.number end)
-    local winner, num = nil, nil
-    for k, v in pairs(pdNum) do
-      if num == nil or num < v then
-        num = v
-        winner = k
-      elseif num == v then
-        winner = nil
-      end
-    end
-    if winner then
-      winner = room:getPlayerById(winner)
+    local targets = table.map(self.cost_data, Util.Id2PlayerMapper)
+    local pd = U.jointPindian(player, targets, self.name)
+    if pd.winner then
       table.insert(targets, player)
-      table.removeOne(targets, winner)
-      room:useVirtualCard("fire__slash", nil, winner, targets, self.name, true)
+      table.removeOne(targets, pd.winner)
+      room:useVirtualCard("fire__slash", nil, pd.winner, targets, self.name, true)
     end
   end,
 }
@@ -463,22 +448,8 @@ local os__zhenhu = fk.CreateTriggerSkill{
     if #availableTargets == 0 then return false end
     local targets = room:askForChoosePlayers(player, availableTargets, 1, 3, "#os__chaofeng-ask", self.name, false)
     if #targets == 0 then return false end
-    local pd = player:pindian(table.map(targets, function(pid)
-      return room:getPlayerById(pid)
-    end), self.name)
-    local pdNum = {}
-    pdNum[player.id] = pd.fromCard.number
-    table.forEach(targets, function(pid) pdNum[pid] = pd.results[pid].toCard.number end)
-    local winner, num = nil, nil
-    for k, v in pairs(pdNum) do
-      if num == nil or num < v then
-        num = v
-        winner = k
-      elseif num == v then
-        winner = nil
-      end
-    end
-    if winner == player.id then
+    local pd = U.jointPindian(player, table.map(targets, Util.Id2PlayerMapper), self.name)
+    if pd.winner == player then
       data.extra_data = data.extra_data or {}
       data.extra_data.os__zhenhu = targets
     else
@@ -1285,23 +1256,11 @@ local danlie = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local targets = effect.tos
-    local pd = player:pindian(table.map(targets, Util.Id2PlayerMapper), self.name)
-    local pdNum = {}
-    pdNum[player.id] = pd.fromCard.number
-    table.forEach(targets, function(pid) pdNum[pid] = pd.results[pid].toCard.number end)
-    local winner, num = nil, nil
-    for k, v in pairs(pdNum) do
-      if num == nil or num < v then
-        num = v
-        winner = k
-      elseif num == v then
-        winner = nil
-      end
-    end
-    if winner == player.id then
-      for _, pid in ipairs(targets) do
-        local p = room:getPlayerById(pid)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
+    -- local pd = player:pindian(table.map(targets, Util.Id2PlayerMapper), self.name)
+    local pd = U.jointPindian(player, targets, self.name)
+    if pd.winner == player then
+      for _, p in ipairs(targets) do
         if not p.dead then
           room:damage{
             from = player,
