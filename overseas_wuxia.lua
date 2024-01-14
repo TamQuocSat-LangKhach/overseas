@@ -1513,6 +1513,7 @@ Fk:loadTranslationTable{
 
   ["$os__chengxi1"] = "从今日始，血婆娑由我继之。",
   ["$os__chengxi2"] = "夏侯之名，吾师之愿，子萼定不相负！",
+  ["~xiahouzieh"] = "蔷薇凋零，永沉血海……",
 }
 
 return extension

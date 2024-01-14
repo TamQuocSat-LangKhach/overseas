@@ -665,11 +665,9 @@ Fk:addPoxiMethod{
     end
     return #areas == #selected
   end,
-  prompt = function ()
-    return "灵宝：弃置其至多两个不同区域各一张牌"
-  end,
+  prompt = "#os__lingbao-discard",
   default_choice = function(data)
-    if not data then return false end
+    if not data then return {} end
     local cids = table.map(data, function(v) return v[2][1] end)
     return table.random(cids, 1)
   end,
@@ -786,6 +784,7 @@ Fk:loadTranslationTable{
   ["#os__lingbao-red"] = "灵宝：选择一名角色，令其回复1点体力",
   ["#os__lingbao-black"] = "灵宝：选择一名角色，弃置其至多两个不同区域的各一张牌",
   ["os__lingbao_discard"] = "灵宝",
+  ["#os__lingbao-discard"] = "弃置其至多两个不同区域的各一张牌",
   ["#os__lingbao-black_red"] = "灵宝：选择两名角色，先选的摸一张牌，后选的弃置一张牌",
   ["#os__sidao-ask"] = "司道：选择一件法宝并使用之",
 
@@ -796,7 +795,7 @@ Fk:loadTranslationTable{
   ["$os__sidao1"] = "执吾法器，以司正道。",
   ["$os__sidao2"] = "内修道法，外需宝器。",
   ["~os__gexuan"] = "金丹难成，大道难修……",
-  --胜利：科有天禁不可抑，华精庵蔼化仙人
+  ["$os__gexuan_win_audio"] = "科有天禁不可抑，华精庵蔼化仙人。",
 }
 
 local os__himiko = General(extension, "os__himiko", "qun", 3, 3, General.Female)
@@ -4033,6 +4032,12 @@ Fk:loadTranslationTable{
   ["os__xianfeng_yg"] = "其摸一张牌，直到其下回合开始，你至其距离-1",
   ["@os__xianfeng"] = "先锋",
   ["@os__xianfeng_others"] = "先锋",
+
+  ["$os__zhiqu1"] = "八百之众，哼，须臾可灭！",
+  ["$os__zhiqu2"] = "此战首功，当由我取之！",
+  ["$os__xianfeng1"] = "吾领万余白马，可堪此战先锋！",
+  ["$os__xianfeng2"] = "白马先发，敌不攻而散！",
+  ["~yangang"] = "诸将，冲锋！呃啊……",
 }
 
 local gongsunfan = General(extension, "gongsunfan", "qun", 4)
