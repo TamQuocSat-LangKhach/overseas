@@ -56,15 +56,22 @@ local os__wushen_trg = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.trueName == "slash" then
-      if event == fk.CardUsing then return player:usedCardTimes("slash", Player.HistoryPhase) == 1
+      if event == fk.CardUsing then
+        local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+          local use = e.data[1]
+          return use.from == player.id
+        end, Player.HistoryPhase)
+        return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
       elseif data.card.suit == Card.Heart then
         local targets = {}
+        local availableTargets = U.getUseExtraTargets(player.room, data, true, true)
         for _, p in ipairs(player.room:getOtherPlayers(player)) do
-          if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) then
+          if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) and table.contains(availableTargets, p.id) then
             table.insert(targets, p.id)
           end
         end
         if #targets > 0 then
+          self.cost_data = targets
           return true
         end
       end
@@ -81,12 +88,7 @@ local os__wushen_trg = fk.CreateTriggerSkill{
     else
       player:broadcastSkillInvoke("os__wushen")
       room:notifySkillInvoked(player, "os__wushen")
-      local targets = {}
-      for _, p in ipairs(player.room:getOtherPlayers(player)) do
-        if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) then
-          table.insert(targets, p.id)
-        end
-      end
+      local targets = self.cost_data
       room:doIndicate(player.id, targets)
       table.forEach(targets, function(pid)
         TargetGroup:pushTargets(data.targetGroup, pid)
@@ -3456,7 +3458,7 @@ local os__gongge = fk.CreateTriggerSkill{
   events = {fk.TargetSpecified},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return  target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) < 1 and data.card.is_damage_card and data.to
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) < 1 and data.card.is_damage_card and data.to
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -3536,7 +3538,7 @@ local os__gongge_judge = fk.CreateTriggerSkill{
       elseif player:getMark("@os__gongge") == "os__gonggeDamage" then
         room:recover({
           who = target,
-          num = x,
+          num = math.min(x, target.maxHp - target.hp),
           recoverBy = player,
           skillName = self.name,
         })

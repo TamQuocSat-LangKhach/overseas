@@ -1341,7 +1341,6 @@ local huzhong = fk.CreateTriggerSkill{
       if #victims > 0 then
         local victim = victims[1]
         AimGroup:addTargets(room, data, victim)
-        AimGroup:setTargetDone(data.tos, victim)
       end
     else
       local cid = room:askForCardChosen(player, to, "h", self.name)
@@ -1514,6 +1513,133 @@ Fk:loadTranslationTable{
   ["$os__chengxi1"] = "从今日始，血婆娑由我继之。",
   ["$os__chengxi2"] = "夏侯之名，吾师之愿，子萼定不相负！",
   ["~xiahouzieh"] = "蔷薇凋零，永沉血海……",
+}
+
+local guanyu = General(extension, "os__xia__guanyu", "qun", 4)
+local os__chue = fk.CreateTriggerSkill{
+  name = "os__chue",
+  anim_type = "offensive",
+  events = {fk.TargetSpecifying, fk.Damaged, fk.HpLost, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    if event == fk.TurnEnd then
+      return player:getMark("_os__chue-turn") > 0 and player:getMark("@os__bravery") >= player.hp and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
+    end
+    if target ~= player then return false end
+    return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1)
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.TargetSpecifying then
+      return player.room:askForSkillInvoke(player, self.name, data, "#os__chue-loseHp")
+    elseif event == fk.TurnEnd then
+      return player.room:askForSkillInvoke(player, self.name, data, "#os__chue-use:::" .. player.hp)
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecifying then
+      room:loseHp(player, 1, self.name)
+      if player.dead then return end
+      local availableTargets = U.getUseExtraTargets(room, data, true, true)
+      local num = player.hp
+      if #availableTargets > 0 and num > 0 then
+        local targets = room:askForChoosePlayers(player, availableTargets, 1, num,
+        "#os__chue-choose:::"..data.card:toLogString() .. ":" .. num, self.name, true)
+        if #targets > 0 then
+          table.forEach(targets, function(pid) AimGroup:addTargets(room, data, pid) end)
+        end
+      end
+    elseif event == fk.TurnEnd then
+      room:removePlayerMark(player, "@os__bravery", player.hp)
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      local availableTargets = table.map(table.filter(room:getOtherPlayers(player), function(p) return U.canUseCardTo(room, player, p, card) end), Util.IdMapper) -- 还原神必操作
+      local num = card.skill:getMaxTargetNum(player, card) + player.hp
+      if #availableTargets > 0 and num > 0 then
+        local targets = room:askForChoosePlayers(player, availableTargets, 1, num, "#os__chue-slash:::" .. num, self.name, false)
+        local use = { ---@class CardUseStruct
+          from = player.id,
+          tos = table.map(targets, function(p) return {p} end),
+          card = card,
+          extraUse = true,
+        }
+        use.additionalDamage = (use.additionalDamage or 0) + 1
+        room:useCard(use)
+      end
+    else
+      player:drawCards(1, self.name)
+      room:addPlayerMark(player, "@os__bravery")
+      room:setPlayerMark(player, "_os__chue-turn", 1)
+    end
+  end,
+}
+
+local os__zhongyi = fk.CreateTriggerSkill{
+  name = "os__zhongyi",
+  events = {fk.CardUseFinished},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and data.card.trueName == "slash" and data.damageDealt
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local num = 0
+    for _, v in pairs(data.damageDealt) do
+      num = num + v
+    end
+    local x = player:getMark("@os__zhongyi") + 1
+    local all_choices = {"os__zhongyi_draw:::" .. num, "os__zhongyi_recover:::" .. num, "beishui_os__zhongyi:::" .. x}
+    local choices = table.clone(all_choices)
+    if not player:isWounded() then table.remove(choices, 2) end
+    local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
+    if choice:startsWith("beishui") then
+      room:addPlayerMark(player, "@os__zhongyi")
+      room:loseHp(player, x)
+      if player.dead then return end
+    end
+    if not choice:startsWith("os__zhongyi_recover") then
+      player:drawCards(num, self.name)
+    end
+    if not choice:startsWith("os__zhongyi_draw") and not player.dead then
+      room:recover{
+        who = player,
+        num = math.min(num, player.maxHp - player.hp),
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local os__zhongyi_buff = fk.CreateTargetModSkill{
+  name = "#os__zhongyi_buff",
+  bypass_distances = function(self, player, skill, scope)
+    return player:hasSkill(os__zhongyi) and skill.trueName == "slash_skill"
+  end,
+}
+os__zhongyi:addRelatedSkill(os__zhongyi_buff)
+
+guanyu:addSkill(os__chue)
+guanyu:addSkill(os__zhongyi)
+
+Fk:loadTranslationTable{
+  ["os__xia__guanyu"] = "侠关羽",
+  ["os__chue"] = "除恶",
+  [":os__chue"] = "①当你使用【杀】指定唯一目标时，你可失去1点体力，额外指定至多X个目标。②当你受到伤害或失去体力后，你摸一张牌并获得1枚“勇”。③每个回合结束时，若你本回合获得过“勇”，你可弃X枚“勇”，视为使用一张【杀】，此【杀】的伤害值基数+1且额外选择X个目标。（X为你的体力值）",
+  ["os__zhongyi"] = "忠义",
+  [":os__zhongyi"] = "锁定技，①你使用【杀】无距离限制。②当你使用【杀】结算结束后，你选择一项：1.摸等同于此【杀】造成伤害值的牌；2.回复等同于此【杀】造成伤害值的体力；背水：你失去X点体力（X为本局你选择此技能背水的次数+1）。",
+
+  ["#os__chue-loseHp"] = "除恶：你可失去1点体力，然后此【杀】额外指定至多你的体力值个目标",
+  ["#os__chue-choose"] = "除恶：为此%arg额外指定至多%arg2个目标",
+  ["#os__chue-use"] = "除恶：你可弃%arg枚“勇”，视为使用一张伤害值基数+1且额外选择%arg个目标的【杀】",
+  ["#os__chue-slash"] = "除恶：视为使用一张伤害值基数+1的【杀】，目标至多%arg个",
+  ["@os__bravery"] = "勇",
+  ["os__zhongyi_draw"] = "摸%arg张牌",
+  ["os__zhongyi_recover"] = "回复%arg点体力",
+  ["beishui_os__zhongyi"] = "背水：失去%arg点体力",
+  ["@os__zhongyi"] = "忠义",
 }
 
 return extension

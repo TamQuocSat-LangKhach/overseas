@@ -12,7 +12,7 @@ local os_ex__paoxiaoAudio = fk.CreateTriggerSkill{
   name = "#os_ex__paoxiaoAudio",
   refresh_events = {fk.CardUsing},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
+    return target == player and player:hasSkill("os_ex__paoxiao") and
       data.card.trueName == "slash" and
       player:usedCardTimes("slash") > 1
   end,
@@ -46,7 +46,7 @@ local os_ex__xuhe = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if event == fk.CardEffectCancelledOut then
       return target == player and player:hasSkill(self) and data.card.trueName == "slash"
-    elseif target == player and data.to:getMark("@@os_ex__xuhe-turn") > 0 then
+    elseif target == player and data.to:getMark("@@os_ex__xuhe-turn") > 0 and data.card then
       local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       return parentUseData and (parentUseData.data[1].extra_data or {}).os_ex__xuheUser == player.id
     end
@@ -62,7 +62,7 @@ local os_ex__xuhe = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardEffectCancelledOut then
       local target = room:getPlayerById(data.to)
-      local choice = room:askForChoice(target, {"os_ex__xuhe_dmg", "os_ex__xuhe_next"}, self.name, "#os_ex__xuhe-ask:" .. player.id)
+      local choice = room:askForChoice(target, {"os_ex__xuhe_dmg:" .. player.id, "os_ex__xuhe_next:" .. player.id}, self.name, "#os_ex__xuhe-ask:" .. player.id)
       if choice == "os_ex__xuhe_dmg" then
         room:damage{
           from = player,
@@ -102,8 +102,8 @@ Fk:loadTranslationTable{
   [":os_ex__xuhe"] = "当你使用的【杀】被一名角色的【闪】抵消后，你可令其选择一项：1. 你对其造成1点伤害；2. 当本回合你使用的下一张牌对其造成伤害时，伤害+2。",
 
   ["#os_ex__xuhe"] = "你想对 %src 发动技能“虚吓”吗？",
-  ["os_ex__xuhe_dmg"] = "受到其造成的1点伤害",
-  ["os_ex__xuhe_next"] = "本回合其使用的下一张牌对你伤害+2",
+  ["os_ex__xuhe_dmg"] = "受到%src造成的1点伤害",
+  ["os_ex__xuhe_next"] = "本回合%src使用的下一张牌对你伤害+2",
   ["#os_ex__xuhe-ask"] = "%src 对你发动“虚吓”，请选择一项",
   ["@@os_ex__xuhe-turn"] = "虚吓 伤害+2",
 
