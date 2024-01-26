@@ -81,6 +81,9 @@ fengxi:addSkill(os__qingkou)
 
 Fk:loadTranslationTable{
   ["fengxi"] = "冯习",
+  ["#fengxi"] = "赤胆的忠魂",
+  ["illustrator:fengxi"] = "陈鑫",
+
   ["os__qingkou"] = "轻寇",
   [":os__qingkou"] = "准备阶段开始时，你可视为使用一张【决斗】。此【决斗】结算结束后，造成伤害的角色摸一张牌，若为你，你跳过此回合的判定阶段和弃牌阶段。",
 
@@ -146,9 +149,11 @@ zhangnan:addSkill(os__fenwu)
 
 Fk:loadTranslationTable{
   ["zhangnan"] = "张南",
+  ["#zhangnan"] = "澄辉的义烈",
+  ["illustrator:zhangnan"] = "Aaron",
   ["os__fenwu"] = "奋武",
   [":os__fenwu"] = "结束阶段开始时，你可失去1点体力，视为你对一名其他角色使用一张【杀】。若本回合你使用过超过一种基本牌，此【杀】伤害值基数+1。",
-  
+
   ["#os__fenwu-ask"] = "奋武：你可选择一名其他角色，失去1点体力，视为对其使用一张【杀】",
   ["#os__fenwu_plus-ask"] = "奋武：你可选择一名其他角色，失去1点体力，视为对其使用一张伤害+1的【杀】",
 
@@ -210,6 +215,9 @@ yuejiu:addSkill(os__cuijin)
 
 Fk:loadTranslationTable{
   ["yuejiu"] = "乐就",
+  ["#yuejiu"] = "仲家军督",
+  ["designer:yuejiu"] = "老萌",
+  ["illustrator:yuejiu"] = "铁杵文化",
   ["os__cuijin"] = "催进",
   [":os__cuijin"] = "当你或攻击范围内的角色使用【杀】时，你可弃置一张牌，令此【杀】伤害值基数+1。当此【杀】结算结束后，若此【杀】未造成伤害，你对此【杀】的使用者造成1点伤害。",
 
@@ -288,6 +296,9 @@ os__niujin:addSkill(os__liewei)
 
 Fk:loadTranslationTable{
   ["os__niujin"] = "牛金",
+  ["#os__niujin"] = "独进的兵胆",
+  ["illustrator:os__niujin"] = "青骑士",
+
   ["os__cuorui"] = "挫锐",
   [":os__cuorui"] = "限定技，准备阶段开始时，你可将手牌摸至X张（X为全场最大的手牌数，至多摸五张），废除判定区。若你发动过〖挫锐〗，你可选择一名其他角色，对其造成1点伤害。",
   ["os__liewei"] = "裂围",
