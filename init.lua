@@ -5,6 +5,8 @@ local overseas_strategizing = require "packages/overseas/overseas_strategizing"
 local overseas_wuxia = require "packages/overseas/overseas_wuxia"
 local overseas_token = require "packages/overseas/overseas_token"
 
+Fk:loadTranslationTable{ ["overseas"] = "海外服" }
+
 return {
   overseas_ex,
   overseas_sp,
