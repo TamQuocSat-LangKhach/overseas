@@ -2589,7 +2589,7 @@ local os__didao = fk.CreateTriggerSkill{
     return player:hasSkill(self) and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local card = player.room:askForResponse(player, self.name, ".", "#os__didao-ask:" .. target.id, true)
+    local card = player.room:askForResponse(player, self.name, ".|.|.|hand,equip", "#os__didao-ask:" .. target.id, true)
     if card ~= nil then
       self.cost_data = card
       return true
@@ -2599,7 +2599,9 @@ local os__didao = fk.CreateTriggerSkill{
     local invoke = false
     if self.cost_data:compareColorWith(data.card) then invoke = true end
     player.room:retrial(self.cost_data, player, data, self.name, true)
-    if invoke then player:drawCards(1, self.name) end
+    if invoke and not player.dead then
+      player:drawCards(1, self.name)
+    end
   end,
 }
 
@@ -2616,6 +2618,7 @@ zhangmancheng:addRelatedSkill(os__didao)
 
 Fk:loadTranslationTable{
   ["zhangmancheng"] = "张曼成",
+  ["#zhangmancheng"] = "南阳渠帅",
   ["os__fengji"] = "蜂集",
   [":os__fengji"] = "出牌阶段开始时，若你没有“示”，你可将一张牌置于武将牌上，称为“示”并施法X=1~3回合：{从牌堆中获得X张与“示”同名的牌，然后将“示”置入弃牌堆。}" .. 
   "<br/><font color='grey'>#\"<b>施法</b>\"<br/>一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
