@@ -7,6 +7,8 @@ Fk:loadTranslationTable{
   ["overseas_strategizing"] = "国际服-运筹帷幄",
 }
 
+local U = require "packages/utility/utility"
+
 local os__wangcan = General(extension, "os__wangcan", "wei", 3)
 
 local os__dianyi = fk.CreateTriggerSkill{
@@ -325,19 +327,19 @@ local os__shengxi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Start then
-      local id = nil
-      for _, cid in ipairs(Fk:getAllCardIds()) do
-        if Fk:getCardById(cid).name == "redistribute" and room:getCardArea(cid) == Card.Void then --优先拿游戏外的
-          id = cid
-          break
-        end
-      end
-      if not id then
+      local get = nil
+      local shengxi_derivecards = {{"redistribute", Card.Spade, 6}, {"redistribute", Card.Club, 6}, {"redistribute", Card.Heart, 6}, {"redistribute", Card.Diamond, 6}}
+      local cards = table.filter(U.prepareDeriveCards(room, shengxi_derivecards, "shengxi_derivecards"), function (id)
+        return room:getCardArea(id) == Card.Void
+      end)
+      if #cards > 0 then
+        get = table.random(cards)
+      else
         local cids = room:getCardsFromPileByRule("redistribute")
-        if #cids > 0 then id = cids[1] end
+        if #cids > 0 then get = cids[1] end
       end
-      if id then
-        room:obtainCard(player, id, true, fk.ReasonPrey)
+      if get then
+        room:obtainCard(player, get, true, fk.ReasonPrey)
       end
     else
       local id = room:getCardsFromPileByRule(self.cost_data)
@@ -444,6 +446,8 @@ os__feiyi:addSkill(os__kuanji)
 
 Fk:loadTranslationTable{
   ["os__feiyi"] = "费祎",
+  ["#os__feiyi"] = "蜀汉名相",
+  ["illustrator:os__feiyi"] = "凝聚永恒",
   ["os__shengxi"] = "生息",
   [":os__shengxi"] = "①准备阶段开始时，你可获得一张【调剂盐梅】。②结束阶段开始时，若你于此回合内使用过牌且没有造成过伤害，你可从牌堆中获得一张你指定的智囊并摸一张牌。" ..
   "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】<br/>" ..
@@ -593,6 +597,8 @@ os__chenzhen:addSkill(os__chayi)
 
 Fk:loadTranslationTable{
   ["os__chenzhen"] = "陈震",
+  ["#os__chenzhen"] = "歃盟使节",
+  ["illustrator:os__chenzhen"] = "君桓文化",
   ["os__muyue"] = "睦约",
   [":os__muyue"] = "出牌阶段限一次，你选择一个基本牌或普通锦囊牌的牌名，弃置一张牌并选择一名角色，令其从牌堆中获得该牌名的牌。若你弃置的牌的牌名与该牌名相同，你下次发动此技能无需弃牌。",
   ["os__chayi"] = "察异",

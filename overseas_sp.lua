@@ -2566,6 +2566,8 @@ os__hejin:addSkill(os__yanhuo)
 
 Fk:loadTranslationTable{
   ["os__hejin"] = "何进",
+  ["#os__hejin"] = "色厉内荏",
+  ["cv:os__hejin"] = "冷泉月夜",
   ["os__mouzhu"] = "谋诛",
   [":os__mouzhu"] = "出牌阶段限一次，你可选择一名其他角色A，然后除其外体力值不大于你的其他角色B依次选择是否交给你一张牌。若你未因此获得牌，则你与所有B失去1点体力；否则A选择你视为对其使用一张伤害值基数为X的【杀】或【决斗】（X为你以此法获得的牌数且至多为4）。",
   ["os__yanhuo"] = "延祸",
