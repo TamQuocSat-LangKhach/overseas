@@ -410,6 +410,10 @@ liufuren:addSkill(os__shigong)
 
 Fk:loadTranslationTable{
   ["liufuren"] = "刘夫人",
+  ["#liufuren"] = "酷妒的海棠",
+  ["illustrator:liufuren"] = "Jzeo",
+  ["designer:liufuren"] = "梦魇狂朝",
+
   ["os__zhuidu"] = "追妒",
   [":os__zhuidu"] = "出牌阶段限一次，你可选择一名受伤的其他角色并选择一项：1.你对其造成1点伤害；2.你弃置其装备区的一张牌；若其为女性角色，则你可背水：（在其执行完所有可执行的选项后）弃置一张牌。",
   ["os__shigong"] = "示恭",
@@ -610,6 +614,10 @@ os__jiachong:addSkill(os__dingfa)
 
 Fk:loadTranslationTable{
   ["os__jiachong"] = "贾充",
+  ["#os__jiachong"] = "凶凶踽行",
+  ["designer:os__jiachong"] = "Loun老萌",
+  ["illustrator:os__jiachong"] = "铁杵文化",
+
   ["os__beini"] = "悖逆",
   [":os__beini"] = "出牌阶段限一次，你可以选择一名体力值不小于你的角色，令你或其摸两张牌，然后未摸牌的角色视为对摸牌的角色使用一张【杀】。",
   ["os__dingfa"] = "定法",
@@ -806,6 +814,10 @@ os__tianyu:addSkill(os__yangshi)
 
 Fk:loadTranslationTable{
   ["os__tianyu"] = "田豫",
+  ["#os__tianyu"] = "规略明练",
+  ["illustrator:os__tianyu"] = "鬼画府",
+  ["designer:os__tianyu"] = "梦魇狂朝 & Loun老萌",
+
   ["os__zhenxi"] = "震袭",
   [":os__zhenxi"] = "每回合限一次，当你使用【杀】指定目标后，你可选择一项：1.弃置其X张手牌（X为你至其的距离，不足则全弃）；2.移动其场上的一张牌。若其体力值大于你或为全场最高，则你可背水。",
   ["os__yangshi"] = "扬师",

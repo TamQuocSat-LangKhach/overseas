@@ -2,7 +2,7 @@ local extension = Package("overseas_ex")
 extension.extensionName = "overseas"
 
 Fk:loadTranslationTable{
-  ["overseas_ex"] = "国际服界",
+  ["overseas_ex"] = "国际服-界",
   ["os_ex"] = "国际界",
 }
 

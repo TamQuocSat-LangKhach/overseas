@@ -2960,6 +2960,10 @@ xiahouen:addSkill(os__jianwei)
 
 Fk:loadTranslationTable{
   ["xiahouen"] = "夏侯恩",
+  ["#xiahouen"] = "长坂剑灵",
+  ["designer:xiahouen"] = "会玩的许劭",
+  ["illustrator:xiahouen"] = "蚂蚁君",
+
   ["os__fujian"] = "负剑",
   [":os__fujian"] = "锁定技，①游戏开始时或准备阶段开始时，若你的装备区里没有武器牌，则你从牌堆中随机获得一张武器牌并将其置入装备区。②当你于回合外失去武器牌后，你失去1点体力。",
   ["os__jianwei"] = "剑威",
@@ -4711,6 +4715,10 @@ local os__youye = fk.CreateTriggerSkill{
 zhangjih:addSkill(os__youye)
 Fk:loadTranslationTable{
   ["zhangjih"] = "张既",
+  ["#zhangjih"] = "边安人宁",
+  ["illustrator:zhangjih"] = "depp",
+  ["designer:zhangjih"] = "Loun老萌",
+
   ["os__dingzhen"] = "定镇",
   [":os__dingzhen"] = "每轮开始时，你可选择至你距离为X以内的任意名角色（X为你当前体力值），令这些角色弃置一张【杀】，否则本轮中其回合内使用的第一张牌不能指定你为目标。",
   ["os__youye"] = "攸业",

@@ -4,7 +4,7 @@ extension.extensionName = "overseas"
 local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
-  ["overseas_wuxia"] = "国际服武侠篇",
+  ["overseas_wuxia"] = "国际服-武侠篇",
 }
 
 local os__tongyuan = General(extension, "os__tongyuan", "qun", 4)
