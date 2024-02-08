@@ -41,11 +41,11 @@ local os__wushen = fk.CreateFilterSkill{
 }
 local os__wushen_buff = fk.CreateTargetModSkill{
   name = "#os__wushen_buff",
-  residue_func = function(self, player, skill, scope, card)
-    return (player:hasSkill("os__wushen") and skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and card.suit == Card.Heart) and 999 or 0
+  bypass_times = function(self, player, skill, scope, card)
+    return player:hasSkill(os__wushen) and card and card.trueName == "slash" and card.suit == Card.Heart and scope == Player.HistoryPhase
   end,
-  distance_limit_func = function(self, player, skill, card)
-    return (player:hasSkill("os__wushen") and skill.trueName == "slash_skill" and card.suit == Card.Heart) and 999 or 0
+  bypass_distances = function(self, player, skill, card)
+    return player:hasSkill(os__wushen) and card and card.trueName == "slash" and card.suit == Card.Heart
   end,
 }
 local os__wushen_trg = fk.CreateTriggerSkill{
@@ -53,18 +53,18 @@ local os__wushen_trg = fk.CreateTriggerSkill{
   anim_type = "offensive",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.CardUsing, fk.TargetSpecifying},
+  events = {fk.CardUsing, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.trueName == "slash" then
       if event == fk.CardUsing then
         local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
           local use = e.data[1]
-          return use.from == player.id
+          return use.from == player.id and use.card.trueName == "slash"
         end, Player.HistoryPhase)
         return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
       elseif data.card.suit == Card.Heart then
         local targets = {}
-        local availableTargets = U.getUseExtraTargets(player.room, data, true, true)
+        local availableTargets = U.getUseExtraTargets(player.room, data, true, false)
         for _, p in ipairs(player.room:getOtherPlayers(player)) do
           if p:getMark("@os__nightmare") > 0 and not table.contains(TargetGroup:getRealTargets(data.tos), p.id) and table.contains(availableTargets, p.id) then
             table.insert(targets, p.id)
@@ -82,17 +82,23 @@ local os__wushen_trg = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       data.disresponsiveList = data.disresponsiveList or {}
-      for _, target in ipairs(player.room.alive_players) do
-        table.insertIfNeed(data.disresponsiveList, target.id)
+      for _, p in ipairs(player.room.alive_players) do
+        table.insertIfNeed(data.disresponsiveList, p.id)
       end
     else
-      player:broadcastSkillInvoke("os__wushen")
-      room:notifySkillInvoked(player, "os__wushen")
+      room:notifySkillInvoked(player, "os__wushen", "offensive")
       local targets = self.cost_data
       room:doIndicate(player.id, targets)
-      table.forEach(targets, function(pid)
-        TargetGroup:pushTargets(data.targetGroup, pid)
-      end)
+      for _, pid in ipairs(targets) do
+        table.insert(data.tos, {pid})
+      end
+      room:sendLog{
+        type = "#AddTargetsBySkill",
+        from = player.id,
+        to = targets,
+        arg = "os__wushen",
+        arg2 = data.card:toLogString()
+      }
     end
   end,
 }
@@ -160,8 +166,12 @@ os__godguanyu:addSkill(os__wuhun)
 
 Fk:loadTranslationTable{
   ["os__godguanyu"] = "神关羽",
+  ["#os__godguanyu"] = "鬼神再临",
+  ["illustrator:os__godguanyu"] = "DH", -- 史诗皮 链狱鬼神
+
   ["os__wushen"] = "武神",
   [":os__wushen"] = "锁定技，①你的红桃手牌视为【杀】。②你使用红桃【杀】无距离和次数限制且额外选择所有有“梦魇”的角色为目标。③你于每个阶段内使用的第一张【杀】不能被响应。",
+  ["#os__wushen_trg"] = "武神",
   ["os__wuhun"] = "武魂",
   [":os__wuhun"] = "锁定技，①当你受到1点伤害后，伤害来源获得1枚“梦魇”。②当你对有“梦魇”的角色造成伤害后，其获得1枚“梦魇”。③当你死亡时，你可判定：若结果不为【桃】或【桃园结义】，你选择至少一名有“梦魇”的角色，这些角色失去X点体力（X为其“梦魇”数）。",
 
