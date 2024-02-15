@@ -6,6 +6,8 @@ Fk:loadTranslationTable{
   ["os_ex"] = "国际界",
 }
 
+local U = require "packages/utility/utility"
+
 local os_ex__zhangfei = General(extension, "os_ex__zhangfei", "shu", 4)
 
 local os_ex__paoxiaoAudio = fk.CreateTriggerSkill{
@@ -615,13 +617,11 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
     if event == fk.AfterCardUseDeclared then
       return player.room:askForSkillInvoke(player, self.name)
     else
-      local availableTargets = table.map(table.filter(player.room:getOtherPlayers(player), function(p)
-        return not table.contains(TargetGroup:getRealTargets(data.tos), p.id) and data.card.skill:getDistanceLimit(p, data.card) + player:getAttackRange() >= player:distanceTo(p) and not player:isProhibited(p, data.card)
-      end), Util.IdMapper)
-      if #availableTargets == 0 then return false end
-      local targets = player.room:askForChoosePlayers(player, availableTargets, 1, 1, "#os_ex__lihuo-targets", self.name, true)
-      if #targets > 0 then
-        self.cost_data = targets
+      local targets = U.getUseExtraTargets(player.room, data, false, false)
+      if #targets == 0 then return false end
+      local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#os_ex__lihuo-targets", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos
         return true
       end
     end
@@ -636,7 +636,6 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
       data.extra_data = data.extra_data or {}
       data.extra_data.os_ex__lihuoUser = player.id
     else
-      --TargetGroup:pushTargets(data.targetGroup, self.cost_data)
       table.insert(data.tos, self.cost_data)
     end
   end,
@@ -647,7 +646,7 @@ local os_ex__lihuo_judge = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and (data.extra_data or {}).os_ex__lihuoUser == player.id and data.extra_data and data.extra_data.os_ex__lihuoDying == true
+    return not player.dead and (data.extra_data or {}).os_ex__lihuoUser == player.id and data.extra_data and data.extra_data.os_ex__lihuoDying == true
   end,
   on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, self.name)
@@ -775,6 +774,8 @@ os_ex__chengpu:addSkill(os_ex__chunlao)
 
 Fk:loadTranslationTable{
   ["os_ex__chengpu"] = "界程普",
+  ["#os_ex__chengpu"] = "三朝虎臣",
+  ["illustrator:os_ex__chengpu"] = "monkey",
   ["os_ex__lihuo"] = "疠火",
   [":os_ex__lihuo"] = "①你使用普【杀】可改为火【杀】，当此【杀】结算结束后，若此【杀】令其他角色进入过濒死状态，你失去1点体力。②当你使用火【杀】选择目标后，可多选择一个目标。",
   ["os_ex__chunlao"] = "醇醪",
