@@ -1079,13 +1079,9 @@ local os__guoyi = fk.CreateTriggerSkill{
   events = {fk.TargetSpecified},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    local ret = target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.to and data.to ~= player.id and #AimGroup:getAllTargets(data.tos) == 1
-    if ret then
-      if player:getHandcardNum() <= player:getLostHp() + 1 then
-        return true
-      end
-      local room = player.room
-      return isHandOrHpBiggest(room:getPlayerById(data.to), room)
+    if target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card:isCommonTrick())
+    and data.to ~= player.id and #AimGroup:getAllTargets(data.tos) == 1 then
+      return (player:getHandcardNum() <= player:getLostHp() + 1) or isHandOrHpBiggest(player.room:getPlayerById(data.to), player.room)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -1119,10 +1115,20 @@ local os__guoyi = fk.CreateTriggerSkill{
 local os__guoyi_prohibit = fk.CreateProhibitSkill{
   name = "#os__guoyi_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("@@os__guoyi_prohibit-turn") > 0
+    if player:getMark("@@os__guoyi_prohibit-turn") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id)
+      end)
+    end
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("@@os__guoyi_prohibit-turn") > 0
+    if player:getMark("@@os__guoyi_prohibit-turn") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id)
+      end)
+    end
   end,
 }
 os__guoyi:addRelatedSkill(os__guoyi_prohibit)
@@ -1213,7 +1219,7 @@ Fk:loadTranslationTable{
   ["os__guoyi_prohibit"] = "本回合不能使用或打出手牌",
   ["os__guoyi_discard"] = "弃置%arg张牌",
   ["os__guoyi-ask"] = "果毅：%src 对你发动“果毅”，请选择一项",
-  ["@@os__guoyi_prohibit-turn"] = "果毅 禁使用/打出",
+  ["@@os__guoyi_prohibit-turn"] = "果毅封牌",
   ["@os__chuhai"] = "除害",
   ["#os__chuhai-ask"] = "除害：交给 %src 一张牌",
   ["#os__chuhai-discard"] = "除害：将一张交给你的牌置入弃牌堆",
