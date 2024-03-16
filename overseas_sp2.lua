@@ -5630,4 +5630,182 @@ Fk:loadTranslationTable{
   ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",	
 }
 
+-- local wenchou = General(extension, "wenchou", "qun", 4)
+Fk:loadTranslationTable{
+  ["wenchou"] = "文丑",
+  ["#wenchou"] = "有去无回",
+  ["illustrator:wenchou"] = "Mr_Sleeping",
+
+  ["os__juexing"] = "绝行",
+  [":os__juexing"] = "出牌阶段限一次，你可视为对一名其他角色使用一张【决斗】，该【决斗】生效时，你与其将所有手牌扣置于各自武将牌上，然后摸等同于当前体力值的牌；该【决斗】结算结束后，你与其弃置以此法摸的牌，然后获得扣置于武将牌上的牌。<u>历战</u>：你以此法摸牌时，摸牌数+1。" ..
+  "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
+  ["os__xiayong"] = "狭勇",
+  [":os__xiayong"] = "锁定技，你为目标角色或使用者的【决斗】造成伤害时，若受到此牌伤害的角色：为你，你随机弃置一张手牌；不为你，此伤害+1。",
+}
+
+local yuantan = General(extension, "yuantan", "qun", 4)
+local qiaosih = fk.CreateTriggerSkill{
+  name = "os__qiaosih",
+  events = {fk.EventPhaseStart},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if not (player == target and player:hasSkill(self) and player.phase == Player.Finish) then return end
+    local room = player.room
+    local ids = table.filter(U.getMark(player, "_os__qiaosih-turn"), function(id) return room:getCardArea(id) == Card.DiscardPile end)
+    if #ids > 0 then 
+      self.cost_data = ids
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = self.cost_data
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(ids)
+    room:obtainCard(player, dummy, true, fk.ReasonPrey, player.id)
+    if #ids < player.hp and not player.dead then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player.room.current == player
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local record = U.getMark(player, "_os__qiaosih-turn")
+    for _, move in ipairs(data) do
+      if move.from and move.from ~= player.id and move.to ~= move.from then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            table.insertIfNeed(record, id)
+          end
+        end
+      end
+    end
+    room:setPlayerMark(player, "_os__qiaosih-turn", record)
+  end
+}
+
+local baizu = fk.CreateTriggerSkill{
+  name = "os__baizu",
+  events = {fk.EventPhaseStart},
+  anim_type = "control",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and target:hasSkill(self) and player.phase == Player.Finish and
+      player:isWounded() and not player:isKongcheng() and (player.hp + player:getMark("@os__baizu")) > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local x = player.hp + player:getMark("@os__baizu")
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return not p:isKongcheng()
+    end), Util.IdMapper)
+    self.cost_data = #targets <= x and targets or room:askForChoosePlayers(player, targets, x, x, "#os__baizu-ask:::" .. x, self.name, false)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = self.cost_data
+    table.insert(targets, player.id)
+    room:doIndicate(player.id, targets)
+    room:sortPlayersByAction(targets)
+    targets = table.map(targets, Util.Id2PlayerMapper)
+    local cardType
+    local victims = {}
+    local cardsMap = {}
+    for _, p in ipairs(targets) do
+      cardsMap[p.id] = table.filter(p:getCardIds("he"), function(id)
+        return not p:prohibitDiscard(Fk:getCardById(id))
+      end)
+    end
+    local extra_data = {
+      num = 1,
+      min_num = 1, -- 不加会报错
+      include_equip = false,
+      skillName = self.name,
+      pattern = ".",
+      reason = self.name,
+    }
+    local toAsk = {}
+    for _, p in ipairs(targets) do
+      if #cardsMap[p.id] > 0 then
+        table.insert(toAsk, p)
+        p.request_data = json.encode({ "discard_skill", "#os__baizu-discard", false, extra_data })
+      end
+    end
+    if #toAsk > 0 then
+      room:notifyMoveFocus(targets, self.name)
+      room:doBroadcastRequest("AskForUseActiveSkill", toAsk)
+      local moveInfos = {}
+      for _, p in ipairs(toAsk) do
+        local throw
+        if p.reply_ready then
+          local replyCard = json.decode(p.client_reply).card
+          throw = json.decode(replyCard).subcards
+        else
+          throw = table.random(cardsMap[p.id], 1)
+        end
+        if p == player then
+          cardType = Fk:getCardById(throw[1]).type
+        elseif cardType == Fk:getCardById(throw[1]).type then
+          table.insert(victims, p.id)
+        end
+        table.insert(moveInfos, {
+          ids = throw,
+          from = p.id,
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonDiscard,
+          proposer = p.id,
+          skillName = self.name,
+        })
+      end
+      room:moveCards(table.unpack(moveInfos))
+      room:delay(100 * #targets)
+    end
+    room:sortPlayersByAction(victims)
+    for _, pid in ipairs(victims) do
+      if player.dead then break end
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        room:damage{
+          from = player,
+          to = p,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:usedSkillTimes(self.name) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "@os__baizu")
+  end
+}
+
+yuantan:addSkill(qiaosih)
+yuantan:addSkill(baizu)
+
+Fk:loadTranslationTable{
+  ["yuantan"] = "袁谭",
+  ["#yuantan"] = "兄弟阋墙",
+
+  ["os__qiaosih"] = "峭嗣",
+  [":os__qiaosih"] = "结束阶段，你可获得其他角色本回合进入弃牌堆的牌，然后若你以此法获得牌的数量小于X，你失去1点体力（X为你的体力值）。",
+  ["os__baizu"] = "败族",
+  [":os__baizu"] = "锁定技，结束阶段，若你已受伤且有手牌，你须选择X名其他角色，令你与这些角色同时弃置一张手牌，然后你对弃置与你相同类型牌的其他角色造成1点伤害（X为你的体力值）。<u>历战</u>：X+1。" ..
+  "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
+
+  ["@os__baizu"] = "败族",
+  ["#os__baizu-ask"] = "败族：选择 %arg 名其他角色，你和这些角色各弃置一张手牌",
+  ["#os__baizu-discard"] = "败族：请弃置一张手牌",
+}
+
 return extension

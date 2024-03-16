@@ -1523,10 +1523,10 @@ local os__chue = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     if event == fk.TurnEnd then
-      return player:getMark("_os__chue-turn") > 0 and player:getMark("@os__bravery") >= player.hp and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
+      return player:getMark("@os__bravery") >= player.hp and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
     end
     if target ~= player then return false end
-    return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1)
+    return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1 and #U.getUseExtraTargets(player.room, data, true, true) > 0)
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.TargetSpecifying then
@@ -1569,9 +1569,7 @@ local os__chue = fk.CreateTriggerSkill{
         room:useCard(use)
       end
     else
-      player:drawCards(1, self.name)
       room:addPlayerMark(player, "@os__bravery")
-      room:setPlayerMark(player, "_os__chue-turn", 1)
     end
   end,
 }
@@ -1587,8 +1585,8 @@ local os__zhongyi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = 0
-    for _, v in pairs(data.damageDealt) do
-      num = num + v
+    for _, _ in pairs(data.damageDealt) do
+      num = num + 1
     end
     local x = player:getMark("@os__zhongyi") + 1
     local all_choices = {"os__zhongyi_draw:::" .. num, "os__zhongyi_recover:::" .. num, "beishui_os__zhongyi:::" .. x}
@@ -1626,10 +1624,12 @@ guanyu:addSkill(os__zhongyi)
 
 Fk:loadTranslationTable{
   ["os__xia__guanyu"] = "侠关羽",
+  ["#os__xia__guanyu"] = "义薄云天",
+
   ["os__chue"] = "除恶",
-  [":os__chue"] = "①当你使用【杀】指定唯一目标时，你可失去1点体力，额外指定至多X个目标。②当你受到伤害或失去体力后，你摸一张牌并获得1枚“勇”。③每个回合结束时，若你本回合获得过“勇”，你可弃X枚“勇”，视为使用一张【杀】，此【杀】的伤害值基数+1且额外选择X个目标。（X为你的体力值）",
+  [":os__chue"] = "①当你使用【杀】指定唯一目标时，若存在能成为此【杀】目标的一名角色，你可失去1点体力，额外指定至多X个目标。②当你受到伤害或失去体力后，你获得1枚“勇”。③每个回合结束时，你可弃X枚“勇”，视为使用一张【杀】，此【杀】的伤害值基数+1且额外选择X个目标。（X为你的体力值）",
   ["os__zhongyi"] = "忠义",
-  [":os__zhongyi"] = "锁定技，①你使用【杀】无距离限制。②当你使用【杀】结算结束后，你选择一项：1.摸等同于此【杀】造成伤害值的牌；2.回复等同于此【杀】造成伤害值的体力；背水：你失去X点体力（X为本局你选择此技能背水的次数+1）。",
+  [":os__zhongyi"] = "锁定技，①你使用【杀】无距离限制。②当你使用【杀】结算结束后，你选择一项：1.摸等同于受到此【杀】造成伤害的角色数牌；2.回复等同于受到此【杀】造成伤害的角色数体力；背水：你失去X点体力（X为本局你选择此技能背水的次数+1）。",
 
   ["#os__chue-loseHp"] = "除恶：你可失去1点体力，然后此【杀】额外指定至多你的体力值个目标",
   ["#os__chue-choose"] = "除恶：为此%arg额外指定至多%arg2个目标",
@@ -1641,5 +1641,7 @@ Fk:loadTranslationTable{
   ["beishui_os__zhongyi"] = "背水：失去%arg点体力",
   ["@os__zhongyi"] = "忠义",
 }
+
+-- local yuzhenzi = General(extension, "yuzhenzi", "qun", 3)
 
 return extension

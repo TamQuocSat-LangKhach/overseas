@@ -259,6 +259,7 @@ local os__cuorui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(self.cost_data, self.name)
+    if player.dead then return end
     room:abortPlayerArea(player, {Player.JudgeSlot})
     room:addPlayerMark(player, "@@os__cuorui")
     if player:getMark("@@os__cuorui") > 1 and not player.dead then
@@ -283,8 +284,7 @@ local os__liewei = fk.CreateTriggerSkill{
     return player:hasSkill(self) and data.damage and data.damage.from == player 
   end,
   on_use = function(self, event, target, player, data)
-    if player:usedSkillTimes("os__cuorui", Player.HistoryGame) < 1 or 
-    player.room:askForChoice(player, {"os__liewei_draw", "os__liewei_cuorui"}, self.name) == "os__liewei_draw" then
+    if player:usedSkillTimes("os__cuorui", Player.HistoryGame) < 1 or player.room:askForChoice(player, {"os__liewei_draw", "os__liewei_cuorui"}, self.name) == "os__liewei_draw" then
       player:drawCards(2, self.name)
     else
       player:addSkillUseHistory("os__cuorui", -1)
@@ -336,7 +336,7 @@ local os__zhuidu = fk.CreateActiveSkill{
     local choices = {"os__zhuidu_damage"}
     if #target:getCardIds(Player.Equip) > 0 then table.insert(choices, "os__zhuidu_discard") end
     if U.isFemale(target) and not player:isNude() then table.insert(choices, "beishui_os__zhuidu") end
-    local choice = room:askForChoice(player, choices, self.name)--, nil, false, {"os__zhuidu_damage", "os__zhuidu_discard", "beishui_os__zhuidu"})
+    local choice = room:askForChoice(player, choices, self.name)
     if choice ~= "os__zhuidu_discard" then
       room:damage{
         from = player,
@@ -418,7 +418,7 @@ Fk:loadTranslationTable{
   [":os__zhuidu"] = "出牌阶段限一次，你可选择一名受伤的其他角色并选择一项：1.你对其造成1点伤害；2.你弃置其装备区的一张牌；若其为女性角色，则你可背水：（在其执行完所有可执行的选项后）弃置一张牌。",
   ["os__shigong"] = "示恭",
   [":os__shigong"] = "限定技，当你回合外进入濒死状态时，你可令当前回合者选择一项：1. 增加1点体力上限，回复1点体力，摸一张牌，令你体力回复至体力上限；2. 弃置X张手牌（X为其当前体力值），令你体力回复至1点。",
-  
+
   ["os__zhuidu_damage"] = "对其造成1点伤害",
   ["os__zhuidu_discard"] = "弃置其装备区的一张牌",
   ["beishui_os__zhuidu"] = "背水：你弃置一张牌",
@@ -563,7 +563,7 @@ local os__dingfa = fk.CreateTriggerSkill{
     local choices = {"os__dingfa_damage", "Cancel"}
     if player.hp < player.maxHp then table.insert(choices, 2, "os__dingfa_recover") end
     local choice = room:askForChoice(player, choices, self.name, nil, false, {"os__dingfa_damage", "os__dingfa_recover", "Cancel"})
-    
+
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -784,9 +784,6 @@ local os__yangshi = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self)-- and not player.dead
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if table.every(room:getOtherPlayers(player), function(p)
@@ -884,7 +881,6 @@ local os__moukui = fk.CreateTriggerSkill{
 local os__moukui_delay = fk.CreateTriggerSkill{
   name = "#os__moukui_delay",
   events = {fk.CardUseFinished, fk.EnterDying},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.EnterDying then
       return data.damage and data.damage.card and (data.damage.card.extra_data or {}).os__moukuiUser == player.id and (data.damage.card.extra_data or {}).os__moukuiTargets and table.contains((data.damage.card.extra_data or {}).os__moukuiTargets, target.id)
@@ -892,6 +888,7 @@ local os__moukui_delay = fk.CreateTriggerSkill{
       return player == target and (data.card.extra_data or {}).os__moukuiUser == player.id and (data.card.extra_data or {}).os__moukuiTargets
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     if event == fk.EnterDying then
       table.removeOne((data.damage.card.extra_data or {}).os__moukuiTargets, target.id)
