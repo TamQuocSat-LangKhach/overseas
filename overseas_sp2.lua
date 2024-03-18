@@ -5390,7 +5390,7 @@ local lijians = fk.CreateTriggerSkill{
     local room = player.room
     local cards = self.cost_data
     room:setPlayerMark(player, "@os__lijians", 8)
-    local result = room:askForCardsChosen(player, target, 1, #cards, {
+    local result = room:askForCardsChosen(player, target, 0, #cards, {
       card_data = {
         { "pile_discard", cards }
       }
@@ -5630,7 +5630,105 @@ Fk:loadTranslationTable{
   ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",	
 }
 
--- local wenchou = General(extension, "wenchou", "qun", 4)
+local wenchou = General(extension, "wenchou", "qun", 4)
+local juexing = fk.CreateViewAsSkill{
+  name = "os__juexing",
+  pattern = "duel",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    local c = Fk:cloneCard("duel")
+    c.skillName = self.name
+    return c
+  end,
+  before_use = function(self, player, use)
+    use.extra_data = use.extra_data or {}
+    use.extra_data.os__juexingEffect = 1
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+}
+
+local juexing_delay = fk.CreateTriggerSkill{
+  name = "#os__juexing_delay",
+  mute = true,
+  events = {fk.CardEffecting, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.card.trueName == "duel" and (data.extra_data or {}).os__juexingEffect == (event == fk.CardEffecting and 1 or 2)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = TargetGroup:getRealTargets(data.tos)
+    table.insert(targets, data.from)
+    room:sortPlayersByAction(targets)
+    if event == fk.CardEffecting then
+      for _, pid in ipairs(targets) do
+        local p = room:getPlayerById(pid)
+        if not p.dead then
+          p:addToPile("os__juexing", p:getCardIds(Player.Hand), false, self.name)
+          if not p.dead then
+            local cards = p:drawCards(p.hp + p:getMark("@os__juexing"), self.name)
+            table.forEach(cards, function(id) room:setCardMark(Fk:getCardById(id), "@@os__juexing-inhand", 1) end)
+          end
+        end
+      end
+    else
+      for _, pid in ipairs(targets) do
+        local p = room:getPlayerById(pid)
+        if not p.dead then
+          local cards = table.filter(p:getCardIds(Player.Hand), function(id) return
+            Fk:getCardById(id):getMark("@@os__juexing-inhand") > 0 and not p:prohibitDiscard(Fk:getCardById(id))
+          end)
+          if #cards > 0 then
+            room:throwCard(cards, self.name, p)
+          end
+          if not p.dead then
+            local dummy = Fk:cloneCard("zixing")
+            dummy:addSubcards(p:getPile("os__juexing"))
+            room:obtainCard(pid, dummy, false)
+          end
+        end
+      end
+    end
+    data.extra_data.os__juexingEffect = data.extra_data.os__juexingEffect + 1
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:usedSkillTimes(self.name) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "@os__juexing")
+  end
+}
+juexing:addRelatedSkill(juexing_delay)
+
+local xiayong = fk.CreateTriggerSkill{
+  name = "os__xiayong",
+  events = {fk.DamageCaused},
+  mute = true,
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and data.card and data.card.trueName == "duel" and ((data.to == player and not player:isKongcheng()) or data.from == player) and U.damageByCardEffect(player.room, false)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if data.to == player then
+      room:notifySkillInvoked(player, self.name, "negative")
+      local cards = table.filter(player:getCardIds(Player.Hand), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end)
+      if #cards > 0 then
+        room:throwCard(table.random(cards), self.name, player)
+      end
+    else
+      room:notifySkillInvoked(player, self.name, "offensive")
+      data.damage = data.damage + 1
+    end
+  end,
+}
+wenchou:addSkill(juexing)
+wenchou:addSkill(xiayong)
 Fk:loadTranslationTable{
   ["wenchou"] = "文丑",
   ["#wenchou"] = "有去无回",
@@ -5641,6 +5739,9 @@ Fk:loadTranslationTable{
   "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
   ["os__xiayong"] = "狭勇",
   [":os__xiayong"] = "锁定技，你为目标角色或使用者的【决斗】造成伤害时，若受到此牌伤害的角色：为你，你随机弃置一张手牌；不为你，此伤害+1。",
+
+  ["@os__juexing"] = "绝行 历战",
+  ["@@os__juexing-inhand"] = "绝行",
 }
 
 local yuantan = General(extension, "yuantan", "qun", 4)
