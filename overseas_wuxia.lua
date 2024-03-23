@@ -1640,8 +1640,170 @@ Fk:loadTranslationTable{
   ["os__zhongyi_recover"] = "回复%arg点体力",
   ["beishui_os__zhongyi"] = "背水：失去%arg点体力",
   ["@os__zhongyi"] = "忠义",
+
+  ["$os__chue1"] = "关某此生，誓斩天下恶徒！",
+  ["$os__chue2"] = "政法不行，羽当替天行之！",
+  ["$os__zhongyi1"] = "忠照白日，义贯长虹！",
+  ["$os__zhongyi2"] = "忠铸吾骨，义全吾身！",
+  ["~os__xia__guanyu"] = "丈夫终有一死，唯恨壮志难酬。",
 }
 
 -- local yuzhenzi = General(extension, "yuzhenzi", "qun", 3)
+
+local shitao = General(extension, "shitao", "qun", 4)
+
+--- 获取被废除的装备栏
+---@param player Player
+local function getSealedEquipSlot(player)
+  local all_slots = {"WeaponSlot", "ArmorSlot", "DefensiveRideSlot", "OffensiveRideSlot", "TreasureSlot"}
+  return table.filter(all_slots, function(slot) return table.contains(player.sealedSlots, slot) end)
+end
+
+local jieqiu = fk.CreateActiveSkill{
+  name = "os__jieqiu",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and #getSealedEquipSlot(Fk:currentRoom():getPlayerById(to_select)) == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local num = #target:getCardIds(Player.Equip)
+    room:abortPlayerArea(target, target.equipSlots)
+    if not target.dead then
+      room:setPlayerMark(target, "@os__jieqiu", player.general)
+      room:setPlayerMark(target, "_os__jieqiu", player.id)
+      target:drawCards(num, self.name)
+    end
+  end,
+}
+
+local jieqiu_delay = fk.CreateTriggerSkill{
+  name = "#os__jieqiu_delay",
+  events = {fk.EventPhaseEnd, fk.TurnEnd},
+  anim_type = "control",
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if target:getMark("_os__jieqiu") == 0 then return end
+    if event == fk.EventPhaseEnd then
+      if target == player and target.phase == Player.Discard then
+        local num = 0
+        player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+          for _, move in ipairs(e.data) do
+            if move.from == target.id and move.moveReason == fk.ReasonDiscard then
+              for _, info in ipairs(move.moveInfo) do
+                if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                  num = num + 1
+                end
+              end
+            end
+          end
+          return false
+        end, Player.HistoryPhase)
+        if num > 0 then
+          self.cost_data = num
+          return true
+        end
+      end
+    else
+      if target:getMark("_os__jieqiu") == player.id then
+        return player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return event == fk.EventPhaseEnd or player.room:askForSkillInvoke(player, self.name, data, "#os__jieqiu-ask")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseEnd then
+      local num = self.cost_data
+      local all_choices = getSealedEquipSlot(player)
+      if #all_choices > 0 then
+        local choices = room:askForChoices(player, all_choices, num, num, self.name, "#os__jieqiu-choice:::" .. num, false)
+        room:resumePlayerArea(player, choices)
+      end
+    else
+      room:doIndicate(player.id, {target.id})
+      room:notifySkillInvoked(player, self.name, "control")
+      player:broadcastSkillInvoke("os__jieqiu")
+      player:gainAnExtraTurn()
+    end
+  end,
+
+  refresh_events = {fk.AreaResumed},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and #getSealedEquipSlot(player) == 0 and player:getMark("_os__jieqiu") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@os__jieqiu", 0)
+    room:setPlayerMark(player, "_os__jieqiu", 0)
+  end,
+}
+jieqiu:addRelatedSkill(jieqiu_delay)
+
+local enchou = fk.CreateActiveSkill{
+  name = "os__enchou",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and #getSealedEquipSlot(Fk:currentRoom():getPlayerById(to_select)) > 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cids = target:getCardIds(Player.Hand)
+    local cards, _ = U.askforChooseCardsAndChoice(player, cids, {"os__enchou_get"}, self.name, "#os__enchou-ask::" .. target.id)
+    room:obtainCard(player, cards[1], false, fk.ReasonPrey, player.id)
+    if not target.dead and not player.dead then
+      local choices = getSealedEquipSlot(target)
+      if #choices > 0 then
+        local choice = room:askForChoice(player, choices, self.name, "#os__enchou-choice::" .. target.id, false)
+        room:resumePlayerArea(target, {choice})
+      end
+    end
+  end,
+}
+
+shitao:addSkill(jieqiu)
+shitao:addSkill(enchou)
+
+Fk:loadTranslationTable{
+  ["shitao"] = "石韬",
+  ["#shitao"] = "快意恩仇",
+
+  ["os__jieqiu"] = "劫囚",
+  [":os__jieqiu"] = "出牌阶段限一次，你可选择一名所有装备栏均未被废除的其他角色，废除其所有装备栏，然后其摸X张牌（X为废除前其装备区里的牌数）。其弃牌阶段结束时，其恢复等同于此阶段弃置手牌数量的装备栏。其回合结束时，若仍有装备栏被废除，则你可执行一个额外回合（每轮限一次）。",
+  ["os__enchou"] = "恩仇",
+  [":os__enchou"] = "出牌阶段限一次，你可观看一名有装备栏被废除的其他角色的手牌并获得其中一张牌，然后你恢复其一个装备栏。",
+
+  ["@os__jieqiu"] = "劫囚",
+  ["#os__jieqiu_delay"] = "劫囚",
+  ["#os__jieqiu-choice"] = "劫囚：恢复 %arg 个装备栏",
+  ["#os__jieqiu-ask"] = "劫囚：你可执行一个额外回合",
+  ["os__enchou_get"] = "获得",
+  ["#os__enchou-ask"] = "恩仇：获得 %dest 一张手牌，然后恢复其一个装备栏",
+  ["#os__enchou-choice"] = "恩仇：恢复 %dest 一个装备栏",
+
+  ["$os__jieqiu1"] = "元直莫慌，石韬来也！",
+  ["$os__jieqiu2"] = "一群鼠辈，焉能挡我等去路！",
+  ["$os__enchou1"] = "江湖快意，恩仇必报！",
+  ["$os__enchou2"] = "今日之因，明日之果！",
+  ["~shitao"] = "想不到竟中了官府的埋伏……",
+}
+
+-- local shie = General(extension, "shie", "wei", 4)
 
 return extension
