@@ -4318,22 +4318,28 @@ local os__zhuling = General(extension, "os__zhuling", "wei", 4)
 local os__zhanyi = fk.CreateActiveSkill{
   name = "os__zhanyi",
   anim_type = "drawcard",
+  prompt = "#os__zhanyi-prompt",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and player.hp > 0
   end,
   card_num = 1,
   card_filter = function(self, to_select, selected)
-    return #selected < 1
+    return #selected < 1 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   target_num = 0,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:throwCard(effect.cards, self.name, player, player)
-    room:loseHp(player, 1, self.name)
     local cardType = Fk:getCardById(effect.cards[1]):getTypeString()
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    room:loseHp(player, 1, self.name)
+    if player.dead then return end
     room:setPlayerMark(player, "@os__zhanyi-phase", cardType)
     if cardType == "basic" then
       room:handleAddLoseSkills(player, "os__zhanyi_basic&", nil, false, true)
+      room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
+        room:handleAddLoseSkills(player, "-os__zhanyi_basic&", nil, false, true)
+      end)
     elseif cardType == "trick" then
       player:drawCards(3, self.name)
     end
@@ -4342,10 +4348,11 @@ local os__zhanyi = fk.CreateActiveSkill{
 local os__zhanyi_basic = fk.CreateViewAsSkill{
   name = "os__zhanyi_basic&",
   card_num = 1,
+  prompt = "#os__zhanyi_basic-prompt",
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type == Card.TypeBasic
   end,
-  pattern = "^nullification|.|.|.|.|basic",
+  pattern = ".|.|.|.|.|basic",
   interaction = function(self)
     local all_names = U.getAllCardNames("b")
     local names = U.getViewAsCardNames(Self, "os__zhanyi", all_names)
@@ -4364,8 +4371,8 @@ local os__zhanyi_basic = fk.CreateViewAsSkill{
   enabled_at_play = function(self, player)
     return player:getMark("@os__zhanyi-phase") == "basic"
   end,
-  enabled_at_response = function(self, player)
-    return player:getMark("@os__zhanyi-phase") == "basic"
+  enabled_at_response = function(self, player, resp)
+    return player:getMark("@os__zhanyi-phase") == "basic" and not resp
   end,
 }
 local os__zhanyi_buff = fk.CreateTriggerSkill{
@@ -4399,21 +4406,14 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
     else
       local to = room:getPlayerById(data.to)
       local cids = room:askForDiscard(to, 2, 2, true, self.name, false, ".")
+      cids = table.filter(cids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
       if #cids > 0 then
-        local cards = room:askForGuanxing(player, cids, nil, {1, 1}, self.name, true, {"os__zhanyiNoGet", "os__zhanyiGet"}).bottom
+        local cards = room:askForGuanxing(player, cids, nil, {1, 1}, "os__zhanyi", true, {"os__zhanyiNoGet", "os__zhanyiGet"}).bottom
         if #cards > 0 then
-          room:obtainCard(player, cards[1], true, fk.ReasonJustMove)
+          room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, "os__zhanyi", nil, true)
         end
       end
     end
-  end,
-
-  refresh_events = {fk.EventPhaseEnd},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and target.phase == Player.Play and player:hasSkill(os__zhanyi_basic.name)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, "-os__zhanyi_basic", nil, false, true)
   end,
 }
 os__zhanyi:addRelatedSkill(os__zhanyi_buff)
@@ -4424,15 +4424,17 @@ Fk:addSkill(os__zhanyi_basic)
 Fk:loadTranslationTable{
   ["os__zhuling"] = "朱灵",
   ["os__zhanyi"] = "战意",
-  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被【无懈可击】抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：酒杀2滴，不是bug）</font>",
+  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被【无懈可击】抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：【酒】不享受伤害值+1效果）</font>",
+  ["#os__zhanyi-prompt"] = "战意:弃置一张牌并失去1点体力，根据弃置牌的种类获得效果",
 
   ["@os__zhanyi-phase"] = "战意",
   ["#os__zhanyi_buff"] = "战意",
   ["os__zhanyiNoGet"] = "不获得",
   ["os__zhanyiGet"] = "获得",
 
-  ["os__zhanyi_basic&"] = "战意[印牌]",
+  ["os__zhanyi_basic&"] = "战意",
   [":os__zhanyi_basic&"] = "你可将一张基本牌当成任意基本牌使用",
+  ["#os__zhanyi_basic-prompt"] = "(限一次)你可将一张基本牌当成任意基本牌使用",
 
   ["$os__zhanyi1"] = "以战养战，视敌而战。",
   ["$os__zhanyi2"] = "战，可以破敌。意，可以守御。",
