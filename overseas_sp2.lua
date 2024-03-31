@@ -4333,45 +4333,39 @@ local os__zhanyi = fk.CreateActiveSkill{
     local cardType = Fk:getCardById(effect.cards[1]):getTypeString()
     room:setPlayerMark(player, "@os__zhanyi-phase", cardType)
     if cardType == "basic" then
-      room:handleAddLoseSkills(player, "os__zhanyi_basic", nil, false, true)
+      room:handleAddLoseSkills(player, "os__zhanyi_basic&", nil, false, true)
     elseif cardType == "trick" then
       player:drawCards(3, self.name)
     end
   end,
 }
 local os__zhanyi_basic = fk.CreateViewAsSkill{
-  name = "os__zhanyi_basic",
+  name = "os__zhanyi_basic&",
   card_num = 1,
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type == Card.TypeBasic
   end,
   pattern = "^nullification|.|.|.|.|basic",
   interaction = function(self)
-    local allCardNames = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if not table.contains(allCardNames, card.name) and card.type == Card.TypeBasic and not card.is_derived and ((Fk.currentResponsePattern == nil and Self:canUse(card)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) and not Self:prohibitUse(card) then
-        table.insert(allCardNames, card.name)
-      end
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "os__zhanyi", all_names)
+    if #names > 0 then
+      return UI.ComboBox { choices = names, all_choices = all_names }
     end
-    return UI.ComboBox { choices = allCardNames }
   end,
   view_as = function(self, cards)
     local choice = self.interaction.data
-    if not choice then return end
+    if not choice or #cards ~= 1 then return end
     local c = Fk:cloneCard(choice)
     c:addSubcards(cards)
     c.skillName = self.name
     return c
   end,
-  before_use = function(self, player, use)
-    player.room:addPlayerMark(player, "_os__zhanyi_vs-phase")
-  end,
   enabled_at_play = function(self, player)
-    return player:getMark("@os__zhanyi-phase") == "basic" and player:getMark("_os__zhanyi_vs-phase") == 0
+    return player:getMark("@os__zhanyi-phase") == "basic"
   end,
   enabled_at_response = function(self, player)
-    return player:getMark("@os__zhanyi-phase") == "basic" and player:getMark("_os__zhanyi_vs-phase") == 0
+    return player:getMark("@os__zhanyi-phase") == "basic"
   end,
 }
 local os__zhanyi_buff = fk.CreateTriggerSkill{
@@ -4414,8 +4408,6 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
     end
   end,
 
-  
-  
   refresh_events = {fk.EventPhaseEnd},
   can_refresh = function(self, event, target, player, data)
     return player == target and target.phase == Player.Play and player:hasSkill(os__zhanyi_basic.name)
@@ -4439,8 +4431,8 @@ Fk:loadTranslationTable{
   ["os__zhanyiNoGet"] = "不获得",
   ["os__zhanyiGet"] = "获得",
 
-  ["os__zhanyi_basic"] = "战意[印牌]",
-  [":os__zhanyi_basic"] = "你可将一张基本牌当成任意基本牌使用",
+  ["os__zhanyi_basic&"] = "战意[印牌]",
+  [":os__zhanyi_basic&"] = "你可将一张基本牌当成任意基本牌使用",
 
   ["$os__zhanyi1"] = "以战养战，视敌而战。",
   ["$os__zhanyi2"] = "战，可以破敌。意，可以守御。",
