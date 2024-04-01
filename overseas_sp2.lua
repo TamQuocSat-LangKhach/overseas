@@ -4320,7 +4320,7 @@ local os__zhanyi = fk.CreateActiveSkill{
   anim_type = "drawcard",
   prompt = "#os__zhanyi-prompt",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and player.hp > 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
   card_num = 1,
   card_filter = function(self, to_select, selected)
@@ -4408,10 +4408,12 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
       local cids = room:askForDiscard(to, 2, 2, true, self.name, false, ".")
       cids = table.filter(cids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
       if #cids > 0 then
-        local cards = room:askForGuanxing(player, cids, nil, {1, 1}, "os__zhanyi", true, {"os__zhanyiNoGet", "os__zhanyiGet"}).bottom
-        if #cards > 0 then
-          room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, "os__zhanyi", nil, true)
-        end
+        local cards = room:askForCardChosen(player, target, {
+          card_data = {
+            { "pile_discard", cids }
+          }
+        }, self.name, "#os__zhanyi-get::" .. data.to)
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, "os__zhanyi", nil, true)
       end
     end
   end,
@@ -4429,12 +4431,11 @@ Fk:loadTranslationTable{
 
   ["@os__zhanyi-phase"] = "战意",
   ["#os__zhanyi_buff"] = "战意",
-  ["os__zhanyiNoGet"] = "不获得",
-  ["os__zhanyiGet"] = "获得",
 
   ["os__zhanyi_basic&"] = "战意",
   [":os__zhanyi_basic&"] = "你可将一张基本牌当成任意基本牌使用",
-  ["#os__zhanyi_basic-prompt"] = "(限一次)你可将一张基本牌当成任意基本牌使用",
+  ["#os__zhanyi_basic-prompt"] = "你可将一张基本牌当成任意基本牌使用",
+  ["#os__zhanyi-get"] = "战意：获得%dest弃置的一张牌",
 
   ["$os__zhanyi1"] = "以战养战，视敌而战。",
   ["$os__zhanyi2"] = "战，可以破敌。意，可以守御。",
@@ -4528,11 +4529,8 @@ local os__jinglue_do = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       room:doIndicate(player.id, {target.id})
-      if data.toCard ~= nil then
-        data.toCard = nil
-      else
-        data.nullifiedTargets = TargetGroup:getRealTargets(data.tos)
-      end
+      data.tos = {}
+      room:sendLog{ type = "#CardNullifiedBySkill", from = target.id, arg = self.name, arg2 = data.card:toLogString() }
     else
       local dummy = Fk:cloneCard("dilu")
       local mark = target:getMark("_os__jinglue_now-" .. player.id)
