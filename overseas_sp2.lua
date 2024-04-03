@@ -3835,11 +3835,12 @@ local os__jilun_vs = fk.CreateViewAsSkill{
 Fk:addSkill(os__jilun_vs)
 
 jiangji:addSkill(os__jichou)
---jiangji:addSkill(os__jichou_give) --开摆！
 jiangji:addSkill(os__jilun)
 
 Fk:loadTranslationTable{
   ["jiangji"] = "蒋济",
+  ["#jiangji"] = "盛魏昌杰",
+  ["designer:jiangji"] = "Loun老萌",
   ["os__jichou"] = "急筹",
   [":os__jichou"] = "①每回合限一次，你可视为使用一种普通锦囊牌，然后本局游戏你无法以此法或自手牌中使用此牌名的牌，且不可响应此牌名的牌。②出牌阶段限一次，你可将手牌中“急筹”使用过的其牌名的一张牌交给一名角色。",
   ["os__jilun"] = "机论",
@@ -5625,6 +5626,7 @@ Fk:loadTranslationTable{
 local wenchou = General(extension, "wenchou", "qun", 4)
 local juexing = fk.CreateViewAsSkill{
   name = "os__juexing",
+  prompt = "#os__juexing",
   pattern = "duel",
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -5702,19 +5704,24 @@ local xiayong = fk.CreateTriggerSkill{
   mute = true,
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.card and data.card.trueName == "duel" and ((data.to == player and not player:isKongcheng()) or data.from == player) and U.damageByCardEffect(player.room, false)
+    if not (player:hasSkill(self) and data.card and data.card.trueName == "duel") then return end
+    local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, false)
+    if use_event == nil then return false end
+    return (table.contains(TargetGroup:getRealTargets(use_event.data[1].tos), player.id) or use_event.data[1].from == player.id) and U.damageByCardEffect(player.room, false) and (data.to ~= player or not player:isKongcheng())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(self.name)
     if data.to == player then
       room:notifySkillInvoked(player, self.name, "negative")
+      player:broadcastSkillInvoke(self.name, 1)
       local cards = table.filter(player:getCardIds(Player.Hand), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end)
       if #cards > 0 then
         room:throwCard(table.random(cards), self.name, player)
       end
     else
       room:notifySkillInvoked(player, self.name, "offensive")
+      player:broadcastSkillInvoke(self.name, 2)
+      room:doIndicate(player.id, {data.to.id})
       data.damage = data.damage + 1
     end
   end,
@@ -5732,8 +5739,15 @@ Fk:loadTranslationTable{
   ["os__xiayong"] = "狭勇",
   [":os__xiayong"] = "锁定技，你为目标角色或使用者的【决斗】造成伤害时，若受到此牌伤害的角色：为你，你随机弃置一张手牌；不为你，此伤害+1。",
 
+  ["#os__juexing"] = "绝行：你可视为对一名其他角色使用一张【决斗】",
   ["@os__juexing"] = "绝行 历战",
   ["@@os__juexing-inhand"] = "绝行",
+
+  ["$os__juexing1"] = "阿瞒且寄汝首，待吾一骑取之！",
+  ["$os__juexing2"] = "杀！尽歼贼败军之众！",
+  ["$os__xiayong1"] = "一招之差，不足决此战胜负！",
+  ["$os__xiayong2"] = "这般身手，也敢来战我？",
+  ["~wenchou"] = "黄泉路上，你我兄弟亦不可独行……",	
 }
 
 local yuantan = General(extension, "yuantan", "qun", 4)
