@@ -617,6 +617,7 @@ Fk:loadTranslationTable{
   ["#os__jiachong"] = "凶凶踽行",
   ["designer:os__jiachong"] = "Loun老萌",
   ["illustrator:os__jiachong"] = "铁杵文化",
+  ["cv:os__jiachong"] = "虞晓旭",
 
   ["os__beini"] = "悖逆",
   [":os__beini"] = "出牌阶段限一次，你可以选择一名体力值不小于你的角色，令你或其摸两张牌，然后未摸牌的角色视为对摸牌的角色使用一张【杀】。",
