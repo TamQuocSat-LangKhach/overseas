@@ -3183,6 +3183,7 @@ local os__zhiming = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)
+    if player:isNude() then return false end
     local cids = room:askForCard(player, 1, 1, true, self.name, true, nil, "#os__zhiming-ask")
     if #cids > 0 then
       room:moveCardTo(cids, Card.DrawPile, nil, fk.ReasonPut, self.name, nil, false)
@@ -3201,14 +3202,6 @@ local os__xingbu = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cids = room:getNCards(3)
-    room:moveCards({
-      ids = cids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    })
-    room:delay(2000)
     local num = 0
     for _, cid in ipairs(cids) do
       if Fk:getCardById(cid).color == Card.Red then
@@ -3225,9 +3218,17 @@ local os__xingbu = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
     end
-    local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__xingbu-target:::" .. result, self.name, true)
-    if #target > 0 then
-      room:setPlayerMark(room:getPlayerById(target[1]), "@os__xingbu", result)
+    room:moveCards({
+      ids = cids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
+    })
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
+    "#os__xingbu-target:::" .. result, self.name, true)
+    if #tos > 0 then
+      room:setPlayerMark(room:getPlayerById(tos[1]), "@os__xingbu", result)
     end
     room:moveCardTo(cids, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
   end,
