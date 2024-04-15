@@ -4401,8 +4401,7 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
         data.additionalRecover = (data.additionalRecover or 0) + 1
         room:addPlayerMark(player, "_os__zhanyi_additional-phase")
       else
-        data.prohibitedCardNames = data.prohibitedCardNames or {}
-        table.insertIfNeed(data.prohibitedCardNames, "nullification")
+        data.unoffsetableList = table.map(player.room.alive_players, Util.IdMapper)
       end
     else
       local to = room:getPlayerById(data.to)
@@ -4429,7 +4428,7 @@ Fk:loadTranslationTable{
   ["#os__zhuling"] = "良将之亚",
   ["cv:os__zhuling"] = "秦且歌",
   ["os__zhanyi"] = "战意",
-  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被【无懈可击】抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：【酒】不享受伤害值+1效果）</font>",
+  [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：【酒】不享受伤害值+1效果）</font>",
   ["#os__zhanyi-prompt"] = "战意:弃置一张牌并失去1点体力，根据弃置牌的种类获得效果",
 
   ["@os__zhanyi-phase"] = "战意",
