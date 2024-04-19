@@ -184,6 +184,9 @@ os__tongyuan:addSkill(os__chuanshu)
 
 Fk:loadTranslationTable{
   ["os__tongyuan"] = "童渊",
+  ["#os__tongyuan"] = "凤鸣麟出",
+  ["illustrator:os__tongyuan"] = "M云涯",
+
   ["os__chaofeng"] = "朝凤",
   [":os__chaofeng"] = "①你可将【杀】当【闪】、【闪】当任意【杀】使用或打出。②出牌阶段开始时，你可与至多三名角色共同拼点：赢的角色视为对所有没赢的角色使用一张火【杀】。" ..
   "<br/><font color='grey'>#\"<b>共同拼点</b>\"<br/>所有角色一起比大小（而非“同时拼点”：发起者和其余角色两两各比大小）。",
@@ -304,6 +307,9 @@ wangyue:addSkill(os__jianming)
 
 Fk:loadTranslationTable{
   ["wangyue"] = "王越",
+  ["#wangyue"] = "驭龙在天",
+  ["illustrator:wangyue"] = "鱼仔",
+
 	["os__yulong"] = "驭龙",
 	[":os__yulong"] = "当你使用【杀】指定第一个目标后，你可与其中一名目标拼点。若你：赢，若此【杀】造成伤害则不计入次数，且你此次的拼点牌为：黑色，此【杀】的伤害+1；红色，此【杀】不可被响应。",
 	["os__jianming"] = "剑鸣",
@@ -413,6 +419,9 @@ os__xia__xushu:addSkill(os__xiawang)
 
 Fk:loadTranslationTable{
   ["os__xia__xushu"] = "侠徐庶",
+  ["#os__xia__xushu"] = "仗剑为侠",
+  ["illustrator:os__xia__xushu"] = "zoo",
+
   ["os__jiange"] = "剑歌",
   [":os__jiange"] = "每回合限一次，你可将一张非基本牌当【杀】使用或打出（无距离与次数限制且不计入次数）。若此时为你的回合外，你摸一张牌。",
   ["os__xiawang"] = "侠望",
@@ -524,6 +533,8 @@ liyan:addSkill(os__lvren)
 
 Fk:loadTranslationTable{
   ["liyan"] = "李彦",
+  ["#liyan"] = "暴虎冯河",
+
   ["os__zhenhu"] = "震虎",
   [":os__zhenhu"] = "当你使用伤害牌指定第一个目标时，你可摸一张牌并与至多三名其他角色共同拼点：若你赢，此牌对没赢的角色造成伤害+1。若你没赢，你失去1点体力。" ..
   "<br/><font color='grey'>#\"<b>共同拼点</b>\"<br/>所有角色一起比大小（而非“同时拼点”：发起者和其余角色两两各比大小）。",
@@ -637,6 +648,9 @@ xiahouzie:addSkill(os__duoren)
 
 Fk:loadTranslationTable{
   ["xiahouzie"] = "夏侯紫萼",
+  ["#xiahouzie"] = "孤草飘零",
+  ["illustrator:xiahouzie"] = "M云涯",
+
   ["os__xuechang"] = "血偿",
   [":os__xuechang"] = "出牌阶段限一次，你可与一名角色拼点，若你赢，你获得其一张牌，若此牌为装备牌，则你视为对其使用一张【杀】；若你没赢，你受到其造成的1点伤害，你下次对其造成的伤害+1。",
   ["os__duoren"] = "夺刃",
@@ -742,6 +756,9 @@ zhaoe:addSkill(os__renchou)
 
 Fk:loadTranslationTable{
   ["zhaoe"] = "赵娥",
+  ["#zhaoe"] = "烈女誓仇",
+  ["illustrator:zhaoe"] = "充电JUJU",
+
   ["os__yanshi"] = "言誓",
   [":os__yanshi"] = "①游戏开始时，你选择一名其他角色。②当你或“言誓”角色受到除你与其以外的角色造成的伤害后，若伤害来源没有“誓”，伤害来源获得1枚“誓”。③你对有“誓”的角色使用牌无距离限制且对其造成的伤害+1。④当你对有“誓”的角色造成伤害后，你摸等同于伤害数的牌并弃其1枚“誓”。",
   ["os__renchou"] = "刃仇",
@@ -879,6 +896,9 @@ os__xia__lusu:addSkill(os__yangming)
 
 Fk:loadTranslationTable{
   ["os__xia__lusu"] = "侠鲁肃",
+  ["#os__xia__lusu"] = "性善好施",
+  ["illustrator:os__xia__lusu"] = "zoo",
+
   ["os__kaizeng"] = "慨赠",
   [":os__kaizeng"] = "其他角色的出牌阶段限一次，其可秘密指定一种基本牌牌名或非基本牌类别，令你选择是否交给其任意张手牌。若你交给其多于一张牌，你摸一张牌；若其中包含其指定的牌名/类别的牌，你从牌堆中获得一张不同牌名/类别的牌。",
   ["os__yangming"] = "扬名",
@@ -1027,6 +1047,9 @@ os__xia__dianwei:addSkill(os__shezhong)
 
 Fk:loadTranslationTable{
   ["os__xia__dianwei"] = "侠典韦",
+  ["#os__xia__dianwei"] = "任侠报怨",
+  ["illustrator:os__xia__dianwei"] = "鱼仔",
+
   ["os__liexi"] = "烈袭",
   [":os__liexi"] = "准备阶段开始时，你可弃置任意张牌并选择一名其他角色，若你弃置的牌数大于其体力值，则你对其造成1点伤害；否则其对你造成1点伤害；若你弃置的牌中包含武器牌，你对其造成1点伤害。",
   ["os__shezhong"] = "慑众",
@@ -1215,6 +1238,8 @@ liubei:addSkill(xinghan)
 
 Fk:loadTranslationTable{
   ["os__xia__liubei"] = "侠刘备",
+  ["#os__xia__liubei"] = "为国为民",
+
   ["os__shenyi"] = "伸义",
   [":os__shenyi"] = "每回合限一次，当你或你攻击范围内的角色此回合首次受到其他角色造成的伤害后，你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后将牌堆中一张此牌名的牌置于你的武将牌上（没有则改为该类别的一张牌），称为“侠义”，然后你可以将任意张手牌交给其，当其失去一张你以此法交给其的牌时，你摸一张牌。",
   ["os__xinghan"] = "兴汉",
@@ -1301,6 +1326,8 @@ xiahoudun:addSkill(danlie)
 
 Fk:loadTranslationTable{
   ["os__xia__xiahoudun"] = "侠夏侯惇",
+  ["#os__xia__xiahoudun"] = "刚烈勇猛",
+
   ["os__danlie"] = "胆烈",
   [":os__danlie"] = "出牌阶段限一次，你可以与至多三名角色共同拼点，若你：赢，你对没赢的角色造成1点伤害；没赢，你失去1点体力。你的拼点牌点数+X（X为你已损失的体力值）。" ..
   "<br/><font color='grey'>#\"<b>共同拼点</b>\"<br/>所有角色一起比大小（而非“同时拼点”：发起者和其余角色两两各比大小）。",
@@ -1504,6 +1531,8 @@ xiahouzieh:addSkill(chengxi)
 
 Fk:loadTranslationTable{
   ["xiahouzieh"] = "夏侯子萼",
+  ["#xiahouzieh"] = "承继婆娑",
+
   ["os__chengxi"] = "承袭",
   [":os__chengxi"] = "出牌阶段对每名角色限一次，你可摸一张牌并与一名角色拼点，若你：赢，你使用的下一张基本牌或普通锦囊牌结算结束后，你视为对相同目标使用一张无次数限制的同名牌；没赢，其视为对你使用一张无距离限制的【杀】。",
 
@@ -1690,7 +1719,7 @@ local jieqiu_delay = fk.CreateTriggerSkill{
   anim_type = "control",
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    if target:getMark("_os__jieqiu") == 0 then return end
+    if target:getMark("_os__jieqiu") == 0 or target.dead then return end
     if event == fk.EventPhaseEnd then
       if target == player and target.phase == Player.Discard then
         local num = 0

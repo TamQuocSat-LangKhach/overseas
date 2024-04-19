@@ -3840,7 +3840,7 @@ jiangji:addSkill(os__jilun)
 Fk:loadTranslationTable{
   ["jiangji"] = "蒋济",
   ["#jiangji"] = "盛魏昌杰",
-  ["designer:jiangji"] = "Loun老萌",
+  ["designer:jiangji"] = "千幻",
   ["os__jichou"] = "急筹",
   [":os__jichou"] = "①每回合限一次，你可视为使用一种普通锦囊牌，然后本局游戏你无法以此法或自手牌中使用此牌名的牌，且不可响应此牌名的牌。②出牌阶段限一次，你可将手牌中“急筹”使用过的其牌名的一张牌交给一名角色。",
   ["os__jilun"] = "机论",
@@ -5479,6 +5479,8 @@ zhangzhao:addSkill(chungang)
 
 Fk:loadTranslationTable{
   ["zhangzhao"] = "张昭",
+  ["#zhangzhao"] = "功勳克举",
+  ["illustrator:zhangzhao"] = "YanBai",
   ["os__lijians"] = "力谏",
   [":os__lijians"] = "昂扬技，其他角色的弃牌阶段结束时，你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给其，若其获得的牌数大于你，则你对其造成1点伤害。<u>激昂</u>：八张牌进入弃牌堆。" .. 
   "<br/><font color='grey'>#\"<b>昂扬技</b>\"：昂扬技发动后，技能失效直到满足<b>激昂</b>条件。",
@@ -5606,6 +5608,7 @@ zhanghong:addSkill(quanqian)
 zhanghong:addSkill(rouke)
 Fk:loadTranslationTable{
   ["zhanghong"] = "张纮",
+  ["#zhanghong"] = "为世令器",
   ["os__quanqian"] = "劝迁",
   [":os__quanqian"] = "昂扬技，出牌阶段限一次，你可以将至多四张花色不同的手牌交给一名其他角色，若你以此法给出了不少于两张牌，你从牌堆中获得一张装备牌。然后你选择一项：1.将手牌摸至与其手牌数相同；2.观看其手牌并选择一种花色，然后获得其手牌中所有此花色的牌。<u>激昂</u>：你弃置六张手牌。" .. 
   "<br/><font color='grey'>#\"<b>昂扬技</b>\"：昂扬技发动后，技能失效直到满足<b>激昂</b>条件。",
