@@ -3073,10 +3073,17 @@ local os__jintao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and (player:usedCardTimes("slash", Player.HistoryPhase) == 1 or player:usedCardTimes("slash", Player.HistoryPhase) == 2) and player.phase == Player.Play
+    if target == player and player:hasSkill(self) then
+      local filter = function (e)
+        return e.data[1].from == player.id and e.data[1].card.trueName == "slash"
+      end
+      local times = #player.room.logic:getEventsOfScope(GameEvent.UseCard, 3, filter, Player.phase)
+      self.cost_data = times
+      return data.card.trueName == "slash" and player.phase == Player.Play and times <= 2
+    end
   end,
   on_use = function(self, event, target, player, data)
-    local num = player:usedCardTimes("slash", Player.HistoryPhase)
+    local num = self.cost_data
     if num == 1 then
       data.additionalDamage = (data.additionalDamage or 0) + 1
     elseif num == 2 then
