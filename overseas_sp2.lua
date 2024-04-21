@@ -684,6 +684,19 @@ Fk:addPoxiMethod{
     return table.random(cids, 1)
   end,
 }
+local os__sidao_select = fk.CreateActiveSkill{
+  name = "os__sidao_select",
+  card_num = 1,
+  target_num = 0,
+  expand_pile = function (self)
+    return U.getMark(Self, "os__sidao_cards")
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and table.contains(U.getMark(Self, "os__sidao_cards"), to_select)
+    and Self:canUseTo(Fk:getCardById(to_select), Self)
+  end,
+}
+Fk:addSkill(os__sidao_select)
 local sidao_derivecards = {{"celestial_calabash", Card.Heart, 1}, {"horsetail_whisk", Card.Heart, 1}, {"talisman", Card.Heart, 1}}
 local os__sidao = fk.CreateTriggerSkill{
   name = "os__sidao",
@@ -694,41 +707,26 @@ local os__sidao = fk.CreateTriggerSkill{
       return true
     else
       return player.phase == Player.Start and player:getMark("_os__sidao") ~= 0
-      and table.contains({Card.DiscardPile, Card.DrawPile, Card.Void}, player.room:getCardArea(player:getMark("_os__sidao")))
+      and table.contains({Card.DiscardPile, Card.DrawPile, Card.Void,Card.PlayerSpecial}, player.room:getCardArea(player:getMark("_os__sidao")))
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      local cards = {}
-      for _, name in ipairs({"celestial_calabash", "horsetail_whisk", "talisman"}) do
-        local card = Fk:cloneCard(name, Card.Heart, 1)
-        if U.canUseCardTo(room, player, player, card) then
-          table.insert(cards, room:printCard(name, Card.Heart, 1).id)
-        end
-      end
+      local cards = table.filter(U.prepareDeriveCards(room, sidao_derivecards, "sidao_derivecards"), function (id)
+        return room:getCardArea(id) == Card.Void
+      end)
       if #cards == 0 then return false end
-      player.special_cards["os__sidao"] = table.simpleClone(cards)
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      local chosen = room:askForCard(player, 1, 1, false, self.name, false, ".|.|.|os__sidao", "#os__sidao-ask", "os__sidao")
-      player.special_cards["os__sidao"] = {}
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      local cardId = #chosen > 0 and chosen[1] or table.random(cards)
+      room:setPlayerMark(player, "os__sidao_cards", cards)
+      local _, dat = room:askForUseActiveSkill(player, "os__sidao_select", "#os__sidao-ask", false)
+      local cardId = dat and dat.cards[1] or table.random(cards)
       room:setPlayerMark(player, "_os__sidao", cardId)
       room:useCard({ from = player.id, tos = { {player.id} }, card = Fk:getCardById(cardId) })
     else
       local cardId = player:getMark("_os__sidao")
       room:obtainCard(player, cardId, true, fk.ReasonPrey)
-      if table.contains(player:getCardIds("he"), cardId) and U.canUseCardTo(room, player, player, Fk:getCardById(cardId)) then
+      if table.contains(player:getCardIds("he"), cardId) and player:canUseTo(Fk:getCardById(cardId), player) then
         room:useCard({ from = player.id, tos = { {player.id} }, card = Fk:getCardById(cardId) })
       end
     end
@@ -780,6 +778,7 @@ os__gexuan:addSkill(os__sidao)
 
 Fk:loadTranslationTable{
   ["os__gexuan"] = "葛玄", --胜利台词……
+  ["#os__gexuan"] = "冲应真人",
   ["os__danfa"] = "丹法",
   [":os__danfa"] = "①准备阶段或结束阶段开始时，你可将一张牌置于你的武将牌上，称为“丹”。②每回合每种花色限一次，当你使用与一张“丹”相同花色的牌时，你摸一张牌。", 
   ["os__lingbao"] = "灵宝",
@@ -799,6 +798,7 @@ Fk:loadTranslationTable{
   ["#os__lingbao-discard"] = "弃置其至多两个不同区域的各一张牌",
   ["#os__lingbao-black_red"] = "灵宝：选择两名角色，先选的摸一张牌，后选的弃置一张牌",
   ["#os__sidao-ask"] = "司道：选择一件法宝并使用之",
+  ["os__sidao_select"] = "司道",
 
   ["$os__danfa1"] = "取五灵三使之药，炼九光七曜之丹。",
   ["$os__danfa2"] = "云液踊跃成雪霜，流珠之英能延年。",
@@ -4759,49 +4759,38 @@ local os__xingluan = fk.CreateTriggerSkill{
       skillName = self.name,
       proposer = player.id,
     })
-    if player.dead then return end
-    local choices = {}
-    local cardsMap = {}
-    for _, cid in ipairs(cids) do
-      local cardType = Fk:getCardById(cid):getTypeString()
-      table.insertIfNeed(choices, cardType)
-      cardsMap[cardType] = cardsMap[cardType] or {}
-      table.insert(cardsMap[cardType], cid)
-    end
-    local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
-    local cards = cardsMap[choice]
-    player.special_cards["os__xingluan"] = table.simpleClone(cards)
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
-    local move = U.askForDistribution(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", self.name, true, 3)
-    player.special_cards["os__xingluan"] = {}
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
-    local num = #move[string.format("%.0f", player.id)] or 0
-    local victims = {}
-    for p, c in pairs(move) do
-      if #c >= num and #c > 0 then
-        table.insert(victims, tonumber(p))
+    if not player.dead then
+      local choices = {}
+      local cardsMap = {}
+      for _, cid in ipairs(cids) do
+        local cardType = Fk:getCardById(cid):getTypeString()
+        table.insertIfNeed(choices, cardType)
+        cardsMap[cardType] = cardsMap[cardType] or {}
+        table.insert(cardsMap[cardType], cid)
+      end
+      local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
+      local cards = cardsMap[choice]
+      local move = U.askForDistribution(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
+      local num = #move[string.format("%.0f", player.id)] or 0
+      local victims = {}
+      for p, c in pairs(move) do
+        if #c >= num and #c > 0 then
+          table.insert(victims, tonumber(p))
+        end
+      end
+      U.doDistribution(room, move, player.id, self.name)
+      room:sortPlayersByAction(victims)
+      for _, pid in ipairs(victims) do
+        local p = room:getPlayerById(pid)
+        if not p.dead then
+          room:loseHp(p, 1, self.name)
+        end
       end
     end
-    U.doDistribution(room, move, player.id, self.name)
-    room:sortPlayersByAction(victims)
-    for _, pid in ipairs(victims) do
-      local p = room:getPlayerById(pid)
-      if not p.dead then
-        room:loseHp(p, 1, self.name)
-      end
-    end
-    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
-    if #cards > 0 then
+    cids = table.filter(cids, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #cids > 0 then
       room:moveCards({
-        ids = cards,
+        ids = cids,
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonPutIntoDiscardPile,
         skillName = self.name,
@@ -4813,6 +4802,7 @@ local os__xingluan = fk.CreateTriggerSkill{
 os__fanchou:addSkill(os__xingluan)
 Fk:loadTranslationTable{
   ["os__fanchou"] = "樊稠",
+  ["#os__fanchou"] = "庸生变难",
   ["os__xingluan"] = "兴乱",
   [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌分配给任意名角色（每名角色至多三张），以此法获得牌数大于0且不小于你的角色依次失去1点体力。",
   ["#os__xingluan-ask"] = "兴乱：选择其中一种类别的牌并分配",
