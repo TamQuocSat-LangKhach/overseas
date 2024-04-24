@@ -3140,8 +3140,13 @@ local os__fupan = fk.CreateTriggerSkill{
     local plist, cid = room:askForChooseCardAndPlayers(player, availableTargets, 1, 1, nil, "#os__fupan-give", self.name, false)
     local pid = plist[1]
     room:moveCardTo(cid, Player.Hand, room:getPlayerById(pid), fk.ReasonGive, self.name, nil, false)
-    local os__fupan_once = player:getMark("_os__fupan_once") ~= 0 and player:getMark("_os__fupan_once") or {}
-    if not table.contains(os__fupan_once, pid) then
+    local os__fupan_once = U.getMark(player, "_os__fupan_once")
+
+    local targetedFirstTime = table.contains(os__fupan_once, pid)
+    table.insertIfNeed(os__fupan_once, pid)
+    room:setPlayerMark(player, "_os__fupan_once", os__fupan_once)
+
+    if not targetedFirstTime then
       player:drawCards(2, self.name)
     else
       if room:askForChoice(player, {"os__fupan_dmg", "Cancel"}, self.name) ~= "Cancel" then
@@ -3155,8 +3160,6 @@ local os__fupan = fk.CreateTriggerSkill{
         }
       end
     end
-    table.insertIfNeed(os__fupan_once, pid)
-    room:setPlayerMark(player, "_os__fupan_once", os__fupan_once)
   end,
 }
 
