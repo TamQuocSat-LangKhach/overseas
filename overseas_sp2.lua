@@ -197,45 +197,31 @@ local os__shelie = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card_ids = room:getNCards(5)
-    local get, throw = {}, {}
+    local cards = room:getNCards(5)
     room:moveCards({
-      ids = card_ids,
+      ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
     })
-    table.forEach(room.players, function(p)
-      room:fillAG(p, card_ids)
-    end)
-    while true do
-      local card_suits = {}
-      table.forEach(get, function(id)
-        table.insert(card_suits, Fk:getCardById(id).suit)
-      end)
-      for i = #card_ids, 1, -1 do
-        local id = card_ids[i]
-        if table.contains(card_suits, Fk:getCardById(id).suit) then
-          room:takeAG(player, id) --?
-          table.insert(throw, id)
-          table.removeOne(card_ids, id)
-        end
+    local get = {}
+    for _, id in ipairs(cards) do
+      local suit = Fk:getCardById(id).suit
+      if table.every(get, function (id2)
+        return Fk:getCardById(id2).suit ~= suit
+      end) then
+        table.insert(get, id)
       end
-      if #card_ids == 0 then break end
-      local card_id = room:askForAG(player, card_ids, false, self.name)
-      room:takeAG(player, card_id)
-      table.insert(get, card_id)
-      table.removeOne(card_ids, card_id)
-      if #card_ids == 0 then break end
     end
-    room:closeAG()
+    get = U.askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonPrey)
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     end
-    if #throw > 0 then
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #cards > 0 then
       room:moveCards({
-        ids = throw,
+        ids = cards,
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonPutIntoDiscardPile,
       })
@@ -349,6 +335,7 @@ os__godlvmeng:addSkill(os__gongxin)
 
 Fk:loadTranslationTable{
   ["os__godlvmeng"] = "神吕蒙",
+  ["#os__godlvmeng"] = "圣光之国士",
   ["os__shelie"] = "涉猎",
   [":os__shelie"] = "①摸牌阶段，你可改为亮出牌堆顶的五张牌，然后获得其中每种花色的牌各一张。②每轮限一次，结束阶段开始时，若你本回合使用过四种花色的牌，你选择执行一个额外的摸牌阶段或出牌阶段且不能与上次选择相同。",
   ["os__gongxin"] = "攻心",
@@ -383,45 +370,31 @@ local gundam__shelie = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card_ids = room:getNCards(5)
-    local get, throw = {}, {}
+    local cards = room:getNCards(5)
     room:moveCards({
-      ids = card_ids,
+      ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
     })
-    table.forEach(room.players, function(p)
-      room:fillAG(p, card_ids)
-    end)
-    while true do
-      local card_suits = {}
-      table.forEach(get, function(id)
-        table.insert(card_suits, Fk:getCardById(id).suit)
-      end)
-      for i = #card_ids, 1, -1 do
-        local id = card_ids[i]
-        if table.contains(card_suits, Fk:getCardById(id).suit) then
-          room:takeAG(player, id)
-          table.insert(throw, id)
-          table.removeOne(card_ids, id)
-        end
+    local get = {}
+    for _, id in ipairs(cards) do
+      local suit = Fk:getCardById(id).suit
+      if table.every(get, function (id2)
+        return Fk:getCardById(id2).suit ~= suit
+      end) then
+        table.insert(get, id)
       end
-      if #card_ids == 0 then break end
-      local card_id = room:askForAG(player, card_ids, false, self.name)
-      room:takeAG(player, card_id)
-      table.insert(get, card_id)
-      table.removeOne(card_ids, card_id)
-      if #card_ids == 0 then break end
     end
-    room:closeAG()
+    get = U.askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonPrey)
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     end
-    if #throw > 0 then
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #cards > 0 then
       room:moveCards({
-        ids = throw,
+        ids = cards,
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonPutIntoDiscardPile,
       })
@@ -1068,68 +1041,25 @@ local os__waishi = fk.CreateActiveSkill{
   end,
   card_filter = function(self, to_select, selected)
     local kingdoms = {}
-    table.insertIfNeed(kingdoms, Self.kingdom)
-    local player = Self.next
-    while player.id ~= Self.id do --getAliveSiblings
-      if not player.dead then table.insertIfNeed(kingdoms, player.kingdom) end
-      player = player.next
+    for _, p in ipairs(Fk:currentRoom().alive_players) do
+      table.insertIfNeed(kingdoms, p.kingdom)
     end
-    return #selected < #kingdoms 
+    return #selected < #kingdoms
   end,
   min_card_num = 1,
   target_filter = function(self, to_select, selected, selected_cards)
     return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):getHandcardNum() >= #selected_cards
+    and #selected_cards > 0
   end,
   target_num = 1,
+  prompt = "#os__waishi-prompt",
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    
     local n = #effect.cards
     local cids = room:askForCardsChosen(player, target, n, n, "h", self.name)
-    local cards1 = effect.cards
-    local cards2 = cids
-    local move1 = {
-      from = player.id,
-      ids = cards1,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonExchange,
-      proposer = player.id,
-      skillName = self.name,
-      moveVisible = false,  --FIXME: this is still visible! same problem with dimeng!
-    }
-    local move2 = {
-      from = target.id,
-      ids = cards2,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonExchange,
-      proposer = player.id,
-      skillName = self.name,
-      moveVisible = false,
-    }
-    room:moveCards(move1, move2)
-    local move3 = {
-      ids = cards1,
-      fromArea = Card.Processing,
-      to = target.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonExchange,
-      proposer = player.id,
-      skillName = self.name,
-      moveVisible = false,
-    }
-    local move4 = {
-      ids = cards2,
-      fromArea = Card.Processing,
-      to = player.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonExchange,
-      proposer = player.id,
-      skillName = self.name,
-      moveVisible = false,
-    }
-    room:moveCards(move3, move4)
-    if target.kingdom == player.kingdom or target:getHandcardNum() > player:getHandcardNum() then
+    U.swapCards(room, player, player, target, effect.cards, cids, self.name)
+    if not player.dead and (target.kingdom == player.kingdom or target:getHandcardNum() > player:getHandcardNum()) then
       player:drawCards(1, self.name)
     end
   end,
@@ -1204,10 +1134,11 @@ nashime:addSkill(os__renshe)
 
 Fk:loadTranslationTable{
   ["nashime"] = "难升米",
+  ["#nashime"] = "率善中郎将",
   ["os__chijie"] = "持节",
   [":os__chijie"] = "游戏开始时，你可将你的势力改为现存的一个势力。",
   ["os__waishi"] = "外使",
-  [":os__waishi"] = "出牌阶段限一次，你可选择至多X张牌（X为现存势力数），并选择一名其他角色的等量手牌，你与其交换这些牌，然后若其与你势力相同或手牌多于你，你摸一张牌。",
+  [":os__waishi"] = "出牌阶段限一次，你可选择至多X张牌（X为现存势力数），并选择一名其他角色的等量手牌，你与其交换这些牌，然后若其与你势力相同，或其手牌多于你，你摸一张牌。",
   ["os__renshe"] = "忍涉",
   [":os__renshe"] = "当你受到伤害后，你可选择一项：1.将势力改为现存的另一个势力；2.令〖外使〗的发动次数上限于你的出牌阶段结束前+1；3.与一名除伤害来源之外的其他角色各摸一张牌。",
 
@@ -1217,6 +1148,7 @@ Fk:loadTranslationTable{
   ["@os__waishi_times"] = "外使次数+",
   ["os__renshe_draw"] = "与一名除伤害来源之外的其他角色各摸一张牌",
   ["#os__renshe-target"] = "忍涉：选择一名除伤害来源之外的其他角色，与其各摸一张牌",
+  ["#os__waishi-prompt"] = "外使：选择一名其他角色，用你选择的手牌交换其等量手牌",
 
   ["$os__chijie1"] = "按照女王的命令，选择目标吧！",
   ["$os__waishi1"] = "贵国的繁荣，在下都看到了。",
