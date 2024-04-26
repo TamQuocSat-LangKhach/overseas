@@ -1461,6 +1461,9 @@ baoxin:addSkill(os__yimou)
 
 Fk:loadTranslationTable{
   ["baoxin"] = "鲍信",
+  ["#baoxin"] = "坚朴的忠相",
+	["illustrator:baoxin"] = "凡果",
+
   ["os__mutao"] = "募讨",
   [":os__mutao"] = "出牌阶段限一次，你可选择一名角色，令其将手牌中的（系统选择）每一张【杀】依次交给由其下家开始的除其以外的角色，然后其对最后一名角色造成X点伤害（X为最后一名角色手牌中【杀】的数量且至多为3）。",
   ["os__yimou"] = "毅谋",
@@ -2660,6 +2663,9 @@ os__jiakui:addSkill(os__wanlan)
 
 Fk:loadTranslationTable{
   ["os__jiakui"] = "贾逵",
+  ["#os__jiakui"] = "肃齐万里",
+  ["designer:os__jiakui"] = "Loun老萌",
+	["illustrator:os__jiakui"] = "Monkey",
   ["os__zhongzuo"] = "忠佐",
   [":os__zhongzuo"] = "一名角色的结束阶段结束时，若你于本回合内造成或受到过伤害，你可令一名角色摸两张牌，若其已受伤，你摸一张牌。",
   ["os__wanlan"] = "挽澜",
