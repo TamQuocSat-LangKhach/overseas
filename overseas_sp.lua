@@ -1693,9 +1693,20 @@ local os__xingwu = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
+    local room = player.room
     player:addToPile("os__dance", self.cost_data, true, self.name)
-    if #player:getPile("os__dance") > 2 then
-      player.room:askForUseActiveSkill(player, "#os__xingwu_damage", "#os__xingwu-damage", true)
+    if #player:getPile("os__dance") < 3 then return end
+    local _,dat = room:askForUseActiveSkill(player, "#os__xingwu_damage", "#os__xingwu-damage", true)
+    if dat then
+      local to = room:getPlayerById(dat.targets[1])
+      room:moveCardTo(dat.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name)
+      room:throwCard(to:getCardIds(Player.Equip), self.name, to, player)
+      room:damage{
+        from = player,
+        to = to,
+        damage = to.gender == General.Male and 2 or 1,
+        skillName = self.name,
+      }
     end
   end,
 }
@@ -1706,26 +1717,14 @@ local os__xingwu_damage = fk.CreateActiveSkill{
   target_num = 1,
   card_num = 3,
   expand_pile = "os__dance",
-  target_filter = function(self, to_select, selected)
-    return to_select ~= Self.id
+  target_filter = function(self, to_select, selected, cards)
+    return to_select ~= Self.id and #cards == 3
   end,
   card_filter = function(self, to_select, selected)
     return #selected < 3 and Self:getPileNameOfId(to_select) == "os__dance"
   end,
-  on_use = function(self, room, use)
-    local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    room:moveCardTo(use.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__dance")
-    room:throwCard(target:getCardIds(Player.Equip), self.name, target, player)
-    room:damage{
-      from = player,
-      to = target,
-      damage = target.gender == General.Male and 2 or 1,
-      skillName = self.name,
-    }
-  end,
 }
-os__xingwu:addRelatedSkill(os__xingwu_damage)
+Fk:addSkill(os__xingwu_damage)
 
 local os__pingting = fk.CreateTriggerSkill{
   name = "os__pingting",
@@ -1744,10 +1743,10 @@ local os__pingting = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    if not player:hasSkill(self.name, true) then return false end--……
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if move.to and move.to == player.id and move.toArea == Card.PlayerSpecial and #player:getPile("os__dance") > 0 then
+        if move.to and move.to == player.id and move.toArea == Card.PlayerSpecial and move.specialName == "os__dance"
+        and #player:getPile("os__dance") > 0 then
           return true
         elseif move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
@@ -1763,11 +1762,10 @@ local os__pingting = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if #player:getPile("os__dance") == 0 and (player:hasSkill("tianxiang", true) or player:hasSkill("liuli", true)) then
-      room:handleAddLoseSkills(player, "-tianxiang|-liuli", nil, true, false)
-    end
-    if #player:getPile("os__dance") > 0 and not (player:hasSkill("tianxiang", true) and player:hasSkill("liuli", true)) then
-      room:handleAddLoseSkills(player, "tianxiang|liuli", nil, true, false)
+    if #player:getPile("os__dance") > 0 and player:hasSkill(self, true) then
+      room:handleAddLoseSkills(player, "tianxiang|liuli", self.name, false, true)
+    else
+      room:handleAddLoseSkills(player, "-tianxiang|-liuli", self.name, false, true)
     end
   end,
 }
@@ -1779,6 +1777,8 @@ os__daqiaoxiaoqiao:addRelatedSkill("liuli")
 
 Fk:loadTranslationTable{
   ["os__daqiaoxiaoqiao"] = "大乔小乔",
+  ["#os__daqiaoxiaoqiao"] = "江东之花",
+
   ["os__xingwu"] = "星舞",
   [":os__xingwu"] = "弃牌阶段开始时，你可将一张牌置于你的武将牌上（称为“星舞”），然后你可将三张“星舞”置入弃牌堆，选择一名其他角色，弃置其装备区里的所有牌，然后若其为男/非男性角色，你对其造成2/1点伤害。",
   ["os__pingting"] = "娉婷",
@@ -1786,7 +1786,7 @@ Fk:loadTranslationTable{
   
   ["#os__xingwu-put"] = "星舞：你可将一张牌置于你的武将牌上（称为“星舞”）",
   ["os__dance"] = "星舞",
-  ["#os__xingwu-damage"] = "你可将三张“星舞”置入弃牌堆，对一名其他角色发动“星舞”",
+  ["#os__xingwu-damage"] = "你可将三张“星舞”置入弃牌堆，弃置一名其他角色装备区里的所有牌，对其造成2/1点伤害",
   ["#os__xingwu_damage"] = "星舞",
   ["#os__pingting-put"] = "娉婷：将一张牌置于你的武将牌上（称为“星舞”）",
 
@@ -2333,11 +2333,11 @@ local os__luannian = fk.CreateTriggerSkill{
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     else
-      return target == player and player:hasSkill(self.name, true, true)
+      return target == player and player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -2349,7 +2349,7 @@ local os__luannian = fk.CreateTriggerSkill{
     ]]
     local targets = room.alive_players
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         table.forEach(targets, function(p)
           room:handleAddLoseSkills(p, "os__luannian_other&", nil, false, true)
         end)
@@ -2517,7 +2517,7 @@ local os__yanhuo = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_cost = function(self, event, target, player, data)
     local num = #player:getCardIds(Player.Equip) + #player:getCardIds(Player.Hand)

@@ -57,6 +57,7 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
   name = "#os__chaofeng_pd",
   events = {fk.EventPhaseStart},
   mute = true,
+  main_skill = os__chaofeng,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng()
   end,
@@ -133,7 +134,6 @@ local os__chuanshu = fk.CreateTriggerSkill{
       local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       return parentUseData and (parentUseData.data[1].extra_data or {}).os__chuanshuUser == player.id
     end
-    return false
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
