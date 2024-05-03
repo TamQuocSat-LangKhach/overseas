@@ -1606,11 +1606,11 @@ local os__chue = fk.CreateTriggerSkill{
 local os__zhongyi = fk.CreateTriggerSkill{
   name = "os__zhongyi",
   events = {fk.CardUseFinished},
+  frequency = Skill.Compulsory,
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self) and data.card.trueName == "slash" and data.damageDealt
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = 0
@@ -1642,6 +1642,7 @@ local os__zhongyi = fk.CreateTriggerSkill{
 }
 local os__zhongyi_buff = fk.CreateTargetModSkill{
   name = "#os__zhongyi_buff",
+  frequency = Skill.Compulsory,
   bypass_distances = function(self, player, skill, scope)
     return player:hasSkill(os__zhongyi) and skill.trueName == "slash_skill"
   end,
