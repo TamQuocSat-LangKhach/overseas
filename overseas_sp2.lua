@@ -993,7 +993,6 @@ Fk:loadTranslationTable{
   ["@os__bingzhao"] = "秉诏",
   ["#os__canshi"] = "蚕食：你可取消【%arg】的目标，然后 %dest 弃“傀”",
   ["#os__canshi-targets"] = "蚕食：你可令任意名有“傀”的角色也成为目标，然后这些角色弃“傀”",
-  ["#AddTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 增加了目标 %to",
 
   ["$os__zongkui1"] = "不要抵抗，接受我的操纵吧。",
   ["$os__zongkui2"] = "当我的傀儡，你将受益良多。",
