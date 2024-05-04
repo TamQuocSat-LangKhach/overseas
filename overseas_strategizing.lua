@@ -177,9 +177,7 @@ local os__miaolue = fk.CreateTriggerSkill{
         end
       end
       if #cids > 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cids)
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+        room:obtainCard(player, cids, false, fk.ReasonPrey)
       end
     else
       if self.cost_data == "os__miaolue_underhanding" then
@@ -435,9 +433,7 @@ local os__kuanji = fk.CreateTriggerSkill{
     return false
   end,
   on_use = function(self, event, target, player, data)
-    local dummy = Fk:cloneCard'slash'
-    dummy:addSubcards(self.cost_data[2])
-    player.room:obtainCard(self.cost_data[1], dummy, false, fk.ReasonJustMove)
+    player.room:obtainCard(self.cost_data[1], self.cost_data[2], false, fk.ReasonJustMove)
   end,
 }
 
@@ -838,13 +834,11 @@ local os__xingqi = fk.CreateTriggerSkill{
       skillName = self.name,
     })
     if player:getQuestSkillState("os__mibei") ~= "succeed" then
-      local dummy = Fk:cloneCard("slash")
-      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|basic"))
-      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|trick"))
-      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|equip"))
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
-      end
+      local cards = {}
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|basic"))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|trick"))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|equip"))
+      room:obtainCard(player, cards, false, fk.ReasonPrey)
     else
       room:setPlayerMark(player, "@os__xingqi_nodistance", 1)
     end
@@ -1030,13 +1024,11 @@ local os__jieyu = fk.CreateTriggerSkill{
       end
     end
     if #allCardNames == 0 then return false end
-    local dummy = Fk:cloneCard("slash")
+    local cards = {}
     table.forEach(allCardNames, function(name)
-      dummy:addSubcards(room:getCardsFromPileByRule(name, 1, "discardPile"))
+      table.insert(cards, room:getCardsFromPileByRule(name, 1, "discardPile"))
     end)
-    if #dummy.subcards > 0 then
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
-    end
+    room:obtainCard(player, cards, false, fk.ReasonPrey)
   end,
 }
 
@@ -1294,7 +1286,6 @@ local os__congji = fk.CreateTriggerSkill{
     return false
   end,
   on_use = function(self, event, target, player, data)
-    local dummy = Fk:cloneCard'slash'
     local room = player.room
     local cids = {}
     for _, move in ipairs(data) do
@@ -1306,8 +1297,7 @@ local os__congji = fk.CreateTriggerSkill{
         end
       end
     end
-    dummy:addSubcards(cids)
-    room:moveCardTo(dummy, Player.Hand, room:getPlayerById(self.cost_data), fk.ReasonGive, self.name, nil, false)
+    room:moveCardTo(cids, Player.Hand, room:getPlayerById(self.cost_data), fk.ReasonGive, self.name, nil, false)
   end,
 }
 

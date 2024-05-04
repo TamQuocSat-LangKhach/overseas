@@ -1608,6 +1608,7 @@ local os__zhongyi = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self) and data.card.trueName == "slash" and data.damageDealt
   end,

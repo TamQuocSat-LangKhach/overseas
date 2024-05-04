@@ -2126,19 +2126,14 @@ local os__xingzhui_conjure = fk.CreateTriggerSkill{
       })
       room:delay(2000)
 
-      local dummy = Fk:cloneCard("dilu")
-      for _, cid in ipairs(cids) do
-        if Fk:getCardById(cid).color == Card.Black then
-          dummy:addSubcard(cid)
-        end
-      end
-      local black = #dummy.subcards
+      local cards = table.filter(cids, function(cid) return Fk:getCardById(cid).color == Card.Black end)
+      local black = #cards
 
       if black > 0 then
         local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, black >= num and "#os__xingzhui-ask2:::" .. tostring(num) or "#os__xingzhui-ask", self.name, true)
         if #target > 0 then
           target = room:getPlayerById(target[1])
-          room:obtainCard(target, dummy, true, fk.ReasonJustMove) --?
+          room:obtainCard(target, cards, true, fk.ReasonJustMove) --?
 
           if black >= num then
             room:damage{
@@ -2171,7 +2166,6 @@ local os__juchen = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local promt = "#os__juchen-ask::" .. player.id
-    local dummy = Fk:cloneCard("dilu")
     local ids = {}    
     for _, p in ipairs(room:getAlivePlayers()) do --顺序
       local cids = room:askForDiscard(p, 1, 1, true, self.name, false, nil, promt)
@@ -2183,12 +2177,7 @@ local os__juchen = fk.CreateTriggerSkill{
         end
       end
     end
-    for _, id in ipairs(ids) do
-      if room:getCardArea(id) == Card.DiscardPile then
-        dummy:addSubcard(id)
-      end
-    end
-    room:obtainCard(player, dummy, true, fk.ReasonJustMove) --?
+    room:obtainCard(player, table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end), true, fk.ReasonJustMove) --?
   end,
 }
 
@@ -2692,13 +2681,11 @@ local os__hanyu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dummy = Fk:cloneCard("slash")
-    dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|basic"))
-    dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|trick"))
-    dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|equip"))
-    if #dummy.subcards > 0 then
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
-    end
+    local cards = {}
+    table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|basic"))
+    table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|trick"))
+    table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|equip"))
+    room:obtainCard(player, cards, false, fk.ReasonPrey)
   end,
 }
 
@@ -3520,11 +3507,7 @@ local os__neirao = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(player, "-os__jiekuang", nil)
     local num = #player:getCardIds(Player.Equip) + #player:getCardIds(Player.Hand)
     player:throwAllCards("he")
-    local dummy = Fk:cloneCard("slash")
-    dummy:addSubcards(room:getCardsFromPileByRule("slash", num, "allPiles"))
-    if #dummy.subcards > 0 then
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
-    end
+    room:obtainCard(player, room:getCardsFromPileByRule("slash", num, "allPiles"), false, fk.ReasonPrey)
     room:handleAddLoseSkills(player, "os__luanlue", nil)
   end,
 }

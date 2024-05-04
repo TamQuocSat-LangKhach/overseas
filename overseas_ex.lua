@@ -365,10 +365,7 @@ local os_ex__xuanhuo = fk.CreateTriggerSkill{
     local name = victim.general
     local choice = room:askForChoice(to, {"os_ex__xuanhuo_slash:::" .. name, "os_ex__xuanhuo_duel:::" .. name, "os_ex__xuanhuo_extract:::" .. player.general}, self.name)
     if choice:startsWith("os_ex__xuanhuo_extract") then
-      local cards = room:askForCardsChosen(player, to, 2, 2, "he", self.name)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      room:obtainCard(player, room:askForCardsChosen(player, to, 2, 2, "he", self.name), false, fk.ReasonPrey)
     elseif choice:startsWith("os_ex__xuanhuo_slash") then
       room:useVirtualCard("slash", nil, to, {victim}, self.name, true)
     else
@@ -643,11 +640,11 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
 local os_ex__lihuo_judge = fk.CreateTriggerSkill{
   name = "#os_ex__lihuo_judge",
   events = {fk.CardUseFinished},
-  frequency = Skill.Compulsory,
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return not player.dead and (data.extra_data or {}).os_ex__lihuoUser == player.id and data.extra_data and data.extra_data.os_ex__lihuoDying == true
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, self.name)
   end,

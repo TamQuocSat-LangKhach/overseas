@@ -1180,15 +1180,18 @@ local os__kunsi = fk.CreateViewAsSkill{
       room:addPlayerMark(room:getPlayerById(pid), "_os__kunsi")
     end)
   end,
-  enabled_at_response = function(self, player, cardResponsing) return false end,
+  enabled_at_play = function (self, player)
+    return player.phase == Player.Play
+  end,
+  enabled_at_response = Util.FalseFunc,
 }
 local os__kunsi_buff = fk.CreateTargetModSkill{
   name = "#os__kunsi_buff",
-  residue_func = function(self, player, skill, scope, card)
-    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "kunsi") and 999 or 0
+  bypass_times = function (self, player, skill, scope, card, to)
+    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "kunsi")
   end,
-  distance_limit_func = function(self, player, skill, card)
-    return card and table.contains(card.skillNames, "os__kunsi") and 999 or 0
+  bypass_distances = function (self, player, skill, card, to)
+    return card and table.contains(card.skillNames, "os__kunsi")
   end,
 }
 local os__kunsi_prohibit = fk.CreateProhibitSkill{
@@ -1944,7 +1947,7 @@ local os__qirang = fk.CreateTriggerSkill{
     local cids = room:getCardsFromPileByRule(".|.|.|.|.|trick")
     if #cids > 0 then
       local cid = cids[1]
-      local cidsRecorded = type(player:getMark("_os__qirangTrick-phase")) == "table" and player:getMark("_os__qirangTrick-phase") or {}
+      local cidsRecorded = U.getMark(player, "_os__qirangTrick-phase")
       table.insert(cidsRecorded, cid)
       room:setPlayerMark(player, "_os__qirangTrick-phase", cidsRecorded)
       room:obtainCard(player, cid, false, fk.ReasonPrey)
@@ -2039,14 +2042,14 @@ local os__yuhua = fk.CreateTriggerSkill{
 local os__yuhuaMax = fk.CreateMaxCardsSkill{
   name = "#os__yuhuaMax",
   exclude_from = function(self, player, card)
-    return player:hasSkill(os__yuhua.name) and card.type ~= Card.TypeBasic
+    return player:hasSkill(os__yuhua) and card.type ~= Card.TypeBasic
   end,
 }
 local os__yuhua_maxcards_audio = fk.CreateTriggerSkill{
   name = "#os__yuhua_maxcards_audio",
   refresh_events = {fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(os__yuhua.name) and player.phase == Player.Discard
+    return player == target and player:hasSkill(os__yuhua) and player.phase == Player.Discard
   end,
   on_refresh = function(self, event, target, player, data)
     player:broadcastSkillInvoke(os__yuhua.name)
@@ -2115,11 +2118,7 @@ local os__fengji_conjure = fk.CreateTriggerSkill{
     if #player:getPile("os__revelation") > 0 then
       room:notifySkillInvoked(player, "os__fengji")
       player:broadcastSkillInvoke("os__fengji")
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(room:getCardsFromPileByRule(Fk:getCardById(player:getPile("os__revelation")[1]).trueName, num))
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
-      end
+      room:obtainCard(player, room:getCardsFromPileByRule(Fk:getCardById(player:getPile("os__revelation")[1]).trueName, num), false, fk.ReasonPrey)
       room:moveCardTo(Fk:getCardById(player:getPile("os__revelation")[1]), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__revelation")
     end
     room:setPlayerMark(player, "@os__fengji", 0)
@@ -2852,7 +2851,6 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
     end
     if pd.results[pd_target.id].winner == player then
       if to:isAllNude() then return end
-      local dummy = Fk:cloneCard("dilu")
       local card_data = {}
       if to:getHandcardNum() > 0 then
         local handcards = {}
@@ -2873,8 +2871,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
       if hand_num > 0 then
         table.insertTable(new_ret, table.random(to:getCardIds(Player.Hand), hand_num))
       end
-      dummy:addSubcards(new_ret)
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      room:obtainCard(player, new_ret, false, fk.ReasonPrey)
     else
       if player:getEquipment(Card.SubtypeWeapon) then room:obtainCard(to, player:getEquipment(Card.SubtypeWeapon), false, fk.ReasonPrey) end
     end
@@ -4165,9 +4162,7 @@ local os__xiawei = fk.CreateTriggerSkill{
         room:setPlayerMark(player, "@os__xiawei_presume-turn", num)
       end
       if #cids > 0 then
-        local dummy = Fk:cloneCard("jink")
-        dummy:addSubcards(cids)
-        player:addToPile("os__pomp&", dummy, true, self.name)
+        player:addToPile("os__pomp&", cids, true, self.name)
         player:setMark("_os__pomp", cids)
       end
     end
@@ -4466,18 +4461,18 @@ local os__jinglue_do = fk.CreateTriggerSkill{
       data.tos = {}
       room:sendLog{ type = "#CardNullifiedBySkill", from = target.id, arg = self.name, arg2 = data.card:toLogString() }
     else
-      local dummy = Fk:cloneCard("dilu")
+      local cards = {}
       local mark = target:getMark("_os__jinglue_now-" .. player.id)
       for i = #mark, 1, -1 do
         local id = mark[i]
         if table.contains({Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}, room:getCardArea(id)) then
           table.remove(mark, i)
           room:setCardMark(Fk:getCardById(id), "_os__sishi", 0)
-          dummy:addSubcard(id)
+          table.insert(cards, id)
         end
       end
       room:setPlayerMark(target, "_os__jinglue_now-" .. player.id, mark)
-      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      room:obtainCard(player, cards, true, fk.ReasonPrey)
     end
   end,
 }
@@ -4635,9 +4630,7 @@ local os__youye = fk.CreateTriggerSkill{
       end
       local residue = table.filter(cards, function(id) return not table.contains(toCurrent, id) end)
       if #residue == 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(toCurrent)
-        room:obtainCard(current, dummy, true, fk.ReasonGive)
+        room:obtainCard(current, toCurrent, true, fk.ReasonGive)
       else
         local move = U.askForDistribution(player, residue, room.alive_players, self.name, #residue, #residue, "#os__youye-give2", "os__poise", true)
         local str = string.format("%.0f", current.id)
@@ -4978,9 +4971,7 @@ local os__tuidao = fk.CreateTriggerSkill{
     local cards = dead and room:getCardsFromPileByRule(".|.|.|.|.|" .. choice, 2) or
       table.filter(to:getCardIds{Player.Hand, Player.Equip}, function(id) return Fk:getCardById(id):getTypeString() == choice end)
     if #cards > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      room:obtainCard(player, cards, false, fk.ReasonPrey)
     end
     local targets = table.map(table.filter(room.alive_players, function(p) return p ~= player and p ~= to end), Util.IdMapper)
     if #targets == 0 then return false end
@@ -5311,9 +5302,7 @@ local lijians = fk.CreateTriggerSkill{
         { "pile_discard", cards }
       }
     }, self.name)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(result)
-    room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    room:obtainCard(player, result, true, fk.ReasonJustMove)
     for _, c in ipairs(result) do
       table.removeOne(cards, c)
     end
@@ -5473,13 +5462,9 @@ local quanqian = fk.CreateActiveSkill{
         local reply = json.decode(result)
         suit = reply.choice
       end
-      local dummy = Fk:cloneCard("dilu")
-      for _, cid in ipairs(cards) do
-        if Fk:getCardById(cid):getSuitString(true) == suit then dummy:addSubcard(cid) end
-      end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
-      end
+      room:obtainCard(player, table.filter(cards, function(cid)
+        return Fk:getCardById(cid):getSuitString(true) == suit
+      end), false, fk.ReasonPrey)
     end
   end
 }
@@ -5604,9 +5589,7 @@ local juexing_delay = fk.CreateTriggerSkill{
             room:throwCard(cards, self.name, p)
           end
           if not p.dead then
-            local dummy = Fk:cloneCard("zixing")
-            dummy:addSubcards(p:getPile("os__juexing"))
-            room:obtainCard(pid, dummy, false)
+            room:obtainCard(pid, p:getPile("os__juexing"), false)
           end
         end
       end
@@ -5693,9 +5676,7 @@ local qiaosih = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = self.cost_data
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(ids)
-    room:obtainCard(player, dummy, true, fk.ReasonPrey, player.id)
+    room:obtainCard(player, ids, true, fk.ReasonPrey, player.id)
     if #ids < player.hp and not player.dead then
       room:loseHp(player, 1, self.name)
     end
