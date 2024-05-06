@@ -132,7 +132,9 @@ local os__chuanshu = fk.CreateTriggerSkill{
     else
       if player:getMark("@os__chuanshu") == 0 then return false end
       local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      return parentUseData and (parentUseData.data[1].extra_data or {}).os__chuanshuUser == player.id
+      if parentUseData and (parentUseData.data[1].extra_data or {}).os__chuanshuUser == player.id and data.card and data.card.trueName == "slash" then
+        return not table.contains((parentUseData.data[1].extra_data or {}).os__chuanshu, data.to.id)
+      end
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -161,7 +163,7 @@ local os__chuanshu = fk.CreateTriggerSkill{
       data.extra_data.os__chuanshu = player:getMark("_os__chuanshu_slash")
       room:setPlayerMark(player, "_os__chuanshu_slash", 0)
     else
-      room:notifySkillInvoked(player, self.name)
+      room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
       local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       local os__chuanshuRecord = table.clone((parentUseData.data[1].extra_data or {}).os__chuanshu)

@@ -174,7 +174,7 @@ local os__miaolue = fk.CreateTriggerSkill{
         return room:getCardArea(id) == Card.Void
       end)
       if #cids > 0 then
-        room:obtainCard(player, table.random(cids, 2), false, fk.ReasonPrey)
+        room:obtainCard(player, table.random(cids, 2), false, fk.ReasonPrey, player.id, self.name, MarkEnum.DestructIntoDiscard)
       end
     else
       if self.cost_data == "os__miaolue_underhanding" then
@@ -195,7 +195,7 @@ local os__miaolue = fk.CreateTriggerSkill{
           end
         end
         if id then
-          room:obtainCard(player, id, false, fk.ReasonPrey, player.id, self.name, {MarkEnum.DestructIntoDiscard, "1"})
+          room:obtainCard(player, id, false, fk.ReasonPrey, player.id, self.name, MarkEnum.DestructIntoDiscard)
         end
         player:drawCards(1, self.name)
       else
@@ -339,7 +339,7 @@ local os__shengxi = fk.CreateTriggerSkill{
         if #cids > 0 then get = cids[1] end
       end
       if get then
-        room:obtainCard(player, get, true, fk.ReasonPrey, player.id, self.name, {MarkEnum.DestructIntoDiscard, "1"})
+        room:obtainCard(player, get, true, fk.ReasonPrey, player.id, self.name, MarkEnum.DestructIntoDiscard)
       end
     else
       local id = room:getCardsFromPileByRule(self.cost_data)
@@ -672,7 +672,7 @@ local os__weipo = fk.CreateActiveSkill{
       end
     end
     if id then
-      room:obtainCard(target, id, false, fk.ReasonPrey, effect.from, self.name, choice == "enemy_at_the_gates" and {MarkEnum.DestructIntoDiscard, "1"} or nil )
+      room:obtainCard(target, id, false, fk.ReasonPrey, effect.from, self.name, choice == "enemy_at_the_gates" and MarkEnum.DestructIntoDiscard or nil )
     end
   end,
 }
