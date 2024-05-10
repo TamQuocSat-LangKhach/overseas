@@ -1820,7 +1820,7 @@ Fk:loadTranslationTable{
   ["os__enchou"] = "恩仇",
   [":os__enchou"] = "出牌阶段限一次，你可观看一名有装备栏被废除的其他角色的手牌并获得其中一张牌，然后你恢复其一个装备栏。",
 
-  ["@os__jieqiu"] = "劫囚",
+  ["@os__jieqiu"] = "被劫囚",
   ["#os__jieqiu_delay"] = "劫囚",
   ["#os__jieqiu-choice"] = "劫囚：恢复 %arg 个装备栏",
   ["#os__jieqiu-ask"] = "劫囚：你可执行一个额外回合",
