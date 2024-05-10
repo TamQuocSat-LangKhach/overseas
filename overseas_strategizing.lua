@@ -208,47 +208,6 @@ local os__miaolue = fk.CreateTriggerSkill{
     end
   end,
 }
-local os__miaolue_destruct = fk.CreateTriggerSkill{
-  name = "#os__miaolue_destruct",
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
-    local mirror_moves = {}
-    local ids = {}
-    for _, move in ipairs(data) do
-      if not table.contains(hold_areas, move.toArea) then
-        local move_info = {}
-        local mirror_info = {}
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id).name == "underhanding" then
-            table.insert(mirror_info, info)
-            table.insert(ids, id)
-          else
-            table.insert(move_info, info)
-          end
-        end
-        if #mirror_info > 0 then
-          move.moveInfo = move_info
-          local mirror_move = table.clone(move)
-          mirror_move.to = nil
-          mirror_move.toArea = Card.Void
-          mirror_move.moveInfo = mirror_info
-          table.insert(mirror_moves, mirror_move)
-        end
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#destructDerivedCards",
-        card = ids,
-      }
-    end
-    table.insertTable(data, mirror_moves)
-  end,
-}
-os__miaolue:addRelatedSkill(os__miaolue_destruct)
 local os__yingjia = fk.CreateTriggerSkill{
   name = "os__yingjia",
   events = {fk.TurnEnd},
@@ -350,50 +309,12 @@ local os__shengxi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PreCardUse, fk.Damage, fk.BeforeCardsMove},
+  refresh_events = {fk.PreCardUse, fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    return event == fk.BeforeCardsMove or (player:hasSkill(self.name, true) and player.phase ~= Player.NotActive)
+    return player:hasSkill(self, true) and player.phase ~= Player.NotActive
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
-      player.room:addPlayerMark(player, "_os__shengxi_use-turn", 1)
-    elseif event == fk.Damage then
-      player.room:addPlayerMark(player, "_os__shengxi_damage-turn", 1)
-    else
-      local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
-    local mirror_moves = {}
-    local ids = {}
-    for _, move in ipairs(data) do
-      if not table.contains(hold_areas, move.toArea) then
-        local move_info = {}
-        local mirror_info = {}
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id).name == "redistribute" then
-            table.insert(mirror_info, info)
-            table.insert(ids, id)
-          else
-            table.insert(move_info, info)
-          end
-        end
-        if #mirror_info > 0 then
-          move.moveInfo = move_info
-          local mirror_move = table.clone(move)
-          mirror_move.to = nil
-          mirror_move.toArea = Card.Void
-          mirror_move.moveInfo = mirror_info
-          table.insert(mirror_moves, mirror_move)
-        end
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#destructDerivedCards",
-        card = ids,
-      }
-    end
-    table.insertTable(data, mirror_moves)
-    end
+    player.room:addPlayerMark(player, event == fk.PreCardUse and "_os__shengxi_use-turn" or "_os__shengxi_damage-turn", 1)
   end,
 }
 
@@ -416,26 +337,41 @@ local os__kuanji = fk.CreateTriggerSkill{
     target = room:askForChoosePlayers(
       player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
-      local cards = {}
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
-          table.forEach(move.moveInfo, function(info)
-            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-              table.insert(cards, info.cardId)
-            end
-          end)
-        end
-      end
-      local cids = room:askForGuanxing(player, cards, nil, nil, "os__kuanjiGive", true, {"os__kuanjiGet", "os__kuanjiNoGet"}).top
-      if #cids > 0 then
-        self.cost_data = {target[1], cids}
-        return true
-      end
+      self.cost_data = target[1]
+      return true
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
-    player.room:obtainCard(self.cost_data[1], self.cost_data[2], false, fk.ReasonJustMove)
+    local room = player.room
+    target = self.cost_data
+    local cards = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+        table.forEach(move.moveInfo, function(info)
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            table.insert(cards, info.cardId)
+          end
+        end)
+      end
+    end
+    --[[local cids = room:askForCardsChosen(player, player, 0, #cards, {
+      card_data = {
+        { "pile_discard", cards }
+      }
+    }, self.name, "#os__kuanji-cards::" .. target)]]
+    local cids
+    local choice = "os__kuanji_all"
+    if #cards > 1 then
+      cids, choice = U.askforChooseCardsAndChoice(player, cards, {"os__kuanji_selected"}, self.name,
+      "#os__kuanji-cards::" .. target, {"os__kuanji_all"}, 1, #cards)
+    end
+    if choice == "os__kuanji_all" then
+      cids = cards
+    end
+    if #cids > 0 then
+      room:obtainCard(target, cids, true, fk.ReasonJustMove, player.id)
+    end
   end,
 }
 
@@ -456,9 +392,9 @@ Fk:loadTranslationTable{
 
   ["#os__shengxi-ask"] = "生息：你可选择一种智囊，从牌堆中获得之并摸一张牌",
   ["#os__kuanji-ask"] = "宽济：你可令一名其他角色获得其中的任意张牌",
-  ["os__kuanjiGive"] = "宽济",
-  ["os__kuanjiGet"] = "其获得",
-  ["os__kuanjiNoGet"] = "不获得",
+  ["#os__kuanji-cards"] = "宽济：令 %dest 获得其中任意张牌",
+  ["os__kuanji_all"] = "令其获得全部",
+  ["os__kuanji_selected"] = "令其获得选择的牌",
 
   ["$os__shengxi1"] = "利治小之宜，秉居静之理。",
   ["$os__shengxi2"] = "外却骆谷之师，内保宁缉之实。",
@@ -676,47 +612,7 @@ local os__weipo = fk.CreateActiveSkill{
     end
   end,
 }
-local os__weipo_destruct = fk.CreateTriggerSkill{
-  name = "#os__weipo_destruct",
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local hold_areas = {Card.Processing, Card.Void, Card.PlayerHand}
-    local mirror_moves = {}
-    local ids = {}
-    for _, move in ipairs(data) do
-      if not table.contains(hold_areas, move.toArea) then
-        local move_info = {}
-        local mirror_info = {}
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id).name == "enemy_at_the_gates" then
-            table.insert(mirror_info, info)
-            table.insert(ids, id)
-          else
-            table.insert(move_info, info)
-          end
-        end
-        if #mirror_info > 0 then
-          move.moveInfo = move_info
-          local mirror_move = table.clone(move)
-          mirror_move.to = nil
-          mirror_move.toArea = Card.Void
-          mirror_move.moveInfo = mirror_info
-          table.insert(mirror_moves, mirror_move)
-        end
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#destructDerivedCards",
-        card = ids,
-      }
-    end
-    table.insertTable(data, mirror_moves)
-  end,
-}
-os__weipo:addRelatedSkill(os__weipo_destruct)
+
 local os__chenshi = fk.CreateTriggerSkill{
   name = "os__chenshi",
   anim_type = "control",
@@ -769,12 +665,12 @@ local os__moushi = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self.name, true) and data.card and data.card.color ~= Card.NoColor
+    return player == target and player:hasSkill(self, true) and data.card and data.card.color ~= Card.NoColor
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "_os__moushi", data.card.color)
-    if player:hasSkill(self.name, true) then room:setPlayerMark(player, "@os__moushi", data.card:getColorString()) end
+    if player:hasSkill(self, true) then room:setPlayerMark(player, "@os__moushi", data.card:getColorString()) end
   end,
 }
 
@@ -1922,7 +1818,7 @@ local os__xiangyu = fk.CreateTriggerSkill{
     end)
     local num = math.min(5, player:getMark("_os__xiangyu_num-turn") + #target)
     room:setPlayerMark(player, "_os__xiangyu_num-turn", num)
-    if player:hasSkill(self.name, true) then room:setPlayerMark(player, "@os__xiangyu-turn", num) end
+    if player:hasSkill(self, true) then room:setPlayerMark(player, "@os__xiangyu-turn", num) end
   end,
 }
 local os__xiangyuAR = fk.CreateAttackRangeSkill{

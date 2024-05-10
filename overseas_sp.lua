@@ -335,7 +335,7 @@ local os__zhuidu = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local choices = {"os__zhuidu_damage"}
     if #target:getCardIds(Player.Equip) > 0 then table.insert(choices, "os__zhuidu_discard") end
-    if U.isFemale(target) and not player:isNude() then table.insert(choices, "beishui_os__zhuidu") end
+    if target:isFemale() and not player:isNude() then table.insert(choices, "beishui_os__zhuidu") end
     local choice = room:askForChoice(player, choices, self.name)
     if choice ~= "os__zhuidu_discard" then
       room:damage{

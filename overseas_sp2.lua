@@ -1334,6 +1334,37 @@ Fk:loadTranslationTable{
 
 local caozhao = General(extension, "caozhao", "wei", 4)
 
+--- 改变转换技状态
+---@param room Room
+---@param player Player
+---@param target Player
+---@param reason? string
+---@return string @ 被改变的转换技名
+local function ChangeSwitchState(room, player, target, reason)
+  local skills = table.filter(target.player_skills, function(s)
+    return s:isSwitchSkill()
+  end)
+  local skillNames = table.map(skills, function(s)
+    return s.name
+  end)
+  local skill = skills[table.indexOf(skillNames, room:askForChoice(player, skillNames, reason, "#os__fuzuan-ask:" .. target.id))]
+  local switchSkillName = skill.switchSkillName
+  room:setPlayerMark(
+    target,
+    MarkEnum.SwithSkillPreName .. switchSkillName,
+    target:getSwitchSkillState(switchSkillName, true)
+  )
+  target:addSkillUseHistory(skill.name) --……
+  room:sendLog{
+    type = "#ChangeSwitchState",
+    from = player.id,
+    to = {target.id},
+    arg = skill.name,
+    arg2 = target:getSwitchSkillState(switchSkillName, false, true),
+  }
+  return skill.name
+end
+
 local os__fuzuan = fk.CreateActiveSkill{
   name = "os__fuzuan",
   can_use = function(self, player)
@@ -1351,40 +1382,35 @@ local os__fuzuan = fk.CreateActiveSkill{
   end,
   target_num = 1,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local skills = table.filter(target.player_skills, function(s)
-      return s:isSwitchSkill()
-    end)
-    local skillNames = table.map(skills, function(s)
-      return s.name
-    end)
-    local skill = skills[table.indexOf(skillNames, room:askForChoice(player, skillNames, self.name, "#os__fuzuan-ask:" .. target.id))]
-    local switchSkillName = skill.switchSkillName
-    room:setPlayerMark(
-      target,
-      MarkEnum.SwithSkillPreName .. switchSkillName,
-      target:getSwitchSkillState(switchSkillName, true)
-    )
-    target:addSkillUseHistory(skill.name) --……
+    ChangeSwitchState(room, room:getPlayerById(effect.from), room:getPlayerById(effect.tos[1]), self.name)
   end,
 }
 local os__fuzuan_trg = fk.CreateTriggerSkill{
   name = "#os__fuzuan_trg",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if target ~= player or not player:hasSkill(self) then return false end
-    return event == fk.Damaged or data.to ~= player
+    return target == player and player:hasSkill(self) and (event == fk.Damaged or data.to ~= player) 
+      and table.find(player.room.alive_players, function(p)
+      return table.find(p.player_skills, function(s) return s:isSwitchSkill() end)
+    end)
   end,
   on_cost = function(self, event, target, player, data)
-    local _, ret = player.room:askForUseActiveSkill(player, "os__fuzuan", "#os__fuzuan-trg", true)
-    if ret then
-      local target = ret.targets[1]
-      player.room:doIndicate(player.id, {target})
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return table.find(p.player_skills, function(s) return s:isSwitchSkill() end)
+    end), Util.IdMapper)
+    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#os__fuzuan-trg", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
       return true
     end 
   end,
-  on_use = Util.FalseFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = self.cost_data
+    room:doIndicate(player.id, {to})
+    ChangeSwitchState(room, player, room:getPlayerById(to), self.name)
+  end,
 }
 os__fuzuan:addRelatedSkill(os__fuzuan_trg)
 
@@ -1396,8 +1422,11 @@ local os__chongqi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self)
   end,
-  on_cost = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
+    end
     local targets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
         return (not p:hasSkill("os__fuzuan"))
@@ -1407,20 +1436,14 @@ local os__chongqi = fk.CreateTriggerSkill{
     if #targets == 0 then return false end
     local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__chongqi-ask", self.name, true)
     if #target > 0 then
-      self.cost_data = target[1]
-      return true
+      room:changeMaxHp(player, -1)
+      room:handleAddLoseSkills(room:getPlayerById(target[1]), "os__fuzuan", nil)
     end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:changeMaxHp(player, -1)
-    room:handleAddLoseSkills(room:getPlayerById(self.cost_data), "os__fuzuan", nil)
   end,
 
   refresh_events = {fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and data == self  
+    return player:hasSkill(self) and data == self and player.room:getTag("RoundCount") and player.room:getTag("RoundCount") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -1481,6 +1504,7 @@ Fk:loadTranslationTable{
   ["#os__fuzuan-ask"] = "复纂：你可选择 %src 的一个转换技，调整其阴阳状态",
   ["#os__fuzuan_trg"] = "复纂",
   ["#os__fuzuan-trg"] = "你可对一名有转换技的角色发动“复纂”",
+  ["#ChangeSwitchState"] = "%from 将 %to 的转换技 %arg 改变为 %arg2 状态",
   ["#os__chongqi-ask"] = "宠齐：你可减1点体力上限，令一名其他角色获得〖复纂〗",
   ["#os__feifu-give"] = "非服：请交给 %src 一张牌",
   ["#os__feifu-use"] = "非服：你可使用%arg",

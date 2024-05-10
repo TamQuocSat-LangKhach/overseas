@@ -1744,10 +1744,8 @@ local jieqiu_delay = fk.CreateTriggerSkill{
           return true
         end
       end
-    else
-      if target:getMark("_os__jieqiu") == player.id then
-        return player:usedSkillTimes(self.name, Player.HistoryRound) == 0
-      end
+    elseif target:getMark("_os__jieqiu") == player.id and not player.dead then
+      return player:usedSkillTimes(self.name, Player.HistoryRound) == 0
     end
   end,
   on_cost = function(self, event, target, player, data)
