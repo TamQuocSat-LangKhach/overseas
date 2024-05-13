@@ -216,7 +216,7 @@ yuejiu:addSkill(os__cuijin)
 Fk:loadTranslationTable{
   ["yuejiu"] = "乐就",
   ["#yuejiu"] = "仲家军督",
-  ["designer:yuejiu"] = "老萌",
+  ["designer:yuejiu"] = "Loun老萌",
   ["illustrator:yuejiu"] = "铁杵文化",
   ["os__cuijin"] = "催进",
   [":os__cuijin"] = "当你或攻击范围内的角色使用【杀】时，你可弃置一张牌，令此【杀】伤害值基数+1。当此【杀】结算结束后，若此【杀】未造成伤害，你对此【杀】的使用者造成1点伤害。",
@@ -705,6 +705,10 @@ os_sp__yujin:addSkill(os__zhenjun)
 
 Fk:loadTranslationTable{
   ["os_sp__yujin"] = "于禁",
+  ["#os_sp__yujin"] = "逐暴定乱",
+  ["illustrator:os_sp__yujin"] = "凡果",
+  ["designer:os_sp__yujin"] = "Loun老萌",
+
   ["os__zhenjun"] = "镇军",
   [":os__zhenjun"] = "出牌阶段开始时，你可交给一名其他角色一张牌，令其使用一张非黑色的【杀】：若其执行，则此【杀】结算后你摸一张牌，若此【杀】造成过伤害，你额外摸伤害值数张牌；若其不执行，则你可对其或其攻击范围内的一名角色造成1点伤害。",
 
@@ -1463,6 +1467,7 @@ Fk:loadTranslationTable{
   ["baoxin"] = "鲍信",
   ["#baoxin"] = "坚朴的忠相",
 	["illustrator:baoxin"] = "凡果",
+  ["designer:baoxin"] = "Loun老萌",
 
   ["os__mutao"] = "募讨",
   [":os__mutao"] = "出牌阶段限一次，你可选择一名角色，令其将手牌中的（系统选择）每一张【杀】依次交给由其下家开始的除其以外的角色，然后其对最后一名角色造成X点伤害（X为最后一名角色手牌中【杀】的数量且至多为3）。",
@@ -2053,6 +2058,10 @@ os_sp__caocao:addRelatedSkill(os__zhian)
 
 Fk:loadTranslationTable{
   ["os_sp__caocao"] = "曹操",
+  ["#os_sp__caocao"] = "峥嵘而立",
+  ["illustrator:os_sp__caocao"] = "YanBai",
+  ["designer:os_sp__caocao"] = "Loun老萌",
+
   ["os__lingfa"] = "令法",
   [":os__lingfa"] = "每轮开始时，若当前轮数不大于2，你可令第X项效果对所有有牌的其他角色生效（X为当前轮数）：1. 当使用【杀】时，弃置一张牌，否则你对其造成1点伤害；2. 当使用【桃】结算结束后，交给你一张牌，否则你对其造成1点伤害。若当前轮数大于2，则你失去此技能，获得〖治暗〗。",
   ["os__zhian"] = "治暗",
@@ -2426,6 +2435,10 @@ Fk:addSkill(os__luannian_other)
 
 Fk:loadTranslationTable{
   ["os__mateng"] = "马腾",
+  ["#os__mateng"] = "驰骋西陲",
+  ["illustrator:os__mateng"] = "游江",
+  ["designer:os__mateng"] = "步穗",
+
   ["os__xiongzheng"] = "雄争",
   [":os__xiongzheng"] = "每轮开始时，你可选择一名未被此技能选择过的角色。若如此做，则本轮结束时，你可选择一项：1. 视为依次对任意名本轮未对其造成过伤害的其他角色使用一张【杀】；2. 令任意名本轮对其造成过伤害的角色摸两张牌。",
   ["os__luannian"] = "乱年",
@@ -2830,6 +2843,9 @@ duosidawang:addSkill(os__manji)
 
 Fk:loadTranslationTable{
   ["duosidawang"] = "朵思大王",
+  ["#duosidawang"] = "踞泉毒蛟",
+  ["illustrator:duosidawang"] = "蚂蚁君",
+
   ["os__equan"] = "恶泉",
   [":os__equan"] = "锁定技，当一名角色于你回合内受到伤害后，其获得等同于伤害值的“毒”。准备阶段开始时，所有有“毒”的角色失去X点体力并弃所有“毒”（X为其拥有的“毒”数)，以此法进入濒死状态的角色本回合技能失效。",
   ["os__manji"] = "蛮汲",
@@ -3160,6 +3176,10 @@ huchuquan:addSkill(os__fupan)
 
 Fk:loadTranslationTable{
   ["huchuquan"] = "呼厨泉",
+  ["#huchuquan"] = "踞北桀鹰",
+  ["illustrator:huchuquan"] = "小牛",
+  ["designer:huchuquan"] = "步穗",
+
   ["os__fupan"] = "复叛",
   [":os__fupan"] = "当你造成或受到伤害后，你可摸X张牌（X为伤害值），然后交给一名其他角色一张牌。若你未以此法交给过其牌，你摸两张牌；否则，你可对其造成1点伤害，然后你不能再以此法交给其牌。",
   
@@ -3418,6 +3438,10 @@ bingyuan:addSkill(os__qingtao)
 
 Fk:loadTranslationTable{
   ["bingyuan"] = "邴原",
+  ["#bingyuan"] = "峰名谷怀",
+  ["designer:bingyuan"] = "Loun老萌",
+  ["illustrator:bingyuan"] = "鬼画府",
+
   ["os__bingde"] = "秉德",
   [":os__bingde"] = "出牌阶段限一次，你可弃置一张牌并选择一种花色，然后摸X张牌（X为你此阶段使用此花色的牌数），若你弃置的牌的花色和选择的花色相同，此技能视为未发动过且此阶段不能再选择相同的花色。",
   ["os__qingtao"] = "清滔",
@@ -3567,6 +3591,9 @@ wufuluo:addRelatedSkill(os__luanlue)
 
 Fk:loadTranslationTable{
   ["wufuluo"] = "于夫罗",
+  ["#wufuluo"] = "援汉雄狼",
+  ["illustrator:wufuluo"] = "biou09",
+
   ["os__jiekuang"] = "竭匡",
   [":os__jiekuang"] = "每回合限一次，当一名体力值小于你的角色成为其他角色使用基本牌或普通锦囊牌的唯一目标后，若没有角色处于濒死状态，你可失去1点体力或减1点体力上限，然后你代替其成为此牌目标。当此牌结算结束后，若此牌未造成伤害且此牌的使用者可成为此牌的合法目标，则视为你对此牌的使用者使用一张同名牌。",
   ["os__neirao"] = "内扰",
@@ -3610,7 +3637,6 @@ local os__zhengjian = fk.CreateTriggerSkill{
     else
       return true
     end
-    return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3704,6 +3730,10 @@ os__puyangxing:addSkill(os__zhongchi)
 
 Fk:loadTranslationTable{
   ["os__puyangxing"] = "濮阳兴",
+  ["#os__puyangxing"] = "协邪肆民",
+  ["illustrator:os__puyangxing"] = "铁杵文化",
+  ["designer:os__puyangxing"] = "步穗",
+
   ["os__zhengjian"] = "征建",
   [":os__zhengjian"] = "游戏开始时，你选择一项：1.使用过非基本牌；2.获得过牌。其他角色的出牌阶段结束时，若其此阶段未完成“征建”要求的选项，其交给你一张牌，然后你可变更〖征建〗的选项。",
   ["os__zhongchi"] = "众斥",
@@ -3983,6 +4013,10 @@ xiahoushang:addSkill(os__tanfeng)
 
 Fk:loadTranslationTable{
   ["xiahoushang"] = "夏侯尚",
+  ["illustrator:xiahoushang"] = "云涯",
+  ["#xiahoushang"] = "魏胤前驱",
+  ["designer:xiahoushang"] = "耑端瑞湍",
+
   ["os__tanfeng"] = "探锋",
   [":os__tanfeng"] = "准备阶段开始时，你可弃置一名其他角色区域内的一张牌，然后其可选择一项：1. 受到你造成的1点火焰伤害，其令你跳过一个阶段；2. 将一张牌当【杀】对你使用。",
 
@@ -4225,6 +4259,9 @@ yanxiang:addSkill(os__ruilian)
 
 Fk:loadTranslationTable{
   ["yanxiang"] = "阎象",
+  ["#yanxiang"] = "明尚夙达",
+  ["illustrator:yanxiang"] = "zoo",
+
   ["os__kujian"] = "苦谏",
   [":os__kujian"] = "出牌阶段限一次，你可将至多三张手牌标记为“谏”并交给一名其他角色。当其他角色使用或打出“谏”牌时，你与其各摸一张牌。当其他角色非因使用或打出从手牌区失去“谏”牌后，你与其各弃置一张牌。",
   ["os__ruilian"] = "睿敛",

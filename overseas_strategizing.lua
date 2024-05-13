@@ -962,6 +962,10 @@ os__huojun:addSkill(os__jieyu)
 
 Fk:loadTranslationTable{
   ["os__huojun"] = "霍峻",
+  ["#os__huojun"] = "葭萌铁狮",
+  ["illustrator:os__huojun"] = "枭瞳",
+  ["designer:os__huojun"] = "步穗",
+
   ["os__sidai"] = "伺怠",
   [":os__sidai"] = "限定技，出牌阶段，你可将所有基本牌当【杀】使用（无次数和距离限制、不计入使用次数）。若这些牌中有：【酒】，此【杀】造成伤害时，伤害翻倍；【桃】，此【杀】造成伤害后，受到伤害角色减1点体力上限；【闪】，此【杀】的目标需弃置一张基本牌，否则不能响应。",
   ["os__jieyu"] = "竭御",
@@ -1053,6 +1057,7 @@ os__guoyi:addRelatedSkill(os__guoyi_prohibit)
 local os__chuhai = fk.CreateTriggerSkill{
   name = "os__chuhai",
   frequency = Skill.Quest,
+  mute = true,
   events = {fk.TurnEnd, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if event == fk.TurnEnd then
@@ -1081,6 +1086,8 @@ local os__chuhai = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnEnd then
+      room:notifySkillInvoked(player, self.name, "control")
+      player:broadcastSkillInvoke(self.name, math.random(3, 4))
       room:abortPlayerArea(player, {Player.JudgeSlot})
       local targets = room:getOtherPlayers(player)
       local prompt = "#os__chuhai-ask:" .. player.id
@@ -1093,7 +1100,11 @@ local os__chuhai = fk.CreateTriggerSkill{
           end
         end
       end
+      room:setPlayerMark(player, "@os__chuhai", 0)
     else
+      room:notifySkillInvoked(player, self.name, "negative")
+      player:broadcastSkillInvoke(self.name, 5)
+      room:updateQuestSkillState(player, self.name, true)
       local cards = table.filter(table.map(data, function(info) return info.cardId end), function(id) return room:getCardArea(id) == Card.PlayerHand end)
       if #cards > 0 then
         local c = room:askForCard(player, 1, 1, true, self.name, false, ".|.|.|.|.|.|" .. table.concat(cards, ","), "#os__chuhai-discard")
@@ -1105,12 +1116,18 @@ local os__chuhai = fk.CreateTriggerSkill{
   refresh_events = {fk.EnterDying},
   can_refresh = function(self, event, target, player, data)
     return player:hasSkill(self) and data.damage and data.damage.from == player and
-      player:getQuestSkillState(self.name) ~= "succeed" and target ~= player
+      player:getQuestSkillState(self.name) ~= "succeed" and target ~= player and not table.contains(U.getMark(player, "_os__chuhai"), target.id)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
+    room:notifySkillInvoked(player, self.name, "offensive")
+    player:broadcastSkillInvoke(self.name, math.random(2))
+    local record = U.getMark(player, "_os__chuhai")
+    table.insert(record, target.id)
+    room:setPlayerMark(player, "_os__chuhai", record)
     room:addPlayerMark(player, "@os__chuhai")
     if player:getMark("@os__chuhai") > 1 then
+      room:updateQuestSkillState(player, self.name, true) -- ……
       room:updateQuestSkillState(player, self.name, false)
     end
   end,
@@ -1140,6 +1157,15 @@ Fk:loadTranslationTable{
   ["@os__chuhai"] = "除害",
   ["#os__chuhai-ask"] = "除害：交给 %src 一张牌",
   ["#os__chuhai-discard"] = "除害：将一张交给你的牌置入弃牌堆",
+
+  ["$os__guoyi1"] = "心怀远志，何愁声名不彰！",
+  ["$os__guoyi2"] = "从今始学，成为有用之才！",
+  ["$os__chuhai1"] = "快快闪开，伤到你们可就不好了，哈哈哈！", -- 令其他角色进入濒死
+  ["$os__chuhai2"] = "你自己撞上来的，这可怪不得小爷我！",
+  ["$os__chuhai3"] = "小小孽畜，还不伏诛？", -- 成功
+  ["$os__chuhai4"] = "有我在此，安敢为害！",
+  ["$os__chuhai5"] = "此番不成，明日再战！", -- 完成前
+  ["~os__zhouchu"] = "改励自砥，誓除三害……",
 }
 
 local os__wujing = General(extension, "os__wujing", "wu", 4)

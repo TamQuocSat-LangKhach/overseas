@@ -1134,6 +1134,9 @@ nashime:addSkill(os__renshe)
 Fk:loadTranslationTable{
   ["nashime"] = "难升米",
   ["#nashime"] = "率善中郎将",
+  ["illustrator:nashime"] = "杨杨和夏季",
+  ["designer:nashime"] = "Loun老萌",
+
   ["os__chijie"] = "持节",
   [":os__chijie"] = "游戏开始时，你可将你的势力改为现存的一个势力。",
   ["os__waishi"] = "外使",
@@ -1494,6 +1497,10 @@ caozhao:addRelatedSkill(os__feifu)
 
 Fk:loadTranslationTable{
   ["caozhao"] = "曹肇",
+  ["#caozhao"] = "宛童啖桃",
+  ["illustrator:caozhao"] = "匠人绘",
+  ["designer:caozhao"] = "世外高v狼",
+
   ["os__fuzuan"] = "复纂",
   [":os__fuzuan"] = "你可于以下时机点选择一名有转换技的角色，调整其一个转换技的阴阳状态：出牌阶段限一次，你对其他角色造成伤害后，受到伤害后。",
   ["os__chongqi"] = "宠齐",
@@ -4244,6 +4251,8 @@ qiaorui:addSkill(os__qiongji)
 
 Fk:loadTranslationTable{
   ["qiaorui"] = "桥蕤",
+  ["#qiaorui"] = "穷勇技尽",
+  ["designer:qiaorui"] = "暗夜决彻",
   ["os__xiawei"] = "狭威",
   [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。妄行：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。" ..
     "<br/><font color='grey'>#\"<b>妄行</b>\"：选择X的值（1至4）执行相应效果，然后结束阶段开始时，你需弃置X张牌，否则减1点体力上限。", --回合结束时
