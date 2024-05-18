@@ -184,50 +184,37 @@ Fk:loadTranslationTable{
 
 local underhandingSkill = fk.CreateActiveSkill{
   name = "underhanding_skill",
-  --prompt = "#underhanding",
+  prompt = "#underhanding_skill",
   min_target_num = 1,
   max_target_num = 2,
   target_filter = function(self, to_select, selected)
     local p = Fk:currentRoom():getPlayerById(to_select)
-    return p ~= Self and not p:isAllNude()
-  end,
-  on_use = function(self, room, cardUseEvent)
-    cardUseEvent.extra_data = cardUseEvent.extra_data or {}
+    return to_select ~= Self.id and not p:isAllNude()
   end,
   on_effect = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
-    --effect.extra_data = effect.extra_data or {}
-    effect.extra_data.underhandingTargets = effect.extra_data.underhandingTargets or {}
-    table.insert(effect.extra_data.underhandingTargets, effect.to)
     if not to:isAllNude() then
       local id = room:askForCardChosen(player, to, "hej", self.name)
-      room:obtainCard(player, id, false, fk.ReasonPrey)
+      room:obtainCard(player, id, false, fk.ReasonPrey, player.id, self.name)
     end
   end,
-}
-local underhandingAction = fk.CreateTriggerSkill{
-  name = "underhanding_action",
-  global = true,
-  priority = 10,
-  events = { fk.CardUseFinished },
-  can_trigger = function(self, event, target, player, data)
-    return target == player and data.card and data.card.name == "underhanding" and not player.dead and not player:isNude() and data.extra_data and data.extra_data.underhandingTargets
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    --if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
-    for _, pid in ipairs(data.extra_data.underhandingTargets) do
+  on_action = function (self, room, use, finished)
+    if not finished then return end
+    local player = room:getPlayerById(use.from)
+    if player.dead or player:isNude() then return end
+    local targets = TargetGroup:getRealTargets(use.tos)
+    if #targets == 0 then return end
+    room:sortPlayersByAction(targets)
+    for _, pid in ipairs(targets) do
       local target = room:getPlayerById(pid)
-      if not player:isNude() and not target.dead then
+      if not player:isNude() and not target.dead and not player.dead then
         local c = room:askForCard(player, 1, 1, true, self.name, false, nil, "#underhanding-card::" .. pid)[1]
-        room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false)
+        room:moveCardTo(c, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
       end
     end
-    --end
-  end,
+  end
 }
-Fk:addSkill(underhandingAction)
 local underhandingExclude = fk.CreateMaxCardsSkill{
   name = "underhanding_exclude",
   global = true,
@@ -255,11 +242,12 @@ Fk:loadTranslationTable{
   ["underhanding_skill"] = "瞒天过海",
   ["underhanding_action"] = "瞒天过海",
   ["#underhanding-card"] = "瞒天过海：交给 %dest 一张牌",
-  --["#underhanding"] = "选择一至两名区域内有牌的其他角色，依次获得其区域内的一张牌，然后依次交给其一张牌。",
+  ["#underhanding_skill"] = "选择一至两名区域内有牌的其他角色，依次获得其区域内的一张牌，然后依次交给其一张牌",
 }
 
 local redistributeSkill = fk.CreateActiveSkill{
   name = "redistribute_skill",
+  prompt = "#redistribute_skill",
   target_num = 2,
   target_filter = function(self, to_select, selected)
     if #selected == 1 then
@@ -298,42 +286,33 @@ local redistributeSkill = fk.CreateActiveSkill{
       end
     end
   end,
-}
-local redistributeAction = fk.CreateTriggerSkill{
-  name = "redistribute_action",
-  global = true,
-  priority = 10,
-  events = { fk.CardUseFinished },
-  can_trigger = function(self, event, target, player, data)
-    return data.card and data.card.name == "redistribute" and data.extra_data and data.extra_data.redistributeCids and not target.dead
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    if data.tos and #TargetGroup:getRealTargets(data.tos) > 0 then
-      local num = nil
-      for _, p in ipairs(TargetGroup:getRealTargets(data.tos)) do
-        local hand_num = room:getPlayerById(p):getHandcardNum()
-        if num == nil then
-          num = hand_num
-        elseif num ~= hand_num then
-          data.extra_data.redistributeCids = nil
-          return false
+  on_action = function (self, room, use, finished)
+    if finished and (use.extra_data or {}).redistributeCids and not room:getPlayerById(use.from).dead then
+      if use.tos and #TargetGroup:getRealTargets(use.tos) > 0 then
+        local num = nil
+        for _, p in ipairs(TargetGroup:getRealTargets(use.tos)) do
+          local hand_num = room:getPlayerById(p):getHandcardNum()
+          if num == nil then
+            num = hand_num
+          elseif num ~= hand_num then
+            use.extra_data.redistributeCids = nil
+            return false
+          end
         end
       end
+      local cids = table.filter(use.extra_data.redistributeCids, function(id)
+        return room:getCardArea(id) == Card.DiscardPile
+      end)
+      if #cids == 0 then
+        use.extra_data.redistributeCids = nil
+        return false
+      end
+      local target = room:askForChoosePlayers(room:getPlayerById(use.from), table.map(room.alive_players, Util.IdMapper), 1, 1, "#redistribute-give", self.name, true)
+      if #target > 0 then room:moveCardTo(cids, Player.Hand, room:getPlayerById(target[1]), fk.ReasonGive, self.name) end
+      use.extra_data.redistributeCids = nil
     end
-    local cids = table.filter(data.extra_data.redistributeCids, function(id)
-      return room:getCardArea(id) == Card.DiscardPile
-    end)
-    if #cids == 0 then
-      data.extra_data.redistributeCids = nil
-      return false
-    end
-    local target = room:askForChoosePlayers(target, table.map(room.alive_players, Util.IdMapper), 1, 1, "#redistribute-give", self.name, true)
-    if #target > 0 then room:moveCardTo(cids, Player.Hand, room:getPlayerById(target[1]), fk.ReasonGive, self.name) end
-    data.extra_data.redistributeCids = nil
-  end,
+  end
 }
-Fk:addSkill(redistributeAction)
 local redistribute = fk.CreateTrickCard{
   name = "&redistribute",
   skill = redistributeSkill,
@@ -354,10 +333,12 @@ Fk:loadTranslationTable{
   ["redistribute_skill"] = "调剂盐梅",
   ["redistribute_action"] = "调剂盐梅",
   ["#redistribute-give"] = "你可将因【调剂盐梅】弃置的牌交给一名角色",
+  ["#redistribute_skill"] = "选择两名手牌数不同的角色，手牌数小的目标角色摸一张牌，其余的弃置一张手牌。<br />然后若所有目标角色手牌数相同，你可将以此法弃置的牌交给一名角色",
 }
 
 local enemyAtTheGatesSkill = fk.CreateActiveSkill{
   name = "enemy_at_the_gates_skill",
+  prompt = "#enemy_at_the_gates_skill",
   target_num = 1,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and Self.id ~= to_select
@@ -366,7 +347,7 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
     local player = room:getPlayerById(cardEffectEvent.from)
     local to = room:getPlayerById(cardEffectEvent.to)
     local cards = {}
-    for i = 1, 4, 1 do
+    for _ = 1, 4, 1 do
       local id = room:getNCards(1)[1]
       table.insert(cards, id)
       room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
@@ -400,6 +381,7 @@ extension:addCards{
 Fk:loadTranslationTable{
   ["enemy_at_the_gates"] = "兵临城下", -- 根据实际结算修改描述
   [":enemy_at_the_gates"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一名其他角色<br /><b>效果</b>：你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。",
+  ["#enemy_at_the_gates_skill"] = "选择一名其他角色，你依次展示牌堆顶四张牌，若为【杀】，你对其使用之；若不为【杀】，将此牌置入弃牌堆",
 }
 
 return extension

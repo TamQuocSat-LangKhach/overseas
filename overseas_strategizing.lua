@@ -699,7 +699,7 @@ Fk:loadTranslationTable{
 
   ["$os__weipo1"] = "想必……将军心中已有所计较。",
   ["$os__weipo2"] = "谌言尽于此，采纳与否还凭将军。",
-  ["$os__chenshi1"] = "将军已为此二者所围，形势实不容乐观。	",
+  ["$os__chenshi1"] = "将军已为此二者所围，形势实不容乐观。",
   ["$os__chenshi2"] = "此二人若合力攻之，则将军危矣。",
   ["$os__moushi1"] = "潜谋于无形，胜于不争不费。",
   ["$os__moushi2"] = "欲思其成，必虑其败也。",
@@ -1872,7 +1872,7 @@ Fk:loadTranslationTable{
 
   ["$os__shangyi1"] = "国士，当以义为先！",
   ["$os__shangyi2"] = "豪侠尚义，何拘俗礼！",
-  ["$os__xiangyu1"] = "此战必是有死无生！	",
+  ["$os__xiangyu1"] = "此战必是有死无生！",
   ["$os__xiangyu2"] = "抢占先机，占尽优势！",
   ["~os__jiangqin"] = "奋敌护主，成吾忠名……",
 }

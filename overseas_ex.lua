@@ -495,10 +495,20 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
 local os_ex__yuzhang_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__yuzhang_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    if player:getMark("@os_ex__yuzhang_pro-turn") > 0 and card and #card.skillNames == 0 then
+      local subcards = Card:getIdList(card)
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getHandlyIds(true), id)
+      end)
+    end
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("@os_ex__yuzhang_pro-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    if player:getMark("@os_ex__yuzhang_pro-turn") > 0 and card and #card.skillNames == 0 then
+      local subcards = Card:getIdList(card)
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getHandlyIds(true), id)
+      end)
+    end
   end,
 }
 
@@ -518,6 +528,7 @@ Fk:loadTranslationTable{
   ["#os_ex__yuzhang-ask"] = "御嶂：你可弃1枚“策”，选择一项，令 %dest 执行",
   ["os_ex__yuzhang_disable"] = "令%dest本回合不能再使用或打出手牌",
   ["os_ex__yuzhang_discard"] = "%dest弃置两张牌",
+  ["@os_ex__yuzhang_pro-turn"] = "御嶂 禁止出牌",
 
   ["$os_ex__jingce1"] = "方策精详，有备无患。",
   ["$os_ex__jingce2"] = "精兵拒敌，策守如山。",

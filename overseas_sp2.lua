@@ -4564,7 +4564,7 @@ Fk:loadTranslationTable{
   ["$os__jinglue2"] = "察局备间，保诸事不虞。",
   ["$os__shanli1"] = "荡尘涤污，重整河山，便在今日！",
   ["$os__shanli2"] = "效伊尹霍光，以返天下清明。",
-  ["~os__simashi"] = "吾家夙愿，得偿与否，尽看子上……",	
+  ["~os__simashi"] = "吾家夙愿，得偿与否，尽看子上……",  
 }
 
 local zhangjih = General(extension, "zhangjih", "wei", 3)
@@ -4910,7 +4910,7 @@ Fk:loadTranslationTable{
   ["$os__yuanhu3"] = "宝马配英雄！哈哈哈哈……",
   ["$os__juezhu1"] = "曹君速上马，洪自断后。",
   ["$os__juezhu2"] = "天下可无洪，不可无君。",
-  ["~os__caohong"] = "福兮祸所伏……",	
+  ["~os__caohong"] = "福兮祸所伏……",  
 }
 
 local weixu = General(extension, "weixu", "qun", 4)
@@ -5043,7 +5043,7 @@ Fk:loadTranslationTable{
   ["$os__suizheng3"] = "将军莫慌，万事有吾！",
   ["$os__tuidao1"] = "将军大势已去，续无可奈何啊。",
   ["$os__tuidao2"] = "续投明主，还望将军勿怪才是。",
-  ["~os__weixu"] = "颜良小儿，竟敢杀我同伴，看我为其……啊！",	
+  ["~os__weixu"] = "颜良小儿，竟敢杀我同伴，看我为其……啊！",  
 }
 
 local os__zhanglu = General(extension, "os__zhanglu", "qun", 3)
@@ -5462,7 +5462,7 @@ Fk:loadTranslationTable{
   ["$os__lijians2"] = "君者当御贤于后，安可校勇于猛兽！",
   ["$os__chungang1"] = "陛下若此，天下何以观之！",
   ["$os__chungang2"] = "偏听谄谀之言，此为万民所仰之君乎？",
-  ["~zhangzhao"] = "哼哼！此皆老臣罪责，陛下岂会有过……",	
+  ["~zhangzhao"] = "哼哼！此皆老臣罪责，陛下岂会有过……",  
 }
 
 local zhanghong = General(extension, "zhanghong", "wu", 3)
@@ -5585,7 +5585,7 @@ Fk:loadTranslationTable{
   ["$os__quanqian2"] = "吴郡僻远，宜迁都秣陵，以承王业。",
   ["$os__rouke1"] = "宽以待人，柔能克刚，则英雄莫敌。",
   ["$os__rouke2"] = "务崇宽惠，顺天命以行诛。",
-  ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",	
+  ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",  
 }
 
 local wenchou = General(extension, "wenchou", "qun", 4)
@@ -5710,7 +5710,7 @@ Fk:loadTranslationTable{
   ["$os__juexing2"] = "杀！尽歼贼败军之众！",
   ["$os__xiayong1"] = "一招之差，不足决此战胜负！",
   ["$os__xiayong2"] = "这般身手，也敢来战我？",
-  ["~wenchou"] = "黄泉路上，你我兄弟亦不可独行……",	
+  ["~wenchou"] = "黄泉路上，你我兄弟亦不可独行……",  
 }
 
 local yuantan = General(extension, "yuantan", "qun", 4)

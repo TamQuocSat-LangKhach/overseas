@@ -302,7 +302,7 @@ Fk:loadTranslationTable{
   ["os__cuorui"] = "挫锐",
   [":os__cuorui"] = "限定技，准备阶段开始时，你可将手牌摸至X张（X为全场最大的手牌数，至多摸五张），废除判定区。若你发动过〖挫锐〗，你可选择一名其他角色，对其造成1点伤害。",
   ["os__liewei"] = "裂围",
-  [":os__liewei"] = "锁定技，当一名角色死亡后，若其是你杀死的，你选择：1.摸两张牌；2.若〖挫锐〗发动过，令〖挫锐〗于此局游戏内的发动次数上限+1。",	
+  [":os__liewei"] = "锁定技，当一名角色死亡后，若其是你杀死的，你选择：1.摸两张牌；2.若〖挫锐〗发动过，令〖挫锐〗于此局游戏内的发动次数上限+1。",  
 
   ["#os__cuorui-ask"] = "挫锐：你可摸 %arg 张牌，废除判定区",
   ["#os__cuorui_dmg-ask"] = "挫锐：你可摸 %arg 张牌，废除判定区，然后可以选择一名其他角色，对其造成1点伤害",
@@ -1466,7 +1466,7 @@ baoxin:addSkill(os__yimou)
 Fk:loadTranslationTable{
   ["baoxin"] = "鲍信",
   ["#baoxin"] = "坚朴的忠相",
-	["illustrator:baoxin"] = "凡果",
+  ["illustrator:baoxin"] = "凡果",
   ["designer:baoxin"] = "Loun老萌",
 
   ["os__mutao"] = "募讨",
@@ -2667,7 +2667,7 @@ Fk:loadTranslationTable{
   ["os__jiakui"] = "贾逵",
   ["#os__jiakui"] = "肃齐万里",
   ["designer:os__jiakui"] = "Loun老萌",
-	["illustrator:os__jiakui"] = "Monkey",
+  ["illustrator:os__jiakui"] = "Monkey",
   ["os__zhongzuo"] = "忠佐",
   [":os__zhongzuo"] = "一名角色的结束阶段结束时，若你于本回合内造成或受到过伤害，你可令一名角色摸两张牌，若其已受伤，你摸一张牌。",
   ["os__wanlan"] = "挽澜",
