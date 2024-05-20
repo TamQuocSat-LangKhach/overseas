@@ -1165,6 +1165,7 @@ local jianshuo = General(extension, "jianshuo", "qun", 6)
 local os__kunsi = fk.CreateViewAsSkill{
   name = "os__kunsi",
   anim_type = "offensive",
+  prompt = "#os__kunsi-promot",
   card_num = 0,
   view_as = function(self)
     local card = Fk:cloneCard("slash")
@@ -1190,7 +1191,7 @@ local os__kunsi = fk.CreateViewAsSkill{
 local os__kunsi_buff = fk.CreateTargetModSkill{
   name = "#os__kunsi_buff",
   bypass_times = function (self, player, skill, scope, card, to)
-    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "kunsi")
+    return scope == Player.HistoryPhase and card and table.contains(card.skillNames, "os__kunsi")
   end,
   bypass_distances = function (self, player, skill, card, to)
     return card and table.contains(card.skillNames, "os__kunsi")
@@ -1319,11 +1320,13 @@ jianshuo:addRelatedSkill(os__linglu)
 
 Fk:loadTranslationTable{
   ["jianshuo"] = "蹇硕",
+  ["#jianshuo"] = "西园硕犀",
   ["os__kunsi"] = "困兕",
   [":os__kunsi"] = "出牌阶段，你可视为对一名未以此法指定过的角色使用【杀】（无次数和距离限制）。若此【杀】未造成伤害，则其拥有〖令戮〗直到你的下个回合开始后。其指定你为〖令戮〗的目标时，可令〖令戮〗的失败结算进行两次。",
   ["os__linglu"] = "令戮",
   [":os__linglu"] = "出牌阶段开始时，你可强令一名其他角色在其下回合结束前造成2点伤害。成功：其摸两张牌；失败：其失去1点体力。<br/><font color='grey'>#\"<b>强令</b>\"<br/>向一名角色颁布一项任务，在任务结束时点执行奖惩。",
 
+  ["#os__kunsi-promot"] = "困兕：视为对一名未指定过的角色使用【杀】（无次数和距离限制）",
   ["#os__linglu-ask"] = "令戮：你可强令一名其他角色在其下回合结束前造成2点伤害",
   ["os__linglu_twice"] = "令其〖令戮〗的失败结算进行两次",
   ["#os__linglu_twice-ask"] = "令戮：你可令 %src 〖令戮〗的失败结算进行两次",
