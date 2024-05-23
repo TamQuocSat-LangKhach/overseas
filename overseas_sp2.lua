@@ -3424,7 +3424,7 @@ local os__haomeng = General(extension, "os__haomeng", "qun", 4)
 local function getTrueSkills(player)
   local skills = {}
   for _, s in ipairs(player.player_skills) do
-    if not (s.attached_equip or s.name[#s.name] == "&" or s.name == "m_feiyang" or s.name == "m_bahu") then
+    if s:isPlayerSkill(player) and not (s.name == "m_feiyang" or s.name == "m_bahu") then
       table.insertIfNeed(skills, s.name)
     end
   end

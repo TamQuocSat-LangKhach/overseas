@@ -2809,7 +2809,7 @@ local os__equan = fk.CreateTriggerSkill{
 local os__equan_invalidity = fk.CreateInvaliditySkill {
   name = "#os__equan_invalidity",
   invalidity_func = function(self, from, skill)
-    return from:getMark("@@os__equan-turn") > 0 and not skill.attached_equip
+    return from:getMark("@@os__equan-turn") > 0 and skill:isPlayerSkill(from)
   end
 }
 os__equan:addRelatedSkill(os__equan_invalidity)

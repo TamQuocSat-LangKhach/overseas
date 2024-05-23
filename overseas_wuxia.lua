@@ -614,12 +614,12 @@ local os__duoren = fk.CreateTriggerSkill{
     local room = player.room
     room:changeMaxHp(player, -1)
     local skills = table.map(table.filter(target.player_skills, function(s)
-        return not (s.attached_equip or s.lordSkill or s.name[#s.name] == "&")
+        return s:isPlayerSkill(target) and not s.lordSkill
       end), function(skill)
         return skill.name 
       end) or {}
     table.insertTable(skills, table.map(table.filter(target.derivative_skills, function(s)
-        return not (s.attached_equip or s.lordSkill or s.name[#s.name] == "&")
+        return s:isPlayerSkill(target) and not s.lordSkill
       end)), function(skill)
         return skill.name 
       end)
