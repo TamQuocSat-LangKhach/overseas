@@ -197,13 +197,20 @@ local underhandingSkill = fk.CreateActiveSkill{
     if not to:isAllNude() then
       local id = room:askForCardChosen(player, to, "hej", self.name)
       room:obtainCard(player, id, false, fk.ReasonPrey, player.id, self.name)
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if e then
+        local use = e.data[1]
+        use.extra_data = use.extra_data or {}
+        use.extra_data.underhanding_targets = use.extra_data.underhanding_targets or {}
+        table.insertIfNeed(use.extra_data.underhanding_targets, to.id)
+      end
     end
   end,
   on_action = function (self, room, use, finished)
     if not finished then return end
     local player = room:getPlayerById(use.from)
     if player.dead or player:isNude() then return end
-    local targets = TargetGroup:getRealTargets(use.tos)
+    local targets = (use.extra_data or {}).underhanding_targets or {}
     if #targets == 0 then return end
     room:sortPlayersByAction(targets)
     for _, pid in ipairs(targets) do
