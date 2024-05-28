@@ -816,8 +816,8 @@ local os__kaizeng_others = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function() return false end,
-  target_filter = function() return false end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
   interaction = function(self)
     local choiceList = {}
     for _, id in ipairs(Fk:getAllCardIds()) do

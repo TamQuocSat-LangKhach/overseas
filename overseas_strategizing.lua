@@ -15,13 +15,12 @@ local os__dianyi = fk.CreateTriggerSkill{
   mute = true,
   frequency = Skill.Compulsory,
   events = {fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(self.name)
-    if player:getMark("_os__dianyi-turn") > 0 then
+    if #room.logic:getActualDamageEvents(1, function(e)
+      return e.data[1].from == target
+    end, Player.HistoryTurn) > 0 then
       room:notifySkillInvoked(player, self.name)
       player:throwAllCards("h")
     else
@@ -36,19 +35,11 @@ local os__dianyi = fk.CreateTriggerSkill{
       end
     end
   end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player.phase ~= Player.NotActive and player:getMark("_os__dianyi-turn") == 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "_os__dianyi-turn")
-  end,
 }
 
 local os__yingji = fk.CreateViewAsSkill{
   name = "os__yingji",
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   card_num = 0,
   pattern = ".|.|.|.|.|basic,trick",
   interaction = function(self)
@@ -779,7 +770,7 @@ os__xingqi:addRelatedSkill(os__xingqi_nodistance)
 
 local os__mouli = fk.CreateViewAsSkill{
   name = "os__mouli",
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   card_num = 0,
   pattern = ".|.|.|.|.|basic",
   interaction = function(self)
@@ -1608,8 +1599,6 @@ local os__yilie = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@os__yilie-phase", "yl_draw")
     end
   end,
-
-  
 }
 local os__yilie_do = fk.CreateTriggerSkill{
   name = "#os__yilie_do",
@@ -1692,15 +1681,15 @@ Fk:loadTranslationTable{
   ["os__fenming"] = "奋命",
   [":os__fenming"] = "准备阶段开始时，你可选择一名角色并选择一项：1.你弃置其一张牌；2. 其进入连环状态；背水：你进入连环状态。",
 
-  ["os__yilie_times"] = "使用【杀】的次数上限+1", 
-  ["os__yilie_draw"] = "当你使用的【杀】指定处于连环状态的角色为目标后，或被【闪】抵消后，摸一张牌", 
+  ["os__yilie_times"] = "使用【杀】的次数上限+1",
+  ["os__yilie_draw"] = "当你使用的【杀】指定处于连环状态的角色为目标后，或被【闪】抵消后，摸一张牌",
   ["@os__yilie-phase"] = "毅烈",
   ["yl_times_draw"] = "摸牌 多出杀",
   ["yl_times"] = "多出杀",
   ["yl_draw"] = "摸牌",
   ["#os__yilie_do"] = "毅烈",
   ["beishui_os__yilie"] = "背水：你失去1点体力",
-  ["#os__fenming-ask"] = "你可对一名角色发动“奋命”",
+  ["#os__fenming-ask"] = "你可对一名角色发动〖奋命〗",
   ["beishui_os__fenming"] = "背水：你进入连环状态",
   ["os__fenming_discard"] = "你弃置其牌",
   ["os__fenming_chained"] = "其进入连环状态",
@@ -1716,13 +1705,14 @@ local os__jiangqin = General(extension, "os__jiangqin", "wu", 4)
 
 local os__shangyi = fk.CreateActiveSkill{
   name = "os__shangyi",
+  prompt = "#os__shangyi-active",
   anim_type = "control",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
   card_num = 1,
   card_filter = function(self, to_select, selected, targets)
-    return #selected == 0
+    return #selected == 0 and not Self:prohibitDiscard(to_select)
   end,
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id and #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
@@ -1732,72 +1722,20 @@ local os__shangyi = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     room:throwCard(effect.cards, self.name, player, player)
-    local cids
-    if not player:isKongcheng() then 
-      cids = player.player_cards[Player.Hand]
-      room:fillAG(target, cids)
-      room:delay(3000)
-      room:closeAG(target)
+    if not player:isKongcheng() then
+      U.viewCards(target, player:getCardIds(Player.Hand), self.name, "#os__shangyi_view:" .. player.id)
     end
-    cids = target.player_cards[Player.Hand]
-    room:fillAG(player, cids)
-    room:delay(3000)
-    room:closeAG(player)
-    local choiceList = {"os__shangyi_discard:" .. target.id}
-    if not player:isKongcheng() then table.insert(choiceList, "os__shangyi_exchange:" .. target.id) end
-    local choice = room:askForChoice(player, choiceList, self.name)
-    room:fillAG(player, cids)
-    local id = room:askForAG(player, cids, false, self.name)
-    local card = Fk:getCardById(id)
-    room:closeAG(player)
-    if choice:startsWith("os__shangyi_discard") then
-      room:throwCard({id}, self.name, target, player)
-      if card.color == Card.Black then player:drawCards(1, self.name) end
+    local choiceList = {"os__shangyi_discard"}
+    if not player:isKongcheng() then table.insert(choiceList, "os__shangyi_exchange") end
+    local cards, choice = U.askforChooseCardsAndChoice(player, target:getCardIds(Player.Hand), choiceList, self.name, "#os__shangyi-ask::" .. target.id)
+    local card = Fk:getCardById(cards[1])
+    if choice == "os__shangyi_discard" then
+      room:throwCard(cards, self.name, target, player)
+      if card.color == Card.Black and not player.dead then player:drawCards(1, self.name) end
     else
       local cids = room:askForCard(player, 1, 1, false, self.name, false, nil, "#os__shangyi-exchange:" .. target.id .. "::" .. card:toLogString())
-      local cards1 = cids
-      local cards2 = {id}
-      local move1 = {
-        from = player.id,
-        ids = cards1,
-        toArea = Card.Processing,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,  --FIXME: this is still visible! same problem with dimeng!
-      }
-      local move2 = {
-        from = target.id,
-        ids = cards2,
-        toArea = Card.Processing,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      }
-      room:moveCards(move1, move2)
-      local move3 = {
-        ids = cards1,
-        fromArea = Card.Processing,
-        to = target.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      }
-      local move4 = {
-        ids = cards2,
-        fromArea = Card.Processing,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      }
-      room:moveCards(move3, move4)
-      if card.color == Card.Red and Fk:getCardById(cids[1]).color == Card.Red then player:drawCards(1, self.name) end
+      U.swapCards(room, player, player, target, cids, {card.id}, self.name)
+      if card.color == Card.Red and Fk:getCardById(cids[1]).color == Card.Red and not player.dead then player:drawCards(1, self.name) end
     end
   end,
 }
@@ -1820,7 +1758,7 @@ local os__xiangyu = fk.CreateTriggerSkill{
     if player.phase == Player.NotActive then return false end
     local room = player.room
     for _, move in ipairs(data) do
-      if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and 
+      if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and
         table.find(move.moveInfo, function(info)
           return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
         end) then
@@ -1832,7 +1770,7 @@ local os__xiangyu = fk.CreateTriggerSkill{
     local room = player.room
     local target = {}
     for _, move in ipairs(data) do
-      if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and 
+      if move.from and room:getPlayerById(move.from):getMark("_os__xiangyu-turn") == 0 and
         table.find(move.moveInfo, function(info)
           return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
         end) then
@@ -1865,9 +1803,12 @@ Fk:loadTranslationTable{
   ["os__xiangyu"] = "翔羽",
   [":os__xiangyu"] = "锁定技，①你的回合内，每有一名角色失去过牌，本回合你的攻击范围便+1（至多+5）。②你使用【杀】指定一名角色为目标时，若你与其距离小于你的攻击范围，则其需依次使用两张【闪】才能抵消此【杀】。",
 
-  ["os__shangyi_discard"] = "弃置%src一张手牌",
-  ["os__shangyi_exchange"] = "与%src交换一张手牌",
+  ["os__shangyi_discard"] = "弃置此牌",
+  ["os__shangyi_exchange"] = "与其交换此牌",
   ["#os__shangyi-exchange"] = "尚义：选择一张手牌，与 %src 交换其%arg",
+  ["#os__shangyi_view"] = "尚义：观看 %src 的手牌",
+  ["#os__shangyi-ask"] = "尚义：观看 %dest 的手牌，选择一张牌并选择一项",
+  ["#os__shangyi-active"] = "发动 尚义，弃置一张牌，与一名有手牌的其他角色互相观看手牌",
   ["@os__xiangyu-turn"] = "翔羽",
 
   ["$os__shangyi1"] = "国士，当以义为先！",

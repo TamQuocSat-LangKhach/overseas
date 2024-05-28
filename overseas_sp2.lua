@@ -1605,7 +1605,7 @@ Fk:loadTranslationTable{
   ["~os__hucheer"] = "未料一伸手，便被……敌酋捉……",
 }
 
-local os__luzhik = General(extension, "os__luzhik", "qun", 3)
+local os__luzhi = General(extension, "os__luzhi", "qun", 3)
 
 local os__mingren = fk.CreateTriggerSkill{
   name = "os__mingren",
@@ -1703,11 +1703,11 @@ local os__zhenliang_defend = fk.CreateTriggerSkill{
 }
 os__zhenliang:addRelatedSkill(os__zhenliang_defend)
 
-os__luzhik:addSkill(os__mingren)
-os__luzhik:addSkill(os__zhenliang)
+os__luzhi:addSkill(os__mingren)
+os__luzhi:addSkill(os__zhenliang)
 
 Fk:loadTranslationTable{
-  ["os__luzhik"] = "卢植",
+  ["os__luzhi"] = "卢植",
   ["os__mingren"] = "明任",
   [":os__mingren"] = "①游戏开始时，你摸一张牌，将一张手牌置于武将牌上，称为“任”。②出牌阶段开始或结束时，你可用一张手牌替换“任”。",
   ["os__zhenliang"] = "贞良",
@@ -1723,7 +1723,7 @@ Fk:loadTranslationTable{
   ["$os__mingren2"] = "得义真所救，吾任之必尽瘁以报。",
   ["$os__zhenliang1"] = "贞洁贤良，吾之本心。",
   ["$os__zhenliang2"] = "风霜以别草木之性，危乱而见贞良之节。",
-  ["~os__luzhik"] = "泓泓眸子宿渊亭，不见蛾眉只见经。",
+  ["~os__luzhi"] = "泓泓眸子宿渊亭，不见蛾眉只见经。",
 }
 
 local os__yangyi = General(extension, "os__yangyi", "shu", 3)
@@ -2143,7 +2143,7 @@ local os__fengji_conjure = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:getMark("@os__fengji") ~= 0 and string.sub(player:getMark("@os__fengji"), -1) == "0"
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local nums = string.split(player:getMark("@os__fengji"), "-")
@@ -4437,7 +4437,7 @@ local os__jinglue = fk.CreateActiveSkill{
     end)
   end,
   card_num = 0,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_num = 1,
   target_filter = function(self, to_select, selected)
     return #selected < 1 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
