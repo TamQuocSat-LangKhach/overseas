@@ -4579,14 +4579,14 @@ local os__dingzhen = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return false end
     local num = player.hp
     return table.find(player.room.alive_players, function(p)
-      return (p:distanceTo(player) <= num)
+      return p:distanceTo(player) <= num and not p:isRemoved()
     end)
   end,
   on_cost = function(self, event, target, player, data)
     local num = player.hp
     local available_targets = table.map(
       table.filter(player.room.alive_players, function(p)
-        return (p:distanceTo(player) <= num)
+        return p:distanceTo(player) <= num and not p:isRemoved()
       end),
       Util.IdMapper
     )
@@ -4627,7 +4627,7 @@ local os__dingzhen_prohibit = fk.CreateProhibitSkill{
   name = "#os__dingzhen_prohibit",
   is_prohibited = function(self, from, to, card)
     return from:getMark("@@os__dingzhen-round") > 0 and table.contains(U.getMark(from, "_os__dingzhen_to-round"), to.id)
-    and from:getMark("_os__dingzhen_use-turn") == 0
+    and from:getMark("_os__dingzhen_use-turn") == 0 and from.phase ~= Player.NotActive
   end,
 }
 os__dingzhen:addRelatedSkill(os__dingzhen_prohibit)
