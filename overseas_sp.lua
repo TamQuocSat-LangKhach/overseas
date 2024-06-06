@@ -1497,15 +1497,10 @@ local os__zhengrong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
       if event == fk.Damage then
-        local events = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e) 
-          return e.data[1].from == player  --local damage = e.data[1]
-        end, Player.HistoryPhase)
-        return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id
+        local _data = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end, Player.HistoryPhase)
+        return #_data > 0 and _data[1].data[1] == data
       else
-        if player:getMark("_os__zhengrong_card_able") > 0 then
-          player.room:setPlayerMark(player, "_os__zhengrong_card_able", 0)
-          return true
-        end
+        return (data.extra_data or {}).os__zhengrong_able
       end
     end
     return false
@@ -1519,33 +1514,31 @@ local os__zhengrong = fk.CreateTriggerSkill{
       Util.IdMapper
     )
     if #targets == 0 then return false end
-    local target = room:askForChoosePlayers(player, targets, 1, 1, "#os__zhengrong-ask", self.name)
-    if #target > 0 then
-      self.cost_data = target[1]
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#os__zhengrong-ask", self.name)
+    if #tos > 0 then
+      self.cost_data = tos[1]
       return true
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local target = room:getPlayerById(self.cost_data)
-    local card = room:askForCardChosen(player, target, "he", self.name)
+    local to = room:getPlayerById(self.cost_data)
+    local card = room:askForCardChosen(player, to, "he", self.name)
     player:addToPile("os__glory", card, false, self.name)
   end,
 
-  refresh_events = {fk.TargetSpecified},
+  refresh_events = {fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
-    if target ~= player then return false end
-    local playerId = player.id
-    return target == player and player.phase == Player.Play and data.firstTarget and #table.filter(AimGroup:getUndoneOrDoneTargets(data.tos), function(id)
-      return id ~= playerId end --?
-    ) > 0
+    return target == player and player:hasSkill(self, true) and player.phase == Player.Play
+    and table.find(TargetGroup:getRealTargets(data.tos), function(pid) return pid ~= player.id end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "_os__zhengrong_card_count", 1)
-    if player:getMark("_os__zhengrong_card_count") % 2 == 0 then
-      room:setPlayerMark(player, "_os__zhengrong_card_able", 1)
+    room:addPlayerMark(player, "_os__zhengrong_count")
+    if player:getMark("_os__zhengrong_count") % 2 == 0 then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.os__zhengrong_able = true
     end
   end,
 }
@@ -1567,43 +1560,11 @@ local os__hongju = fk.CreateTriggerSkill{
     local room = player.room
     if #player:getPile("os__glory") > 0 then
       player:drawCards(#player:getPile("os__glory"), self.name)
-      local cids = room:askForExchange(player, {player:getPile("os__glory"), player:getCardIds(Player.Hand)}, {"os__glory", "$Hand"}, self.name)
-      local cards1, cards2 = {}, {}
-      for _, id in ipairs(cids[1]) do
-        if room:getCardArea(id) == Player.Hand then
-          table.insert(cards1, id)
-        end
+      if not player.dead and #player:getPile("os__glory") > 0 and not player:isKongcheng() then
+        local cids = U.askForArrangeCards(player, self.name,
+        {player:getPile("os__glory"), player:getCardIds(Player.Hand), "os__glory", "$Hand"}, "#os__hongju-exchange", true)
+        U.swapCardsWithPile(player, cids[1], cids[2], self.name, "os__glory")
       end
-      for _, id in ipairs(cids[2]) do
-        if room:getCardArea(id) ~= Player.Hand then
-          table.insert(cards2, id)
-        end
-      end
-      room:moveCards( 
-        {
-        ids = cards2,
-          from = player.id,
-          to = player.id,
-          fromArea = Card.PlayerSpecial,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonExchange,
-          proposer = player.id,
-          skillName = self.name,
-          --moveVisible = true,
-        },
-        {
-        ids = cards1,
-          from = player.id,
-          to = player.id,
-          fromArea = Card.PlayerHand,
-          toArea = Card.PlayerSpecial,
-          moveReason = fk.ReasonExchange,
-          proposer = player.id,
-          specialName = "os__glory",
-          skillName = self.name,
-          --moveVisible = true,
-        }
-      )
     end
     room:handleAddLoseSkills(player, "os__qingce", nil)
     local choices = {"os__hongju_saotao", "Cancel"}
@@ -1620,6 +1581,7 @@ local os__qingce = fk.CreateActiveSkill{
   target_num = 1,
   card_num = 1,
   expand_pile = "os__glory",
+  prompt = "#os__qingce",
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isAllNude()
   end,
@@ -1659,6 +1621,8 @@ os__guanqiujian:addRelatedSkill(os__saotao)
 
 Fk:loadTranslationTable{
   ["os__guanqiujian"] = "毌丘俭",
+  ["#os__guanqiujian"] = "镌功铭征荣",
+  ["illustrator:os__guanqiujian"] = "猎枭", -- 平高句丽
   ["os__zhengrong"] = "征荣",
   [":os__zhengrong"] = "当你于你的出牌阶段对其他角色使用（此局游戏）累计偶数张牌结算结束后，或当你于出牌阶段第一次造成伤害后，你可选择一名其他角色，将其一张牌扣置于你的武将牌上，称为“荣”。",
   ["os__hongju"] = "鸿举",
@@ -1670,7 +1634,9 @@ Fk:loadTranslationTable{
 
   ["#os__zhengrong-ask"] = "征荣：你可选择一名其他角色，将其一张牌置于你的武将牌上",
   ["os__glory"] = "荣",
+  ["#os__hongju-exchange"] = "鸿举：可用任意张手牌替换等量的“荣”",
   ["os__hongju_saotao"] = "减1点体力上限，获得〖扫讨〗（锁定技，你使用的【杀】和普通锦囊牌不能被响应）",
+  ["#os__qingce"] = "可将一张“荣”置入弃牌堆，弃置其他角色区域内的一张牌",
 
   ["$os__zhengrong1"] = "此役兵戈所向，贼众望风披靡。",
   ["$os__zhengrong2"] = "世袭兵道，唯愿一扫蛮夷。",
