@@ -1393,7 +1393,10 @@ local os__mutao = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   card_num = 0,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+    if #selected == 0 then
+      local player = Fk:currentRoom():getPlayerById(to_select)
+      return not player:isKongcheng() and player:getNextAlive() ~= player
+    end
   end,
   target_num = 1,
   on_use = function(self, room, effect)
