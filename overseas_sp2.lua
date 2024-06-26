@@ -3920,6 +3920,7 @@ local os__zhiqu = fk.CreateTriggerSkill{
         end
         --local use = room:askForUseCard(player, card.name, ".|.|.|.|.|.|" .. id, "#os__zhiqu-use::" .. to.id .. ":" .. card.name, false, {bypass_distances = true, bypass_times = true})
       end
+      U.clearRemainCards(room, {id}, self.name)
     end
     room:setPlayerMark(player, MarkEnum.BypassTimesLimit, 0)
     room:setPlayerMark(player, MarkEnum.BypassDistancesLimit, 0)
@@ -4579,14 +4580,14 @@ local os__dingzhen = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return false end
     local num = player.hp
     return table.find(player.room.alive_players, function(p)
-      return p:distanceTo(player) <= num and not p:isRemoved()
+      return p:compareDistance(player, num, "<=")
     end)
   end,
   on_cost = function(self, event, target, player, data)
     local num = player.hp
     local available_targets = table.map(
       table.filter(player.room.alive_players, function(p)
-        return p:distanceTo(player) <= num and not p:isRemoved()
+        return p:compareDistance(player, num, "<=")
       end),
       Util.IdMapper
     )
@@ -5877,6 +5878,12 @@ Fk:loadTranslationTable{
   ["@os__baizu"] = "败族",
   ["#os__baizu-ask"] = "败族：选择 %arg 名其他角色，你和这些角色各弃置一张手牌",
   ["#os__baizu-discard"] = "败族：请弃置一张手牌",
+
+  ["$os__qiaosih1"] = "身居长位，犹处峭崖之巅。",
+  ["$os__qiaosih2"] = "为长而不得承嗣，岂有善终乎？",
+  ["$os__baizu1"] = "今袁氏之势，岂独因我？",
+  ["$os__baizu2"] = "长幼之序不明，何惜操戈以正！",
+  ["~yuantan"] = "咄，儿过我，必使富贵……呃啊！",
 }
 
 local zhugejun = General(extension, "zhugejun", "qun", 3)
@@ -5898,7 +5905,7 @@ local shouzhu = fk.CreateTriggerSkill{
         return true
       end
     else
-      local cards = room:askForCard(room:getPlayerById(player:getMark("_os__shouzhu")), 1, 3, true, self.name, true, nil, "#os__shouzhu-give:" .. player.id)
+      local cards = room:askForCard(room:getPlayerById(player:getMark("_os__shouzhu")), 1, 4, true, self.name, true, nil, "#os__shouzhu-give:" .. player.id)
       if #cards > 0 then
         self.cost_data = cards
         return true
@@ -6022,9 +6029,14 @@ local cairu = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    local record = U.getMark(player, "@$os__cairu-turn")
-    table.insert(record, use.card.name)
-    player.room:setPlayerMark(player, "@$os__cairu-turn", record)
+    local name = use.card.name
+    local record = U.getMark(player, "_os__cairu-turn")
+    record[name] = (record[name] or 0) + 1
+    if record[name] >= 2 then
+      record = U.getMark(player, "@$os__cairu-turn")
+      table.insert(record, name)
+      player.room:setPlayerMark(player, "@$os__cairu-turn", record)
+    end
   end,
   enabled_at_play = function(self, player)
     local all_names = {"fire_attack", "iron_chain", "ex_nihilo"}
@@ -6047,21 +6059,21 @@ Fk:loadTranslationTable{
   ["#zhugejun"] = "",
 
   ["os__shouzhu"] = "受嘱",
-  [":os__shouzhu"] = "出牌阶段开始时，你的同心角色可至多交给你三张牌，若X不小于2，则其摸一张牌，然后执行同心：观看牌堆顶X张牌，然后将其中任意张牌置于牌堆底，将其余牌置入弃牌堆。（X为你本次以此法获得牌的数量）" ..
+  [":os__shouzhu"] = "出牌阶段开始时，你的同心角色可至多交给你四张牌，若X不小于2，则其摸一张牌，然后执行同心：观看牌堆顶X张牌，然后将其中任意张牌置于牌堆底，将其余牌置入弃牌堆。（X为你本次以此法获得牌的数量）" ..
     "<br/><font color='grey'>#\"<b>同心</b>\"：回合开始时，你可选择一名其他角色为你的同心角色，直到你的下个回合开始；执行同心效果时，你先执行，然后你的同心角色执行。",
   ["os__daigui"] = "待归",
   [":os__daigui"] = "出牌阶段结束时，若你手牌的颜色均相同，你可选择至多X名角色，然后亮出牌堆底等同这些角色数的牌，这些角色依次获得其中的一张（X为你的手牌数）。",
   ["os__cairu"] = "才濡",
-  [":os__cairu"] = "你可将两张颜色不同的牌当作【火攻】、【铁索连环】、【无中生有】使用。（每回合每种牌名限一次）",
+  [":os__cairu"] = "你可将两张颜色不同的牌当作【火攻】、【铁索连环】、【无中生有】使用。（每回合每种牌名限两次）",
 
   ["#os__shouzhu-ask"] = "你可选择一名其他角色成为你的 受嘱 同心角色",
   ["@os__shouzhu"] = "受嘱同心",
-  ["#os__shouzhu-give"] = "受嘱：你可交给 %src 至多三张牌，若不少于两张，你摸一张牌，然后与其一起执行同心",
+  ["#os__shouzhu-give"] = "受嘱：你可交给 %src 至多四张牌，若不少于两张，你摸一张牌，然后与其一起执行同心",
   ["#os__shouzhu"] = "受嘱：将任意张牌置于牌堆底，将其余牌置入弃牌堆",
   ["#os__daigui-choose"] = "你可发动 待归，选择至多 %arg 名角色",
   ["#os__daigui-card"] = "待归：选择一张牌获得",
-  ["@$os__cairu-turn"] = "才濡",
-  ["#os__cairu-active"] = "才濡：你可将两张颜色不同的牌当作【火攻】、【铁索连环】、【无中生有】使用（每回合每种牌名限一次）",
+  ["@$os__cairu-turn"] = "才濡 已使用",
+  ["#os__cairu-active"] = "发动 才濡，你可将两张颜色不同的牌当作【火攻】、【铁索连环】、【无中生有】使用（每回合每种牌名限两次）",
 }
 
 return extension

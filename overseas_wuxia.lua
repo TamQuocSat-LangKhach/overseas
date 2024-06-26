@@ -1689,7 +1689,7 @@ Fk:loadTranslationTable{
   ["#yuzhenzi"] = "神功天授",
 
   ["os__huajing"] = "化境",
-  [":os__huajing"] = "①游戏开始时，你获得6个（未生效的）“武”标记。②出牌阶段限一次，你可展示至多四张手牌，随机获得其中花色数个“武”的效果直到回合结束。③若一名角色有“武”且有对应的效果，其装备区里武器牌的技能失效，攻击范围+X（X为其有效的“武”数）。<br/ ><font color='grey'>" ..
+  [":os__huajing"] = "①游戏开始时，你获得6个（未生效的）“武”标记。②有“武”的角色攻击范围+X（X为其有的“武”数）。②出牌阶段限一次，你可展示至多四张手牌，随机获得其中花色数个“武”的效果直到回合结束。③若一名角色有“武”且有对应的效果，其装备区里武器牌的技能失效。<br/ ><font color='grey'>" ..
     "<b>6个“武”</b>分别为：<br /><b>剑</b>：你使用【杀】指定目标后，随机弃置其两张手牌<br/ >" ..
     "<b>刀</b>：你使用【杀】对目标角色造成伤害时，若其没有手牌，此伤害+1<br/ >" ..
     "<b>斧</b>：你使用【杀】被【闪】抵消时，对目标角色造成1点伤害<br/ >" ..
@@ -1697,7 +1697,7 @@ Fk:loadTranslationTable{
     "<b>戟</b>：你使用【杀】造成伤害时，摸一张牌<br/ >" ..
     "<b>弓</b>：你使用【杀】对一名角色造成伤害后，随机弃置其装备区里的一张牌",
   ["os__tianshou"] = "天授",
-  [":os__tianshou"] = "锁定技，回合结束时，若你此回合使用【杀】造成过伤害，你须选择1个“武”交给一名其他角色并令其获得对应效果，然后摸两张牌。其下回合结束后移除此“武”。",
+  [":os__tianshou"] = "锁定技，回合结束时，若你此回合使用【杀】造成过伤害，你须选择1个生效的“武”交给一名其他角色并令其获得对应效果，然后摸两张牌。其下回合结束后移除此“武”。",
 
   ["$os__huajing1"] = "瞬息之间，已蕴森罗万象之法！",
   ["$os__huajing2"] = "万般兵器，皆由吾心所化！",
@@ -1858,15 +1858,169 @@ Fk:loadTranslationTable{
   ["~shitao"] = "想不到竟中了官府的埋伏……",
 }
 
--- local shie = General(extension, "shie", "wei", 4)
+local shie = General(extension, "shie", "wei", 4)
+local os__dengjian = fk.CreateTriggerSkill{
+  name = "os__dengjian",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function (self, event, target, player, data)
+    if not (target.phase == Player.Discard and player:hasSkill(self) and player ~= target) then return end
+    local cards = {}
+    local record = U.getMark(player, "_os__dengjian-round")
+    player.room.logic:getActualDamageEvents(1, function (e)
+      local damage = e.data[1]
+      if damage.from == target and damage.card then
+        local c = damage.card
+        if c.trueName == "slash" and not table.contains(record, c.color) then
+          table.insertIfNeed(cards, c.id)
+        end
+      end
+      return false
+    end)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local cards = self.cost_data
+    local card = table.random(cards) ---@type integer
+    room:obtainCard(player, card, true, fk.ReasonPrey, player.id, self.name, "@@os__fencing-inhand")
+    local record = U.getMark(player, "_os__dengjian-round")
+    table.insert(record, Fk:getCardById(card, true).color)
+    room:setPlayerMark(player, "_os__dengjian-round", record)
+  end
+}
+local os__dengjian_buff = fk.CreateTargetModSkill{
+  name = "#os__dengjian_buff",
+  bypass_times = function (self, player, skill, scope, card, to)
+    return card:getMark("@@os__fencing-inhand") > 0
+  end
+}
+os__dengjian:addRelatedSkill(os__dengjian_buff)
+
+local os__xinshou = fk.CreateTriggerSkill{
+  name = "os__xinshou",
+  anim_type = "support",
+  events = {fk.CardUsing},
+  can_trigger = function (self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self) or data.card.trueName ~= "slash" then return end
+    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    if #record == 2 then
+      return player:hasSkill("os__dengjian")
+    elseif player.phase == Player.Play then
+      if #record == 1 and record[1] == "draw1" and player:isNude() then return end
+      local room = player.room
+      local current_event_id = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true).id
+      local use
+      if #room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        use = e.data[1]
+        if use.from == player.id and use.card.trueName == "slash" then
+          return data.card:compareColorWith(use.card) and e.id ~= current_event_id
+        end
+        return false
+      end, Player.HistoryTurn) == 0 then
+        return true
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    if #record == 2 then
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__xinshou-invoke2", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    else
+      local all_choices = {"draw1", "os__xinshou_give", "Cancel"}
+      local choices = table.clone(all_choices)
+      table.forEach(record, function(c) table.removeOne(choices, c) end)
+      if player:isNude() then table.removeOne(choices, "os__xinshou_give") end
+      local choice = player.room:askForChoice(player, choices, self.name, "#os__xinshou-invoke1", false, all_choices)
+      if choice ~= "Cancel" then
+        self.cost_data = choice
+        return true
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    if #record == 2 then
+      local to = room:getPlayerById(self.cost_data)
+      room:setPlayerMark(player, "_os__xinshou_target", to.id)
+      room:setPlayerMark(player, "@os__xinshou_target", to.general)
+      room:setPlayerMark(player, "_os__xinshou_invalid", 1) -- 控制使用【杀】造成伤害的条件
+      room:handleAddLoseSkills(to, "os__dengjian", nil)
+    else
+      local choice = self.cost_data
+      table.insert(record, choice)
+      room:setPlayerMark(player, "_os__xinshou_choice-turn", record)
+      if choice == "draw1" then
+        room:drawCards(player, 1)
+      else
+        local plist, card = room:askForChooseCardAndPlayers(target, table.map(room:getOtherPlayers(target), Util.IdMapper), 1, 1, nil, "#os__xinshou-give", self.name, false)
+        room:moveCardTo(card, Player.Hand, room:getPlayerById(plist[1]), fk.ReasonGive, self.name, nil, false)
+      end
+    end
+  end,
+
+  refresh_events = {fk.Damage},
+  can_refresh = function (self, event, target, player, data)
+    return target:hasSkill("os__dengjian") and player:getMark("_os__xinshou_target") == target.id and data.card and data.card.trueName == "slash"
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "_os__xinshou_invalid", 0)
+  end
+}
+
+local os__xinshou_detach = fk.CreateTriggerSkill{
+  name = "#os__xinshou_detach",
+  mute = true,
+  events = {fk.TurnStart},
+  can_trigger = function (self, event, target, player, data)
+    return player == target and player:getMark("_os__xinshou_target") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(player:getMark("_os__xinshou_target"))
+    room:setPlayerMark(player, "_os__xinshou_target", 0)
+    room:setPlayerMark(player, "@os__xinshou_target", 0)
+    room:handleAddLoseSkills(to, "-os__dengjian", nil)
+  end
+}
+local os__xinshou_invalidity = fk.CreateInvaliditySkill {
+  name = "#os__xinshou_invalidity",
+  invalidity_func = function(self, from, skill)
+    return (from:getMark("_os__xinshou_target") ~= 0 or from:getMark("_os__xinshou_invalid") > 0) and skill:isPlayerSkill(from) and skill.name == "os__dengjian"
+  end
+}
+os__xinshou:addRelatedSkill(os__xinshou_detach)
+os__xinshou:addRelatedSkill(os__xinshou_invalidity)
+
+shie:addSkill(os__dengjian)
+shie:addSkill(os__xinshou)
+
 Fk:loadTranslationTable{
   ["shie"] = "史阿",
   ["#shie"] = "剑术登峰",
 
   ["os__dengjian"] = "登剑",
-  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆获得一张其本回合使用造成过伤害的【杀】（每轮每种颜色限一次），此【杀】不计入次数限制。",
+  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：不计入次数限制）。",
   ["os__xinshou"] = "心授",
-  [":os__xinshou"] = "当你于出牌阶段内使用【杀】时，若此【杀】颜色与你本回合使用过的【杀】颜色均不同，你可选择一项本回合未执行过的效果：1.摸一张牌；2.交给一名其他角色一张牌。当你使用【杀】时，若你本回合执行过〖心授〗的所有效果，你可以令〖登剑〗失效并选择一名其他角色，其视为拥有〖登剑〗直到你的下回合开始。若其拥有〖登剑〗时使用【杀】造成过伤害，则你的下回合开始时，你的〖登剑〗生效。",
+  [":os__xinshou"] = "当你于出牌阶段内使用【杀】时，若此【杀】颜色与你本回合使用过的【杀】颜色均不同，你可选择一项本回合未执行过的效果：1.摸一张牌；2.交给一名其他角色一张牌。" ..
+    "当你使用【杀】时，若你本回合执行过〖心授〗的所有效果，你可令〖登剑〗失效并选择一名其他角色，其视为拥有〖登剑〗直到你的下回合开始。若其拥有〖登剑〗时使用【杀】造成过伤害，则你的下回合开始时，你的〖登剑〗生效。",
+
+  ["@@os__fencing-inhand"] = "剑法",
+  ["#os__xinshou-invoke1"] = "你可发动〖心授〗，选择一项本回合未执行过的效果",
+  ["#os__xinshou-invoke2"] = "你可发动〖心授〗，令〖登剑〗失效并选择一名其他角色，其视为拥有〖登剑〗直到你的下回合开始",
+  ["os__xinshou_give"] = "交给一名其他角色一张牌",
+  ["#os__xinshou-give"] = "心授：交给一名其他角色一张牌",
+  ["#os__xinshou_detach"] = "心授",
+  ["@os__xinshou_target"] = "心授",
 
   ["$os__dengjian1"] = "百家剑法之长，皆凝于此剑！",
   ["$os__dengjian2"] = "君剑法超群，观之似有所得！",
