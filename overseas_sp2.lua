@@ -214,7 +214,7 @@ local os__shelie = fk.CreateTriggerSkill{
         table.insert(get, id)
       end
     end
-    get = U.askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
+    get = room:askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
     if #get > 0 then
       room:moveCardTo(get, Player.Hand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     end
@@ -387,7 +387,7 @@ local gundam__shelie = fk.CreateTriggerSkill{
         table.insert(get, id)
       end
     end
-    get = U.askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
+    get = room:askForArrangeCards(player, self.name, cards, "#shelie-choose", false, 0, {5, 4}, {0, #get}, ".", "shelie", {{}, get})[2]
     if #get > 0 then
       room:moveCardTo(get, Player.Hand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     end
@@ -5929,7 +5929,7 @@ local shouzhu = fk.CreateTriggerSkill{
         end
         for _, p in ipairs{player, companion} do
           if not p.dead then
-            local ret = U.askForArrangeCards(p, self.name, {room:getNCards(num), "Bottom", "pile_discard"}, "#os__shouzhu", true, 0, {num, num}, {0, 0})
+            local ret = room:askForArrangeCards(p, self.name, {room:getNCards(num), "Bottom", "pile_discard"}, "#os__shouzhu", true, 0, {num, num}, {0, 0})
             local discard, bottom = ret[2], ret[1]
             room:moveCardTo(discard, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, p.id)
             for i = 1, #bottom, 1 do
