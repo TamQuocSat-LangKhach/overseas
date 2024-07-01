@@ -1564,7 +1564,7 @@ local os__hongju = fk.CreateTriggerSkill{
     if #player:getPile("os__glory") > 0 then
       player:drawCards(#player:getPile("os__glory"), self.name)
       if not player.dead and #player:getPile("os__glory") > 0 and not player:isKongcheng() then
-        local cids = U.askForArrangeCards(player, self.name,
+        local cids = room:askForArrangeCards(player, self.name,
         {player:getPile("os__glory"), player:getCardIds(Player.Hand), "os__glory", "$Hand"}, "#os__hongju-exchange", true)
         U.swapCardsWithPile(player, cids[1], cids[2], self.name, "os__glory")
       end
@@ -1611,8 +1611,8 @@ local os__saotao = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
-    for _, target in ipairs(player.room.alive_players) do
-      table.insertIfNeed(data.disresponsiveList, target.id)
+    for _, p in ipairs(player.room.alive_players) do
+      table.insertIfNeed(data.disresponsiveList, p.id)
     end
   end,
 }

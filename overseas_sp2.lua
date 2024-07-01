@@ -6032,6 +6032,7 @@ local cairu = fk.CreateViewAsSkill{
     local name = use.card.name
     local record = U.getMark(player, "_os__cairu-turn")
     record[name] = (record[name] or 0) + 1
+    player.room:setPlayerMark(player, "_os__cairu-turn", record)
     if record[name] >= 2 then
       record = U.getMark(player, "@$os__cairu-turn")
       table.insert(record, name)
@@ -6070,10 +6071,10 @@ Fk:loadTranslationTable{
   ["@os__shouzhu"] = "受嘱同心",
   ["#os__shouzhu-give"] = "受嘱：你可交给 %src 至多四张牌，若不少于两张，你摸一张牌，然后与其一起执行同心",
   ["#os__shouzhu"] = "受嘱：将任意张牌置于牌堆底，将其余牌置入弃牌堆",
-  ["#os__daigui-choose"] = "你可发动 待归，选择至多 %arg 名角色",
+  ["#os__daigui-choose"] = "待归：选择至多 %arg 名角色，亮出牌堆底等量张牌，各获得一张",
   ["#os__daigui-card"] = "待归：选择一张牌获得",
   ["@$os__cairu-turn"] = "才濡 已使用",
-  ["#os__cairu-active"] = "发动 才濡，你可将两张颜色不同的牌当作【火攻】、【铁索连环】、【无中生有】使用（每回合每种牌名限两次）",
+  ["#os__cairu-active"] = "才濡：将两张颜色不同的牌当【火攻】/【铁索连环】/【无中生有】使用（每回合每牌名限两次）",
 }
 
 return extension
