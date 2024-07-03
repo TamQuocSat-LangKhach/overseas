@@ -1610,7 +1610,6 @@ local os__zhongyi = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self) and data.card.trueName == "slash" and data.damageDealt
   end,
@@ -1871,8 +1870,8 @@ local os__dengjian = fk.CreateTriggerSkill{
       local damage = e.data[1]
       if damage.from == target and damage.card then
         local c = damage.card
-        if c.trueName == "slash" and not table.contains(record, c.color) then
-          table.insertIfNeed(cards, c.id)
+        if c.trueName == "slash" and not table.contains(record, c.color) and player.room:getCardArea(c) == Card.DiscardPile then
+          table.insertTableIfNeed(cards, Card:getIdList(c))
         end
       end
       return false
