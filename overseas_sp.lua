@@ -4104,25 +4104,6 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       room:askForDiscard(target, 1, 1, true, self.name, false, nil, "#os__kujian-discard")
     end
   end,
-  
-  --[[
-    refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.toArea ~= Card.Processing and move.toArea ~= Card.PlayerHand then
-        for _, info in ipairs(move.moveInfo) do
-          if Fk:getCardById(info.cardId):getMark("@@os__kujian") > 0 then
-            room:setCardMark(Fk:getCardById(info.cardId), "@@os__kujian", 0)
-          end
-        end
-      end
-    end
-  end,
-  --]]
 }
 os__kujian:addRelatedSkill(os__kujian_judge)
 
