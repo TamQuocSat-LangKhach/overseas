@@ -42,7 +42,7 @@ local os__longjin = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function (self, event, target, player, data)
-    return player.hp < 2
+    return player.hp < 1
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
@@ -107,17 +107,17 @@ local os__kuiduan = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function (self, event, target, player, data)
-    if not (player:hasSkill(self) and player == target and player:getHandcardNum() > 0 and data.card.trueName == "slash" and #TargetGroup:getRealTargets(data.tos) > 0) then return end
-    local to = player.room:getPlayerById(data.to)
-    return U.isOnlyTarget(to, data, event) and to:getHandcardNum() > 0
+    return player:hasSkill(self) and player == target and data.card.trueName == "slash"
+      and #TargetGroup:getRealTargets(data.tos) > 0 and U.isOnlyTarget(player.room:getPlayerById(data.to), data, event)
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(data.to)
     for _, p in ipairs{player, to} do
       local cards = table.filter(p:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@os__kuiduan_rout-inhand") == 0 end)
+      cards = table.random(cards, math.min(2, #cards)) ---@type integer[]
       if #cards > 0 then
-        room:addCardMark(Fk:getCardById(table.random(cards)), "@@os__kuiduan_rout-inhand")
+        table.forEach(cards, function(id) room:addCardMark(Fk:getCardById(id), "@@os__kuiduan_rout-inhand") end)
       end
     end
   end
@@ -174,7 +174,7 @@ os__kuiduan:addRelatedSkill(os__kuiduan_slash)
 Fk:loadTranslationTable{
   ["os_if__zhanghe"] = "幻张郃",
   ["os__kuiduan"] = "溃端",
-  [":os__kuiduan"] = "锁定技，当你使用【杀】指定唯一目标后，你与其各将随机一张手牌标记为“溃端”牌（只能当【杀】使用或打出）。当“溃端”牌造成伤害时，若伤害来源拥有的“溃端”牌数大于受到伤害的角色，则此伤害+1。<font color='grey'>“溃端”牌暂实现为锁定视为技</font>",
+  [":os__kuiduan"] = "锁定技，当你使用【杀】指定唯一目标后，你与其各将随机两张手牌标记为“溃端”牌（只能当【杀】使用或打出）。当“溃端”牌造成伤害时，若伤害来源拥有的“溃端”牌数大于受到伤害的角色，则此伤害+1。<font color='grey'>“溃端”牌暂实现为锁定视为技</font>",
 
   ["@@os__kuiduan_rout-inhand"] = "溃端",
   ["#os__kuiduan_dmg"] = "溃端",
