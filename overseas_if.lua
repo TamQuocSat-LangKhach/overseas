@@ -38,6 +38,9 @@ local os__longjin = fk.CreateTriggerSkill{
   name = "os__longjin",
   frequency = Skill.Wake,
   events = {fk.EnterDying},
+  can_trigger = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
   can_wake = function (self, event, target, player, data)
     return player.hp < 2
   end,
