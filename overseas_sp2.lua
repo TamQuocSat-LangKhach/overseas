@@ -5338,6 +5338,8 @@ local lijians = fk.CreateTriggerSkill{
     if #cards > 1 then
       cids, choice = U.askforChooseCardsAndChoice(player, cards, {"os__lijians_get", "os__lijians_back"}, self.name,
       "#os__lijian-cards::" .. target.id, {"os__lijians_all_get", "os__lijians_all_back"}, 0, #cards)
+    else
+      choice = U.askforViewCardsAndChoice(player, cards, {"os__lijians_all_get", "os__lijians_all_back"}, self.name, "#os__lijian-card::" .. target.id)
     end
     if choice == "os__lijians_all_get" then
       to_get = cards
@@ -5456,9 +5458,10 @@ Fk:loadTranslationTable{
   ["#os__lijians-invoke"] = "力谏：你可获得任意张此阶段因弃置而移至弃牌堆里的牌，然后将其余牌交给 %dest",
   ["@os__lijians"] = "力谏",
   ["#os__lijian-cards"] = "力谏：你可获得任意张此阶段因弃置而移至弃牌堆里的牌，将其余牌交给%dest",
+  ["#os__lijian-card"] = "力谏：你可获得此牌或交给 %dest",
   ["os__lijians_get"] = "获得选中牌，其余交还",
   ["os__lijians_back"] = "交还选中牌，其余获得",
-  ["os__lijians_all_get"] = "获得所有牌", 
+  ["os__lijians_all_get"] = "获得所有牌",
   ["os__lijians_all_back"] = "交还所有牌",
   ["#os__chungang-discard"] = "受到 %src “纯刚” 的影响，请弃置一张牌",
 

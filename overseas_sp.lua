@@ -1470,7 +1470,7 @@ Fk:loadTranslationTable{
   ["baoxin"] = "鲍信",
   ["#baoxin"] = "坚朴的忠相",
   ["illustrator:baoxin"] = "凡果",
-  ["designer:baoxin"] = "Loun老萌",
+  ["designer:baoxin"] = "jcj熊",
 
   ["os__mutao"] = "募讨",
   [":os__mutao"] = "出牌阶段限一次，你可选择一名角色，令其将手牌中的（系统选择）每一张【杀】依次交给由其下家开始的除其以外的角色，然后其对最后一名角色造成X点伤害（X为最后一名角色手牌中【杀】的数量且至多为3）。",
