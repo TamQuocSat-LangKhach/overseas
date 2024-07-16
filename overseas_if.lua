@@ -8,11 +8,466 @@ Fk:loadTranslationTable{
   ["os_if"] = "国际幻",
 }
 
--- local zhugeliang = General(extension, "os_if__zhugeliang", "shu", 3)
-
+local ifzhugeliang = General(extension, "os_if__zhugeliang", "shu", 3, 4)
+local ifzhugeliangwin = fk.CreateActiveSkill{ name = "os_if__zhugeliang_win_audio" }
+ifzhugeliangwin.package = extension
+Fk:addSkill(ifzhugeliangwin)
 Fk:loadTranslationTable{
   ["os_if__zhugeliang"] = "幻诸葛亮",
+  ["#os_if__zhugeliang"] = "天意可叹",
+  ["$os_if__zhugeliang_win_audio"] = "卧龙腾于九天，炎汉之火长明。",
+  ["~os_if__zhugeliang"] = "先帝遗志未竟，吾怎可终于半途。",
 }
+
+local osBeiding = fk.CreateTriggerSkill{
+  name = "os__beiding",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function (self, event, target, player, data)
+    return target.phase == Player.Start and player:hasSkill(self) and player.hp > 0
+  end,
+  on_cost = function (self, event, target, player, data)
+    local cardNames = U.getAllCardNames("bt")
+    cardNames = table.filter(
+      cardNames,
+      function(name) return not table.contains(U.getMark(player, "@$os__beiding_names"), name) end
+    )
+
+    local realNameMapper = {}
+    for _, cardName in ipairs(cardNames) do
+      local realNames = table.filter(cardNames, function(name) return name:endsWith("__" .. cardName) end)
+      if #realNames > 0 then
+        realNameMapper[cardName] = realNames
+      end
+    end
+    cardNames = table.filter(cardNames, function(name) return #name:split("__") == 1 end)
+
+    if #cardNames == 0 then
+      return false
+    end
+
+    local room = player.room
+    local namesChosen = room:askForChoices(player, cardNames, 1, player.hp, self.name, "#os__beiding-choose:::" .. player.hp)
+    if #namesChosen == 0 then
+      return false
+    end
+
+    for _, cardName in ipairs(namesChosen) do
+      local realNames = realNameMapper[cardName]
+      if realNames then
+        table.insert(realNames, 1, cardName)
+        local name = room:askForChoice(player, realNames, self.name, "#os__beiding-replace:::" .. cardName)
+        local index = table.indexOf(namesChosen, cardName)
+        table.remove(namesChosen, index)
+        table.insert(namesChosen, index, name)
+      end
+    end
+
+    self.cost_data = namesChosen
+    return true
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local namesChosen = self.cost_data
+
+    local namesChosenThisTurn = U.getMark(player, "os__beiding_names-turn")
+    table.insert(namesChosenThisTurn, namesChosen)
+    room:setPlayerMark(player, "os__beiding_names-turn", namesChosen)
+
+    namesChosen = table.map(namesChosen, function(name)
+      local realName = name:split("__")
+      return realName[#realName]
+    end)
+    local beidingNames = U.getMark(player, "@$os__beiding_names")
+    table.insertTable(beidingNames, namesChosen)
+    room:setPlayerMark(player, "@$os__beiding_names", beidingNames)
+
+    if player:hasSkill("os_huan__beiding", true) then
+      for _, id in ipairs(player:getCardIds("h")) do
+        local card = Fk:getCardById(id)
+        if table.contains(beidingNames, card.trueName) and card:getMark("@@os__beiding_card-inhand") ~= 1 then
+          room:setCardMark(card, "@@os__beiding_card-inhand", 1)
+        end
+      end
+    end
+  end
+}
+local osBeidingUse = fk.CreateTriggerSkill{
+  name = "#os__beiding_use",
+  anim_type = "offensive",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function (self, event, target, player, data)
+    return target.phase == Player.Discard and player:getMark("os__beiding_names-turn") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local namesChosenThisTurn = U.getMark(player, "os__beiding_names-turn")
+    for _, name in ipairs(namesChosenThisTurn) do
+      if not player:isAlive() then
+        break
+      end
+
+      local use = U.askForUseVirtualCard(room, player, name, nil, self.name, "#os__beiding-use:::" .. name, false, true, true)
+      if use and not table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+        target:drawCards(1, self.name)
+      end
+    end
+  end
+}
+Fk:loadTranslationTable{
+  ["os__beiding"] = "北定",
+  [":os__beiding"] = "一名角色的准备阶段开始时，你可以声明并记录至多X种未被“北定”记录过的基本牌或普通锦囊牌牌名。" .. 
+  "若如此做，此回合的弃牌阶段结束时，你视为依次使用本回合记录的牌（无距离限制），若此牌的目标不包含当前回合角色，" ..
+  "其摸一张牌（X为你的体力值）。",
+  ["#os__beiding_use"] = "北定",
+  ["@$os__beiding_names"] = "北定",
+  ["#os__beiding-choose"] = "北定：请选择至多%arg种牌名记录，你于此回合弃牌阶段结束时按顺序依次使用",
+  ["#os__beiding-replace"] = "北定：请为牌名【%arg】替换具体牌名",
+  ["#os__beiding-use"] = "北定：请视为使用【%arg】",
+
+  ["$os__beiding1"] = "众将同心扶汉，北伐或可功成。",
+  ["$os__beiding2"] = "虽失天时地利，亦有三分胜机！",
+}
+
+osBeiding:addRelatedSkill(osBeidingUse)
+ifzhugeliang:addSkill(osBeiding)
+
+local osJielv = fk.CreateTriggerSkill{
+  name = "os__jielv",
+  anim_type = "support",
+  events = {fk.TurnEnd, fk.Damaged, fk.HpLost},
+  frequency = Skill.Compulsory,
+  can_trigger = function (self, event, target, player, data)
+    if not player:hasSkill(self) then
+      return false
+    end
+
+    if event == fk.TurnEnd then
+      return
+        #player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local use = e.data[1]
+          return use.from == player.id and table.contains(TargetGroup:getRealTargets(use.tos), target.id)
+        end, Player.HistoryTurn) == 0
+    end
+
+    return target == player and player.maxHp < 7
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnEnd then
+      room:loseHp(player, 1, self.name)
+    else
+      room:changeMaxHp(player, math.min(event == fk.Damaged and data.damage or data.num, 7 - player.maxHp))
+    end
+  end
+}
+Fk:loadTranslationTable{
+  ["os__jielv"] = "竭虑",
+  [":os__jielv"] = "锁定技，一名角色的回合结束时，若你于本回合内未对其使用过牌，则你失去1点体力；当你受到1点伤害或失去1点体力后，" ..
+  "若你的体力上限小于7，则你加1点体力上限。",
+
+  ["$os__jielv1"] = "竭一国之材，尽万人之力！",
+  ["$os__jielv2"] = "穷力尽心，亮定以血补天！",
+}
+
+ifzhugeliang:addSkill(osJielv)
+
+local osHunyou = fk.CreateTriggerSkill{
+  name = "os__hunyou",
+  anim_type = "defensive",
+  events = {fk.AskForPeaches},
+  frequency = Skill.Limited,
+  can_trigger = function (self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      player.hp < 1 and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if player.hp < 1 then
+      room:recover{
+        who = player,
+        num = 1 - player.hp,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+
+    room:setPlayerMark(player, "@@os__hunyou_prevent-turn", 1)
+  end
+}
+local osHunyouBuff = fk.CreateTriggerSkill{
+  name = "#os__hunyou_buff",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted, fk.PreHpLost, fk.TurnEnd},
+  can_trigger = function (self, event, target, player, data)
+    return player:getMark("@@os__hunyou_prevent-turn") > 0 and (event == fk.TurnEnd or target == player)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnEnd then
+      room:changeHero(
+        player,
+        "os_if_huan__zhugeliang",
+        false,
+        player.deputyGeneral == "os_if__zhugeliang",
+        false,
+        false
+      )
+      player:gainAnExtraTurn(true)
+    else
+      return true
+    end
+  end
+}
+Fk:loadTranslationTable{
+  ["os__hunyou"] = "魂游",
+  [":os__hunyou"] = "限定技，当你处于濒死状态时，你可以将体力回复至1点，本回合防止你受到的伤害和体力流失。" ..
+  "此回合结束时，你入幻并获得一个额外的回合。",
+  ["#os__hunyou_buff"] = "魂游",
+  ["@@os__hunyou_prevent-turn"] = "魂游",
+
+  ["$os__hunyou1"] = "扶汉兴刘，夙夜沥血，忽入草堂梦中。",
+  ["$os__hunyou2"] = "一整河山，以明己志，昔日言犹记否？",
+}
+
+osHunyou:addRelatedSkill(osHunyouBuff)
+ifzhugeliang:addSkill(osHunyou)
+
+local huanzhugeliang = General(extension, "os_if_huan__zhugeliang", "shu", 3, 4)
+huanzhugeliang.hidden = true
+local huanzhugeliangwin = fk.CreateActiveSkill{ name = "os_if_huan__zhugeliang_win_audio" }
+huanzhugeliangwin.package = extension
+Fk:addSkill(huanzhugeliangwin)
+Fk:loadTranslationTable{
+  ["os_if_huan"] = "入幻",
+  ["os_if_huan__zhugeliang"] = "幻诸葛亮",
+  ["#os_if_huan__zhugeliang"] = "天意可叹",
+  ["$os_if_huan__zhugeliang_win_audio"] = "卧龙腾于九天，炎汉之火长明。",
+  ["~os_if_huan__zhugeliang"] = "一人之愿，终难逆天命……",
+}
+
+local osHuanBeiding = fk.CreateTriggerSkill{
+  name = "os_huan__beiding",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function (self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      table.contains(U.getMark(player, "@$os__beiding_names"), data.card.trueName)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(1, self.name)
+    local beidingNames = U.getMark(player, "@$os__beiding_names")
+    table.removeOne(beidingNames, data.card.trueName)
+    if #beidingNames == 0 then
+      beidingNames = 0
+    end
+
+    local room = player.room
+    room:setPlayerMark(player, "@$os__beiding_names", beidingNames)
+    for _, id in ipairs(player:getCardIds("h")) do
+      local card = Fk:getCardById(id)
+      if card.trueName == data.card.trueName and card:getMark("@@os__beiding_card-inhand") == 1 then
+        room:setCardMark(card, "@@os__beiding_card-inhand", 0)
+      end
+    end
+  end,
+
+  refresh_events = {fk.PreCardUse, fk.AfterCardsMove, fk.EventAcquireSkill, fk.EventLoseSkill},
+  can_refresh = function (self, event, target, player, data)
+    if event == fk.PreCardUse then
+      return
+        target == player and
+        player:hasSkill(self) and
+        table.contains(U.getMark(player, "@$os__beiding_names"), data.card.trueName)
+    elseif event == fk.AfterCardsMove then
+      return table.find(data, function(move)
+        if move.to == player.id and move.toArea == Card.PlayerHand then
+          return
+            table.find(
+              move.moveInfo,
+              function(moveInfo)
+                return table.contains(U.getMark(player, "@$os__beiding_names"), Fk:getCardById(moveInfo.cardId).trueName)
+              end
+            )
+        end
+      end)
+    end
+
+    return target == player and data == self
+  end,
+  on_refresh = function (self, event, target, player, data)
+    if event == fk.PreCardUse then
+      data.extraUse = true
+    elseif event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand then
+          for _, moveInfo in ipairs(move.moveInfo) do
+            local card = Fk:getCardById(moveInfo.cardId)
+            if table.contains(U.getMark(player, "@$os__beiding_names"), card.trueName) then
+              player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
+            end
+          end
+        end
+      end
+    elseif event == fk.EventAcquireSkill then
+      for _, id in ipairs(player:getCardIds("h")) do
+        local card = Fk:getCardById(id)
+        if table.contains(U.getMark(player, "@$os__beiding_names"), card.trueName) then
+          player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
+        end
+      end
+    else
+      for _, id in ipairs(player:getCardIds("h")) do
+        local card = Fk:getCardById(id)
+        if card:getMark("@@os__beiding_card-inhand") ~= 0 then
+          player.room:setCardMark(card, "@@os__beiding_card-inhand", 0)
+        end
+      end
+    end
+  end,
+}
+local osHuanBeidingBuff = fk.CreateTargetModSkill{
+  name = "#os_huan__beiding_buff",
+  bypass_distances =  function(self, player, skill, card, to)
+    return player:hasSkill(osHuanBeiding) and card:getMark("@@os__beiding_card-inhand") == 1
+  end,
+}
+Fk:loadTranslationTable{
+  ["os_huan__beiding"] = "北定",
+  [":os_huan__beiding"] = "你使用“北定”记录的牌无距离限制且不计入次数；当你使用“北定”记录牌名的牌结算结束后，" ..
+  "你摸一张牌，然后移除“北定”记录中的此牌名。",
+  ["@@os__beiding_card-inhand"] = "北定",
+
+  ["$os_huan__beiding1"] = "内外不懈如斯，长安不日可下！",
+  ["$os_huan__beiding2"] = "先帝英灵冥鉴，此番定成夙愿！",
+}
+
+osHuanBeiding:addRelatedSkill(osHuanBeidingBuff)
+huanzhugeliang:addSkill(osHuanBeiding)
+
+local osHuanJielv = fk.CreateTriggerSkill{
+  name = "os_huan__jielv",
+  anim_type = "defensive",
+  events = {fk.MaxHpChanged},
+  frequency = Skill.Compulsory,
+  can_trigger = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.num < 0 and player:isWounded()
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:recover{
+      who = player,
+      num = -data.num,
+      recoverBy = player,
+      skillName = self.name,
+    }
+  end
+}
+Fk:loadTranslationTable{
+  ["os_huan__jielv"] = "竭虑",
+  [":os_huan__jielv"] = "锁定技，当你减少1点体力上限后，你回复1点体力。",
+
+  ["$os_huan__jielv1"] = "出箕谷，饮河洛，所至长安！",
+  ["$os_huan__jielv2"] = "破司马，废伪政，誓还帝都！",
+}
+
+huanzhugeliang:addSkill(osHuanJielv)
+
+local osHuanji = fk.CreateActiveSkill{
+  name = "os__huanji",
+  prompt = "#os__huanji-active",
+  anim_type = "support",
+  target_num = 0,
+  card_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    room:changeMaxHp(from, -1)
+    if not from:isAlive() or from.hp < 1 then
+      return
+    end
+
+    local cardNames = U.getAllCardNames("bt")
+    cardNames = table.filter(
+      cardNames,
+      function(name) return not table.contains(U.getMark(from, "@$os__beiding_names"), name) end
+    )
+
+    if #cardNames == 0 then
+      return false
+    end
+    cardNames = table.filter(cardNames, function(name) return #name:split("__") == 1 end)
+
+    local namesChosen = room:askForChoices(from, cardNames, from.hp, from.hp, self.name, "#os__beiding-choose:::" .. from.hp, false)
+    local beidingNames = U.getMark(from, "@$os__beiding_names")
+    table.insertTable(beidingNames, namesChosen)
+    room:setPlayerMark(from, "@$os__beiding_names", beidingNames)
+
+    for _, id in ipairs(from:getCardIds("h")) do
+      local card = Fk:getCardById(id)
+      if table.contains(beidingNames, card.trueName) and card:getMark("@@os__beiding_card-inhand") ~= 1 then
+        room:setCardMark(card, "@@os__beiding_card-inhand", 1)
+      end
+    end
+  end
+}
+Fk:loadTranslationTable{
+  ["os__huanji"] = "幻计",
+  [":os__huanji"] = "出牌阶段限一次，你可以减1点体力上限，在“北定”记录中增加X种牌名（X为你的体力值）。",
+  ["#os__huanji-active"] = "幻计：你可减1点体力上限为“北定”增加体力值数量的牌名记录",
+
+  ["$os__huanji1"] = "以计中之计，调雍凉戴甲，天下备鞍！",
+  ["$os__huanji2"] = "借计代兵，以一隅抗九州！",
+}
+
+huanzhugeliang:addSkill(osHuanji)
+
+local osChanggui = fk.CreateTriggerSkill{
+  name = "os__changgui",
+  anim_type = "negative",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function (self, event, target, player, data)
+    return
+      target == player and
+      player.phase == Player.Finish and
+      player:hasSkill(self) and
+      table.every(player.room.alive_players, function(p) return p.hp >= player.hp end)
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:changeHero(
+      player,
+      "os_if__zhugeliang",
+      false,
+      player.deputyGeneral == "os_if_huan__zhugeliang",
+      false,
+      false
+    )
+    room:changeMaxHp(player, player.hp - player.maxHp)
+  end
+}
+Fk:loadTranslationTable{
+  ["os__changgui"] = "怅归",
+  [":os__changgui"] = "锁定技，结束阶段开始时，若你的体力值为全场最低，则你退幻并将体力上限调整至体力值。",
+
+  ["$os__changgui1"] = "隆中鱼水，永安星落，数载恍然隔世。",
+  ["$os__changgui2"] = "铁马冰河，金台临望，倏醒方叹无功。",
+}
+
+huanzhugeliang:addSkill(osChanggui)
 
 local zhaoyun = General(extension, "os_if__zhaoyun", "shu", 4)
 
