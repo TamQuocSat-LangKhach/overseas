@@ -536,6 +536,7 @@ zhaoyun:addRelatedSkill("chongzhen")
 
 Fk:loadTranslationTable{
   ["os_if__zhaoyun"] = "幻赵云",
+  ["#os_if__zhaoyun"] = "天武耆龙",
   ["os__jiezhan"] = "竭战",
   [":os__jiezhan"] = "其他角色的出牌阶段开始时，若其在你攻击范围内，你可摸一张牌，然后其视为对你使用一张无距离限制且计入次数限制的【杀】。",
   ["os__longjin"] = "龙烬",
@@ -628,6 +629,7 @@ os__kuiduan:addRelatedSkill(os__kuiduan_slash)
 
 Fk:loadTranslationTable{
   ["os_if__zhanghe"] = "幻张郃",
+  ["#os_if__zhanghe"] = "追敌入彀",
   ["os__kuiduan"] = "溃端",
   [":os__kuiduan"] = "锁定技，当你使用【杀】指定唯一目标后，你与其各将随机两张手牌标记为“溃端”牌（只能当【杀】使用或打出）。当“溃端”牌造成伤害时，若伤害来源拥有的“溃端”牌数大于受到伤害的角色，则此伤害+1。<font color='grey'>“溃端”牌暂实现为锁定视为技</font>",
 
