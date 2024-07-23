@@ -1616,8 +1616,8 @@ local os__zhongyi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = 0
-    for _, _ in pairs(data.damageDealt) do
-      num = num + 1
+    for _, n in pairs(data.damageDealt) do
+      num = num + n
     end
     local x = player:getMark("@os__zhongyi") + 1
     local all_choices = {"os__zhongyi_draw:::" .. num, "os__zhongyi_recover:::" .. num, "beishui_os__zhongyi:::" .. x}
@@ -1661,7 +1661,7 @@ Fk:loadTranslationTable{
   ["os__chue"] = "除恶",
   [":os__chue"] = "①当你使用【杀】指定唯一目标时，若存在能成为此【杀】目标的一名角色，你可失去1点体力，额外指定至多X个目标。②当你受到伤害或失去体力后，你获得1枚“勇”。③每个回合结束时，你可弃X枚“勇”，视为使用一张【杀】，此【杀】的伤害值基数+1且额外选择X个目标。（X为你的体力值）",
   ["os__zhongyi"] = "忠义",
-  [":os__zhongyi"] = "锁定技，①你使用【杀】无距离限制。②当你使用【杀】结算结束后，你选择一项：1.摸等同于受到此【杀】造成伤害的角色数牌；2.回复等同于受到此【杀】造成伤害的角色数体力；背水：你失去X点体力（X为本局你选择此技能背水的次数+1）。",
+  [":os__zhongyi"] = "锁定技，①你使用【杀】无距离限制。②当你使用【杀】结算结束后，你选择一项：1.摸等同于此【杀】造成伤害值数牌；2.回复等同于此【杀】造成伤害值数体力；背水：你失去X点体力（X为本局你选择此技能背水的次数+1）。",
 
   ["#os__chue-loseHp"] = "除恶：你可失去1点体力，然后此【杀】额外指定至多你的体力值个目标",
   ["#os__chue-choose"] = "除恶：为此%arg额外指定至多%arg2个目标",
