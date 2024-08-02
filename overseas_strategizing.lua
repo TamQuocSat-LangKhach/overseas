@@ -1458,13 +1458,13 @@ local os__zhibian = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
       player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p)
-      return not p:isKongcheng() end)
+      return player:canPindian(p) end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return not p:isKongcheng()
+        return player:canPindian(p)
       end),
       Util.IdMapper
     )

@@ -2843,7 +2843,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
     if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
     if target == player then
       return table.find(player.room.alive_players, function(p)
-        return not p:isKongcheng() and player:inMyAttackRange(p)
+        return player:canPindian(p) and player:inMyAttackRange(p)
       end)
     else
       return not player:isKongcheng()
@@ -2854,7 +2854,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
     if target == player then
       local availableTargets = table.map(
         table.filter(room.alive_players, function(p)
-          return not p:isKongcheng() and player:inMyAttackRange(p)
+          return player:canPindian(p) and player:inMyAttackRange(p)
         end),
         Util.IdMapper
       )

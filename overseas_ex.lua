@@ -234,6 +234,9 @@ local lieren = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and player:canPindian(player.room:getPlayerById(data.to))
   end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#os_ex__lieren-invoke:"..data.to)
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local target = room:getPlayerById(data.to)
@@ -259,6 +262,7 @@ Fk:loadTranslationTable{
   ["os_ex__zhurong"] = "界祝融",
   ["os_ex__lieren"] = "烈刃",
   [":os_ex__lieren"] = "当你使用【杀】指定目标后，你可以与其拼点，若你赢，你获得其一张牌；若你没赢，你获得其拼点的牌，其获得你拼点的牌。",
+  ["#os_ex__lieren-invoke"] = "烈刃：你可以与 %src 拼点，若赢，你获得其一张牌，若没赢，你们获得对方拼点牌",
 
   ["$juxiang_os_ex__zhurong1"] = "今日，就让这群汉人长长见识。",
   ["$juxiang_os_ex__zhurong2"] = "我的大象，终于有了用武之地。",
@@ -417,12 +421,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local invoke = false
     local room = player.room
-    if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
-      local damage = e.data[5]
-      if damage and target == damage.from then
-        return true
-      end
-    end, Player.HistoryTurn) == 1 then
+    if #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) > 0 then
       invoke = true
     end
     if not invoke and #room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -433,7 +432,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
       invoke = true
     end
     player:drawCards(2, self.name)
-    if invoke then
+    if invoke and not player.dead then
       room:addPlayerMark(player, "@os_ex__strategy", 1)
     end
   end,

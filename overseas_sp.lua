@@ -2964,7 +2964,7 @@ local os__shuangren = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p)
-      return not p:isKongcheng()
+      return player:canPindian(p)
     end) and (event == fk.EventPhaseStart or (player:getMark("_os__shuangren_invalid-turn") == 0 and player:usedSkillTimes(self.name) == 0))
   end,
   on_cost = function(self, event, target, player, data)
@@ -2975,7 +2975,7 @@ local os__shuangren = fk.CreateTriggerSkill{
     end
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return not p:isKongcheng()
+        return player:canPindian(p)
       end),
       Util.IdMapper
     )
