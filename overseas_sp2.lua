@@ -52,7 +52,6 @@ local os__wushen_trg = fk.CreateTriggerSkill{
   name = "#os__wushen_trg",
   anim_type = "offensive",
   mute = true,
-  frequency = Skill.Compulsory,
   events = {fk.CardUsing, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.trueName == "slash" then
@@ -78,6 +77,7 @@ local os__wushen_trg = fk.CreateTriggerSkill{
     end
     return false
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
@@ -311,11 +311,11 @@ local os__gongxin = fk.CreateActiveSkill{
 local os__gongxin_dr = fk.CreateTriggerSkill{
   name = "#os__gongxin_dr",
   mute = true,
-  frequency = Skill.Compulsory,
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("_os__gongxin-turn") > 0
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
     local room = player.room
@@ -2319,7 +2319,6 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
   name = "#os__zuhuo_conjure",
   mute = true,
   events = {fk.TurnEnd, fk.DamageInflicted},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.TurnEnd then
       return player:getMark("@os__zuhuo") ~= 0 and string.sub(player:getMark("@os__zuhuo"), -1) == "0"
@@ -2327,6 +2326,7 @@ local os__zuhuo_conjure = fk.CreateTriggerSkill{
       return target == player and player:getMark("@os__zuhuo_defend") ~= 0
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnEnd then
@@ -3035,10 +3035,10 @@ local os__yujue_do_obtain = fk.CreateTriggerSkill{
   name = "#os__yujue_do_obtain",
   events = {fk.CardUsing},
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@@os__yujue_obtain") > 0 
+    return target == player and player:getMark("@@os__yujue_obtain") > 0
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:removePlayerMark(player, "@@os__yujue_obtain")
@@ -3052,7 +3052,6 @@ os__yujue:addRelatedSkill(os__yujue_do_obtain)
 local os__yujue_skill = fk.CreateTriggerSkill{
   name = "#os__yujue_skill",
   mute = true,
-  frequency = Skill.Compulsory,
   events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
     if event == fk.GameStart then
@@ -3063,6 +3062,7 @@ local os__yujue_skill = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(os__yujue.name, true, true)
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart or event == fk.EventAcquireSkill then
@@ -3482,7 +3482,6 @@ local os__gongge_judge = fk.CreateTriggerSkill{
   name = "#os__gongge_judge",
   mute = true,
   events = {fk.CardUseFinished, fk.EventPhaseChanging},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if target ~= player then return false end
     if event == fk.EventPhaseChanging then
@@ -3491,6 +3490,7 @@ local os__gongge_judge = fk.CreateTriggerSkill{
       return (data.card.extra_data or {}).os__gonggeUser == player.id and player:getMark("@os__gongge") ~= 0
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseChanging then
@@ -3670,11 +3670,11 @@ local os__jichou_prohibit = fk.CreateProhibitSkill{
 local os__jichou_dr = fk.CreateTriggerSkill{
   name = "#os__jichou_dr",
   anim_type = "negative",
-  frequency = Skill.Compulsory,
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return table.contains(U.getMark(player, "@$os__jichou"), data.card.name)
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
     table.insertIfNeed(data.disresponsiveList, player.id)
@@ -4206,10 +4206,10 @@ local os__xiawei_presume = fk.CreateTriggerSkill{
   name = "#os__xiawei_presume",
   events = {fk.EventPhaseStart},
   anim_type = "negative",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player == target and player.phase == Player.Finish and player:getMark("@os__xiawei_presume-turn") > 0
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = player:getMark("@os__xiawei_presume-turn")
@@ -4343,7 +4343,6 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
   name = "#os__zhanyi_buff",
   anim_type = "offensive",
   events = {fk.CardUsing, fk.TargetSpecified},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if player ~= target or player:getMark("@os__zhanyi-phase") == 0 then return false end
     if event == fk.CardUsing then
@@ -4356,6 +4355,7 @@ local os__zhanyi_buff = fk.CreateTriggerSkill{
       return data.card.trueName == "slash" and player:getMark("@os__zhanyi-phase") == "equip"
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
@@ -4466,7 +4466,6 @@ local os__jinglue_do = fk.CreateTriggerSkill{
   name = "#os__jinglue_do",
   anim_type = "control",
   events = {fk.CardUsing, fk.TurnEnd},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     local mark
     if event == fk.CardUsing then
@@ -4490,6 +4489,7 @@ local os__jinglue_do = fk.CreateTriggerSkill{
       end
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
@@ -4881,10 +4881,10 @@ local os__juezhu_re = fk.CreateTriggerSkill{
   name = "#os__juezhu_re",
   mute = true,
   events = {fk.Deathed},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player:getMark("_os__juezhu") ~= 0 and player:getMark("_os__juezhu")[1] == target.id
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:resumePlayerArea(player, player:getMark("_os__juezhu")[2])

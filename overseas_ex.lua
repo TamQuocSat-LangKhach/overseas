@@ -988,7 +988,6 @@ Fk:loadTranslationTable{
 local caoxiu = General(extension, "os_ex__caoxiu", "wei", 4)
 local os_ex__qianju_distance = fk.CreateDistanceSkill{
   name = "#os_ex__qianju_distance",
-  frequency = Skill.Compulsory,
   correct_func = function(self, from, to)
     if from:hasSkill(self) then
       return -#from:getCardIds(Player.Equip)

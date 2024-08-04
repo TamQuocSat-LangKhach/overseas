@@ -852,7 +852,7 @@ local os__moukui = fk.CreateTriggerSkill{
     local all_choices = {"os__moukui_draw", "os__moukui_discard", "beishui_os__moukui", "Cancel"}
     local choices = table.clone(all_choices)
     local target = room:getPlayerById(data.to)
-    if target:isNude() then
+    if target:isKongcheng() then
       table.remove(choices, 2)
     end
     local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
@@ -870,7 +870,7 @@ local os__moukui = fk.CreateTriggerSkill{
       player:drawCards(1, self.name)
     end
     if choice ~= "os__moukui_draw" then
-      if not target:isNude() then
+      if not target:isKongcheng() then
         local card = room:askForCardChosen(player, target, "h", self.name)
         room:throwCard(card, self.name, target, player)
       end
@@ -1302,11 +1302,11 @@ local os__xiafeng_disres = fk.CreateTriggerSkill{
   name = "#os__xiafeng_disres",
   mute = true,
   anim_type = "offensive",
-  frequency = Skill.Compulsory,
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("_os__xiafeng_count-turn") <= player:getMark("_os__xiafeng-turn") and player:getMark("_os__xiafeng-turn") > 0
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
     for _, target in ipairs(player.room.alive_players) do
@@ -3227,7 +3227,6 @@ local os__xingbu = fk.CreateTriggerSkill{
 local os__xingbu_do = fk.CreateTriggerSkill{
   name = "#os__xingbu_do",
   events = {fk.CardUseFinished, fk.DrawNCards, fk.EventPhaseChanging},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if target ~= player or player:getMark("@os__xingbu-turn") == 0 then return false end
     if event == fk.CardUseFinished then
@@ -3238,8 +3237,9 @@ local os__xingbu_do = fk.CreateTriggerSkill{
       return player:getMark("@os__xingbu-turn") == "_os__xingbu_3"
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    if event == fk.CardUseFinished then 
+    if event == fk.CardUseFinished then
       local room = player.room
       local cids = table.clone(player:getCardIds(Player.Hand))
       table.insertTable(cids, player:getCardIds(Player.Equip))
@@ -4030,7 +4030,6 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding, fk.AfterCardsMove},
   anim_type = "drawcard",
   mute = true,
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     if event ~= fk.AfterCardsMove then
@@ -4051,6 +4050,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
     end
     return false
   end,
+  on_cost = Util.TrueFunc,
   on_trigger = function(self, event, target, player, data)
     if event ~= fk.AfterCardsMove then
       self:doCost(event, target, player, data)

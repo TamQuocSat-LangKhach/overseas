@@ -1604,7 +1604,6 @@ local os__yilie_do = fk.CreateTriggerSkill{
   name = "#os__yilie_do",
   anim_type = "drawcard",
   events = {fk.CardEffectCancelledOut, fk.TargetSpecified},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.CardEffectCancelledOut then
       return target == player and player:getMark("@os__yilie-phase") ~= 0 and string.find(player:getMark("@os__yilie-phase"), "draw") and data.card.trueName == "slash"
@@ -1617,6 +1616,7 @@ local os__yilie_do = fk.CreateTriggerSkill{
       end
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
   end,
@@ -1860,7 +1860,6 @@ local zaoli = fk.CreateTriggerSkill{
 }
 local zaoli_record = fk.CreateTriggerSkill{
   name = "#os__zaoli_record",
-  frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   mute = true,
   can_trigger = function(self, event, target, player, data)
@@ -1878,6 +1877,7 @@ local zaoli_record = fk.CreateTriggerSkill{
       end
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark("_os__zaoli_record")
