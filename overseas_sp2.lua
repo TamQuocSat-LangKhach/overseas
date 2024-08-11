@@ -6113,7 +6113,7 @@ local yichong = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
       local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
-        return p.id end), 1, 1, "#yichong-choose", self.name, true)
+        return p.id end), 1, 1, "#os__yichong-choose", self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
         return true
@@ -6210,6 +6210,7 @@ Fk:loadTranslationTable{
   "（若场上已有“雀”标记则转移给该角色）。拥有“雀”标记的角色获得你指定花色的牌时，你获得此牌（你至多因此“雀”标记获得一张牌）。",
 
   ['@os__yichong'] = "易宠",
+  ["#os__yichong-choose"] = "你可以发动 易宠，选择一名其他角色，获得其一种花色的所有牌",
 
   ["$os__yichong1"] = "处椒房之尊，得陛下隆宠！",
   ["$os__yichong2"] = "三千宠爱？当聚于我一身！",
