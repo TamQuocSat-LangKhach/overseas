@@ -6080,4 +6080,140 @@ Fk:loadTranslationTable{
   ["#os__cairu-active"] = "才濡：将两张颜色不同的牌当【火攻】/【铁索连环】/【无中生有】使用（每回合每牌名限两次）",
 }
 
+local guonvwang = General(extension, "os__guozhao", "wei", 3, 3, General.Female)
+local yichong = fk.CreateTriggerSkill{
+  name = "os__yichong",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    if event == fk.EventPhaseStart then
+      return target == player and player.phase == Player.Start
+    elseif event == fk.AfterCardsMove then
+      local mark = player:getMark("@os__yichong")
+      if type(mark) ~= "table" or mark[1] > 0 then return false end
+      mark = player:getMark("yichong_target")
+      if type(mark) ~= "table" then return false end
+      local room = player.room
+      local to = room:getPlayerById(mark[1])
+      if to == nil or to.dead then return false end
+      for _, move in ipairs(data) do
+        if move.to == mark[1] and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == to and
+            Fk:getCardById(id):getSuitString(true) == mark[2] then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+        return p.id end), 1, 1, "#yichong-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    elseif event == fk.AfterCardsMove then
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local to = room:getPlayerById(self.cost_data)
+      local suits = {"log_spade", "log_club", "log_heart", "log_diamond"}
+      local choice = room:askForChoice(player, suits, self.name)
+      local cards = table.filter(to:getCardIds{Player.Equip, Player.Hand}, function (id)
+        return Fk:getCardById(id):getSuitString(true) == choice
+      end)
+      if #cards > 0 then
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+      end
+      if not (player.dead or to.dead) then
+        local mark = player:getMark("yichong_target")
+        if type(mark) == "table" then
+          local orig_to = room:getPlayerById(mark[1])
+          local mark2 = orig_to:getMark("@yichong_que")
+          if type(mark2) == "table" then
+            table.removeOne(mark2, mark[2])
+            room:setPlayerMark(orig_to, "@yichong_que", #mark2 > 0 and mark2 or 0)
+          end
+        end
+        local mark2 = type(to:getMark("@yichong_que")) == "table" and to:getMark("@yichong_que") or {}
+        table.insert(mark2, choice)
+        room:setPlayerMark(to, "@yichong_que", mark2)
+        room:setPlayerMark(player, "yichong_target", {self.cost_data, choice})
+        room:setPlayerMark(player, "@os__yichong", {0})
+      end
+    else
+      local mark = player:getMark("@os__yichong")
+      if type(mark) ~= "table" or mark[1] > 0 then return false end
+      local x = 1 - mark[1]
+      mark = player:getMark("yichong_target")
+      if type(mark) ~= "table" then return false end
+      local to = room:getPlayerById(mark[1])
+      if to == nil or to.dead then return false end
+      local cards = {}
+      for _, move in ipairs(data) do
+        if move.to == mark[1] and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == to and
+                Fk:getCardById(id):getSuitString(true) == mark[2] then
+              table.insert(cards, id)
+            end
+          end
+        end
+      end
+      if #cards == 0 then
+        return false
+      elseif #cards > x then
+        cards = table.random(cards, x)
+      end
+      room:setPlayerMark(player, "@os__yichong", {1-x+#cards})
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    end
+  end,
+
+  refresh_events = {fk.TurnStart, fk.EventLoseSkill, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventLoseSkill and data ~= self then return false end
+    return player == target and type(player:getMark("yichong_target")) == "table"
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("yichong_target")
+    local to = room:getPlayerById(mark[1])
+    local mark2 = to:getMark("@yichong_que")
+    if type(mark2) == "table" then
+      table.removeOne(mark2, mark[2])
+      room:setPlayerMark(to, "@yichong_que", #mark2 > 0 and mark2 or 0)
+    end
+    room:setPlayerMark(player, "yichong_target", 0)
+    room:setPlayerMark(player, "@os__yichong", 0)
+  end,
+}
+
+guonvwang:addSkill(yichong)
+guonvwang:addSkill("wufei")
+
+Fk:loadTranslationTable{
+  ["os__guozhao"] = "郭女王",
+  ["#os__guozhao"] = "文德皇后",
+  ["os__yichong"] = "易宠",
+  [":os__yichong"] = "准备阶段，你可选择一名其他角色并选择一种花色，获得其所有该花色的牌，并令其获得“雀”标记直到你下个回合开始"..
+  "（若场上已有“雀”标记则转移给该角色）。拥有“雀”标记的角色获得你指定花色的牌时，你获得此牌（你至多因此“雀”标记获得一张牌）。",
+
+  ['@os__yichong'] = "易宠",
+
+  ["$os__yichong1"] = "处椒房之尊，得陛下隆宠！",
+  ["$os__yichong2"] = "三千宠爱？当聚于我一身！",
+  ["~os__guozhao"] = "不觉泪下……沾衣裳……",
+}
+
 return extension

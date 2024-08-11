@@ -619,7 +619,7 @@ local os__kuiduan_slash = fk.CreateFilterSkill{
     return card:getMark("@@os__kuiduan_rout-inhand") > 0
   end,
   view_as = function(self, card)
-    return Fk:cloneCard('slash', card.suit, card.number)
+    return Fk:cloneCard("slash", card.suit, card.number)
   end,
 }
 
@@ -818,9 +818,199 @@ Fk:loadTranslationTable{
   ["#os__xianyuan_trigger"] = "仙援",
   ["#os__xianyuan-invoke"] = "仙援：观看%dest的手牌，并且可以将其中至多%arg张牌置于牌堆顶",
 
+  ["$os__xianyuan1"] = "顺天者，天助之。",
+  ["$os__xianyuan2"] = "所思所寻，皆得天应。",
+  ["$os__lingyin1"] = "我自逍遥天地，何拘凡尘俗法？",
+  ["$os__lingyin2"] = "朝暮露霞雾，夜枕溪缠绵。",
+  ["~os_if__zhugeguo"] = "仙缘已了，魂入轮回。",
+}
 
+local jiangwei = General(extension, "os_if__jiangwei", "shu", 4)
+local os__qinghan = fk.CreateActiveSkill{
+  name = "os__qinghan",
+  prompt = "#os__qinghan-active",
+  anim_type = "control",
+  can_use = function (self, player, card, extra_data)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function (self, to_select, selected, selected_targets)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
+  end,
+  target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
+    return #selected_cards == 1 and Self:canPindian(Fk:currentRoom():getPlayerById(to_select), true)
+  end,
+  on_use = function (self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local pd = player:pindian({target}, self.name, Fk:getCardById(effect.cards[1]))
+    if pd.results[target.id].winner == player then
+      local all_names = U.getAllCardNames("t")
+      for i = #all_names, 1, -1 do
+        local card = Fk:cloneCard(all_names[i])
+        card.skillName = self.name
+        if not U.canUseCardTo(room, player, target, card, false, false) then
+          table.remove(all_names, i)
+        end
+      end
+      local names = U.getViewAsCardNames(Self, self.name, all_names, nil)
+      if #names > 0 then
+        local _names = U.askForChooseCardNames(room, player, names, 1, 1, self.name, "#os__qinghan-trick::" .. target.id, all_names, true)
+        if #_names > 0 then
+          room:useVirtualCard(_names[1], nil, player, target, self.name)
+        end
+      end
+    end
+    if pd.results[target.id].toCard:compareColorWith(pd.fromCard) then
+      local moveInfos = {}
+      if room:getCardArea(pd.results[target.id].toCard) == Card.DiscardPile then
+        table.insert(moveInfos, {
+          to = player.id,
+          ids = Card:getIdList(pd.results[target.id].toCard),
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonExchange,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+      if room:getCardArea(pd.fromCard) == Card.DiscardPile then
+        table.insert(moveInfos, {
+          to = target.id,
+          ids = Card:getIdList(pd.fromCard),
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonExchange,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+      if #moveInfos > 0 then
+        room:moveCards(table.unpack(moveInfos))
+      end
+    end
+  end,
+}
+local os__qinghan_pindian = fk.CreateTriggerSkill{
+  name = "#os__qinghan_pindian",
+  mute = true,
+  main_skill = os__qinghan,
+  events = {fk.PindianCardsDisplayed},
+  can_trigger = function (self, event, target, player, data)
+    return player:hasSkill(os__qinghan) and (player == data.from or data.results[player.id])
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local num = 2 * #player:getCardIds(Player.Equip)
+    if target == data.from.id then
+      data.fromCard.number = math.min(data.fromCard.number + num, 13)
+    elseif data.results[target] then
+      data.results[target].toCard.number = math.min(data.results[target].toCard.number + num, 13)
+    end
+  end,
+}
+os__qinghan:addRelatedSkill(os__qinghan_pindian)
 
+local os__zhihuan = fk.CreateTriggerSkill{
+  name = "os__zhihuan",
+  anim_type = "control",
+  events = {fk.DamageCaused},
+  can_trigger = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash"
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#os__zhihuan-invoke::" .. data.to.id)
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    target = data.to
+    local choices
+    if #target:getCardIds(Player.Equip) > 0 then
+      choices = {"os__zhihuan_target", "os__zhihuan_pile"}
+    else
+      choices = {"os__zhihuan_pile"}
+    end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice == "os__zhihuan_target" then
+      local card = room:askForCardChosen(player, target, "e", self.name)
+      room:obtainCard(player.id, card, true, fk.ReasonPrey, player.id, self.name)
+    else
+      local subtype_string_table = {
+        [Card.SubtypeArmor] = "armor",
+        [Card.SubtypeWeapon] = "weapon",
+        [Card.SubtypeTreasure] = "treasure",
+        [Card.SubtypeDelayedTrick] = "delayed_trick",
+        [Card.SubtypeDefensiveRide] = "defensive_ride",
+        [Card.SubtypeOffensiveRide] = "offensive_ride",
+      }
+      local slots = table.simpleClone(player:getAvailableEquipSlots())
+      table.shuffle(slots)
+      for _, slot in ipairs(slots) do
+        if player.dead then return end
+        local type = Util.convertSubtypeAndEquipSlot(slot)
+        if #player:getEquipments(type) < #player:getAvailableEquipSlots(type) then
+          local ids = room:getCardsFromPileByRule(".|.|.|.|.|"..subtype_string_table[type], 1, "allPiles")
+          if #ids > 0 then
+            room:obtainCard(player, ids[1], true, fk.ReasonPrey, player.id, self.name)
+            if not player.dead then
+              room:useCard{
+                from = player.id,
+                tos = {{player.id}},
+                card = Fk:getCardById(ids[1]),
+              }
+              break
+            end
+          end
+        end
+      end
+    end
+    room:setPlayerMark(target, "@@os__zhihuan_discard", 1)
+    return true
+  end
+}
+local os__zhihuan_delay = fk.CreateTriggerSkill{
+  name = "#os__zhihuan_delay",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function (self, event, target, player, data)
+    return player == target and data.card.trueName == "jink" and player:getMark("@@os__zhihuan_discard") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local cards = player:getCardIds(Player.Hand)
+    local room = player.room
+    room:setPlayerMark(player, "@@os__zhihuan_discard", 0)
+    if #cards > 0 then
+      room:throwCard(table.random(cards, 2), self.name, player, player)
+    end
+  end
+}
+os__zhihuan:addRelatedSkill(os__zhihuan_delay)
 
+jiangwei:addSkill(os__qinghan)
+jiangwei:addSkill(os__zhihuan)
+
+Fk:loadTranslationTable{
+  ["os_if__jiangwei"] = "幻姜维",
+  ["#os_if__jiangwei"] = "麒麟擎汉",
+  ["os__qinghan"] = "擎汉",
+  [":os__qinghan"] = "①出牌阶段限一次，你可用一张装备牌与一名角色拼点：若你赢，你可视为对其使用一张以其为唯一目标的普通锦囊牌；" ..
+  "若两张拼点牌颜色相同，你与其获得对方的拼点牌。②你的拼点牌点数+X（X为你装备区牌数的两倍）。",
+  ["os__zhihuan"] = "治宦",
+  [":os__zhihuan"] = "当你使用【杀】造成伤害时，你可防止此伤害并选择一项：1. 获得其装备区里的一张牌；" ..
+  "2. 获得并使用一张牌堆或弃牌堆中与你空置的装备栏对应类型的装备牌。若如此做，其下次使用【闪】时随机弃置两张手牌。",
+
+  ["#os__qinghan-active"] = "你可发动 擎汉，选择一张装备牌与一名角色拼点",
+  ["#os__qinghan-trick"] = "擎汉：你可视为对%dest使用一张以其为唯一目标的普通锦囊牌",
+  ["#os__qinghan_pindian"] = "擎汉",
+  ["#os__zhihuan-invoke"] = "你可发动〖治宦〗，防止对 %dest 的伤害",
+  ["os__zhihuan_target"] = "获得其装备区里的一张牌",
+  ["os__zhihuan_pile"] = "获得并使用一张牌堆或弃牌堆中与你空置的装备栏对应类型的装备牌",
+  ["@@os__zhihuan_discard"] = "被治宦",
+  ["#os__zhihuan_delay"] = "治宦",
+
+  ["$os__qinghan1"] = "二十四代终未竟，今以一隅誓还天！",
+  ["$os__qinghan2"] = "维继丞相遗托，当负擎汉之重。",
+  ["$os__zhihuan1"] = "贪行祸国，谗言媚主，汝罪不容诛！",
+  ["$os__zhihuan2"] = "阉宦小人，何以蔽天！",
+  ["~os_if__jiangwei"] = "九州未定，维有负丞相遗托。",
 }
 
 return extension
