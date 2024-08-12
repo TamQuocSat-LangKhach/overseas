@@ -833,9 +833,11 @@ local os__qinghan = fk.CreateActiveSkill{
   can_use = function (self, player, card, extra_data)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
   end,
+  card_num = 1,
   card_filter = function (self, to_select, selected, selected_targets)
     return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
+  target_num = 1,
   target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
     return #selected_cards == 1 and Self:canPindian(Fk:currentRoom():getPlayerById(to_select), true)
   end,
