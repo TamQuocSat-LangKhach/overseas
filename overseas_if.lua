@@ -642,113 +642,103 @@ Fk:loadTranslationTable{
   ["~os_if__zhanghe"] = "老卒迟暮，恨不能再报于国……",
 }
 
+---@param room Room
+---@param player ServerPlayer
+---@param target ServerPlayer
+---@param num integer
+local function addXianyuanMark(room, player, target, num)
+  local n = target:getMark("@os__xianyuan")
+  n = math.min(4, num + n)
+  room:setPlayerMark(target, "@os__xianyuan", n)
+  if player ~= target then
+    local mark = U.getMark(player, "_os__xianyuan")
+    table.insertIfNeed(mark, target.id)
+    room:setPlayerMark(player, "_os__xianyuan", mark)
+  end
+end
+
 local zhugeguo = General(extension, "os_if__zhugeguo", "shu", 3, 3, General.Female)
 local xianyuan = fk.CreateActiveSkill{
   name = "os__xianyuan",
   anim_type = "support",
   prompt = "#os__xianyuan-active",
   target_num = 1,
-  max_card_num = 2,
-  min_card_num = 1,
+  card_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 3
+    return player:getMark("@os__xianyuan") ~= 0
   end,
-  card_filter = function(self, to_select, selected)
-    return #selected < 2
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected_cards > 0 and #selected == 0 and to_select ~= Self.id and not table.contains(U.getMark(Self, "os__xianyuan-round"), to_select)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  interaction = function()
+    return UI.Spin {
+      from = 1,
+      to = Self:getMark("@os__xianyuan"),
+    }
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = U.getMark(player, "os__xianyuan-round")
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, "os__xianyuan-round", mark)
-    room:obtainCard(target.id, effect.cards, false, fk.ReasonGive, player.id)
-    if player.dead or target.dead then return end
-    mark = U.getMark(player, "os__xianyuan")
-    mark[tostring(target.id)] = (mark[tostring(target.id)] or 0) + #effect.cards
-    room:setPlayerMark(player, "os__xianyuan", mark)
-    room:setPlayerMark(target, "@@os__xianyuan", 1)
+    local num = self.interaction.data or 1
+    room:removePlayerMark(player, "@os__xianyuan", num)
+    addXianyuanMark(room, player, target, num)
   end,
 }
 local xianyuan_trigger = fk.CreateTriggerSkill{
   name = "#os__xianyuan_trigger",
-  events = {fk.TurnStart, fk.EventPhaseStart},
+  events = {fk.RoundStart, fk.EventPhaseStart},
   mute = true,
+  main_skill = xianyuan,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(xianyuan) then return false end
-    local room = player.room
-    if event == fk.TurnStart then
-      if player == target and player:getMark("os__xianyuan") ~= 0 then
-        local mark = U.getMark(player, "os__xianyuan")
-        return table.find(room.alive_players, function (p)
-          return mark[tostring(p.id)] ~= nil
-        end)
-      end
-    else
-      if target.phase == Player.Play and not target:isKongcheng() then
-        local x = U.getMark(player, "os__xianyuan")[tostring(target.id)]
-        if x ~= nil and x > 0 then
-          self.cost_data = x
-          return true
-        end
-      end
-    end
+    return event == fk.RoundStart or (target.phase == Player.Play and target:getMark("@os__xianyuan") > 0)
   end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.TurnStart then
-      return true
-    else
-      local room = player.room
-      if room:askForSkillInvoke(player, "os__xianyuan", data, "#os__xianyuan-invoke::" .. target.id .. ":" .. tostring(self.cost_data)) then
-        room:doIndicate(player.id, {target.id})
-        return true
-      end
-    end
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("os__xianyuan")
-    if event == fk.TurnStart then
-      room:notifySkillInvoked(player, "os__xianyuan", "drawcard")
-      local mark = U.getMark(player, "os__xianyuan")
-      local x = 0
-      for _, p in ipairs(room.alive_players) do
-        if mark[tostring(p.id)] then
-          x = x + 1
-        end
-      end
-      if x > 0 then
-        player:drawCards(x, "os__xianyuan")
-      end
-      room:setPlayerMark(player, "os__xianyuan", 0)
-      for _, p in ipairs(room.alive_players) do
-        if p:getMark("@@os__xianyuan") > 0 and table.every(room.alive_players, function (p2)
-          mark = U.getMark(p2, "os__xianyuan")
-          return mark[tostring(p.id)] == nil
-        end) then
-          room:setPlayerMark(p, "@@os__xianyuan", 0)
-        end
-      end
+    if event == fk.RoundStart then
+      room:notifySkillInvoked(player, "os__xianyuan", "support")
+      addXianyuanMark(room, player, player, 4)
     else
-      room:notifySkillInvoked(player, "os__xianyuan", "control")
-      local x = self.cost_data
-      local handcards = target:getCardIds(Player.Hand)
-      local top = room:askForArrangeCards(player, "os__xianyuan", {handcards, "$Hand", "Top"},
-      "#os__xianyuan-invoke::" .. target.id .. ":" .. tostring(self.cost_data), true, 7, {0, x})[2]
-      top = table.reverse(top)
-      room:moveCards({
-        ids = top,
-        from = target.id,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonPut,
-        skillName = "os__xianyuan",
-        proposer = player.id,
-        moveVisible = false,
-        visiblePlayers = player.id,
-      })
+      local x = target:getMark("@os__xianyuan")
+      room:doIndicate(player.id, {target.id})
+      local choices = {"os__xianyuan_draw::" .. target.id .. ":" .. x}
+      if not target:isKongcheng() then
+        table.insert(choices, 1, "os__xianyuan_put::" .. target.id .. ":" .. x)
+      end
+      if room:askForChoice(player, choices, self.name):startsWith("os__xianyuan_put") then
+        room:notifySkillInvoked(player, "os__xianyuan", "control")
+        local handcards = target:getCardIds(Player.Hand)
+        local top = room:askForArrangeCards(player, "os__xianyuan", {handcards, "$Hand", "Top"},
+        "#os__xianyuan-put::" .. target.id .. ":" .. tostring(x), true, 7, {0, x})[2]
+        top = table.reverse(top)
+        room:moveCards({
+          ids = top,
+          from = target.id,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonPut,
+          skillName = "os__xianyuan",
+          proposer = player.id,
+          moveVisible = false,
+          visiblePlayers = player.id,
+        })
+      else
+        room:notifySkillInvoked(player, "os__xianyuan", "drawcard")
+        target:drawCards(x, self.name)
+      end
+      if target ~= player then
+        room:setPlayerMark(target, "@os__xianyuan", 0)
+        local mark
+        for _, p in ipairs(room.alive_players) do
+          mark = U.getMark(p, "_os__xianyuan")
+          if table.removeOne(mark, target.id) then
+            if #mark == 0 then mark = 0 end
+            room:setPlayerMark(p, "_os__xianyuan", mark)
+          end
+        end
+      end
     end
   end,
 
@@ -758,18 +748,15 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "os__xianyuan-round", 0)
-    if player:getMark("os__xianyuan") ~= 0 then
-      room:setPlayerMark(player, "os__xianyuan", 0)
-      local mark
+    if player:getMark("_os__xianyuan") ~= 0 then
       for _, p in ipairs(room.alive_players) do
-        if p:getMark("@@os__xianyuan") > 0 and table.every(room.alive_players, function (p2)
-          mark = U.getMark(p2, "os__xianyuan")
-          return mark[tostring(p.id)] == nil
+        if p:getMark("@os__xianyuan") > 0 and not table.find(room.alive_players, function (p2)
+          return table.contains(U.getMark(p2, "_os__xianyuan"), p.id)
         end) then
-          room:setPlayerMark(p, "@@os__xianyuan", 0)
+          room:setPlayerMark(p, "@os__xianyuan", 0)
         end
       end
+      room:setPlayerMark(player, "_os__xianyuan", 0)
     end
   end,
 }
@@ -805,23 +792,25 @@ zhugeguo:addSkill(lingyin)
 
 Fk:loadTranslationTable{
   ["os_if__zhugeguo"] = "幻诸葛果",
-  --["#os_if__zhugeguo"] = "",
+  ["#os_if__zhugeguo"] = "悠游清汉",
   ["os__xianyuan"] = "仙援",
-  [":os__xianyuan"] = "出牌阶段限三次，你可以将至多两张牌交给一名于此轮内未选择过的角色并令其获得1枚“仙援”。"..
-  "有“仙援”的角色的出牌阶段开始时，你可以观看其所有手牌，可以将其中至多X张牌以任意顺序置于牌堆顶（X为你以此法交给其的牌数）。"..
-  "回合开始时，你摸有“仙援”的角色数的牌，移去这些角色的“仙援”。",
+  [":os__xianyuan"] = "①每轮开始时，你获得4枚“仙援”。②出牌阶段，你可以将任意枚“仙援”" ..
+  "分配给其他角色。③有“仙援”的角色出牌阶段开始时，你选择一项：1. 观看其手牌，将其中至多X张牌" ..
+  "以任意顺序置于牌堆顶；2. 其摸X张牌。（X为其“仙援”数）然后若此时为其回合，你移除其所有“仙援”。（一名角色至多有4枚“仙缘”）",
   ["os__lingyin"] = "灵隐",
   [":os__lingyin"] = "当你成为普通锦囊牌的目标后，你可以亮出牌堆顶的一张牌，若此牌与此普通锦囊牌颜色相同，你获得亮出的牌，若花色也相同，此普通锦囊牌对此目标无效。",
 
-  ["#os__xianyuan-active"] = "发动 仙援，将1-2张牌交给1名角色并令其获得“仙援”标记",
-  ["@@os__xianyuan"] = "仙援",
+  ["#os__xianyuan-active"] = "发动 仙援，令一名其他角色获得任意枚“仙援”标记",
+  ["@os__xianyuan"] = "仙援",
   ["#os__xianyuan_trigger"] = "仙援",
-  ["#os__xianyuan-invoke"] = "仙援：观看%dest的手牌，并且可以将其中至多%arg张牌置于牌堆顶",
+  ["os__xianyuan_draw"] = "%dest摸%arg张牌",
+  ["os__xianyuan_put"] = "观看%dest的手牌，将其中至多%arg张牌置于牌堆顶",
+  ["#os__xianyuan-put"] = "仙援：观看%dest的手牌，并且可以将其中至多%arg张牌置于牌堆顶",
 
   ["$os__xianyuan1"] = "顺天者，天助之。",
   ["$os__xianyuan2"] = "所思所寻，皆得天应。",
   ["$os__lingyin1"] = "我自逍遥天地，何拘凡尘俗法？",
-  ["$os__lingyin2"] = "朝暮露霞雾，夜枕溪缠绵。",
+  ["$os__lingyin2"] = "朝沐露霞寤，夜枕溪潺眠。",
   ["~os_if__zhugeguo"] = "仙缘已了，魂入轮回。",
 }
 
