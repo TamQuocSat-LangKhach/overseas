@@ -648,7 +648,7 @@ Fk:loadTranslationTable{
 ---@param num integer
 local function addXianyuanMark(room, player, target, num)
   local n = target:getMark("@os__xianyuan")
-  n = math.min(4, num + n)
+  n = math.min(3, num + n)
   room:setPlayerMark(target, "@os__xianyuan", n)
   if player ~= target then
     local mark = U.getMark(player, "_os__xianyuan")
@@ -700,7 +700,7 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("os__xianyuan")
     if event == fk.RoundStart then
       room:notifySkillInvoked(player, "os__xianyuan", "support")
-      addXianyuanMark(room, player, player, 4)
+      addXianyuanMark(room, player, player, 2)
     else
       local x = target:getMark("@os__xianyuan")
       room:doIndicate(player.id, {target.id})
@@ -794,9 +794,9 @@ Fk:loadTranslationTable{
   ["os_if__zhugeguo"] = "幻诸葛果",
   ["#os_if__zhugeguo"] = "悠游清汉",
   ["os__xianyuan"] = "仙援",
-  [":os__xianyuan"] = "①每轮开始时，你获得4枚“仙援”。②出牌阶段，你可以将任意枚“仙援”" ..
+  [":os__xianyuan"] = "①每轮开始时，你获得2枚“仙援”。（一名角色至多有3枚“仙缘”）②出牌阶段，你可以将任意枚“仙援”" ..
   "分配给其他角色。③有“仙援”的角色出牌阶段开始时，你选择一项：1. 观看其手牌，将其中至多X张牌" ..
-  "以任意顺序置于牌堆顶；2. 其摸X张牌。（X为其“仙援”数）然后若此时不是你的回合，你移除其所有“仙援”。（一名角色至多有4枚“仙缘”）",
+  "以任意顺序置于牌堆顶；2. 其摸X张牌。（X为其“仙援”数）然后若此时不是你的回合，你移除其所有“仙援”。",
   ["os__lingyin"] = "灵隐",
   [":os__lingyin"] = "当你成为普通锦囊牌的目标后，你可以亮出牌堆顶的一张牌，若此牌与此普通锦囊牌颜色相同，你获得亮出的牌，若花色也相同，此普通锦囊牌对此目标无效。",
 
