@@ -1374,9 +1374,9 @@ local huzhong = fk.CreateTriggerSkill{
     else
       local cid = room:askForCardChosen(player, to, "h", self.name)
       room:throwCard({cid}, self.name, to, player)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.os__huzhong = true
     end
+    data.extra_data = data.extra_data or {}
+    data.extra_data.os__huzhong = true
   end,
 
   refresh_events = {fk.CardUseFinished},
@@ -1444,7 +1444,7 @@ zhangwei:addSkill(fenwang)
 Fk:loadTranslationTable{
   ["zhangwei"] = "张葳", -- 泪目
   ["os__huzhong"] = "护众",
-  [":os__huzhong"] = "当你使用普【杀】于出牌阶段指定其他角色为唯一目标时，你可摸一张牌并选择一项：1.此【杀】可额外选择一个目标；2.你弃置其一张手牌，若此【杀】造成伤害，你本阶段使用【杀】次数+1。",
+  [":os__huzhong"] = "当你使用普【杀】于出牌阶段指定其他角色为唯一目标时，你可摸一张牌并选择一项：1.此【杀】可额外选择一个目标；2.你弃置其一张手牌。然后若此【杀】造成伤害，你本阶段使用【杀】次数+1。",
   ["os__fenwang"] = "焚亡",
   [":os__fenwang"] = "锁定技，①当你受到属性伤害时，你须弃置一张手牌，否则此伤害+1。②当你对其他角色造成普通伤害时，若你的手牌数大于其手牌数，此伤害+1。",
 
@@ -1869,8 +1869,8 @@ local os__dengjian = fk.CreateTriggerSkill{
     player.room.logic:getActualDamageEvents(1, function (e)
       local damage = e.data[1]
       if damage.from == target and damage.card then
-        local c = damage.card
-        if c.trueName == "slash" and not table.contains(record, c.color) and player.room:getCardArea(c) == Card.DiscardPile then
+        local c = damage.card ---@class Card
+        if c.trueName == "slash" and U.isPureCard(c) and not table.contains(record, c.color) and player.room:getCardArea(c) == Card.DiscardPile then
           table.insertTableIfNeed(cards, Card:getIdList(c))
         end
       end
@@ -2008,7 +2008,7 @@ Fk:loadTranslationTable{
   ["#shie"] = "剑术登峰",
 
   ["os__dengjian"] = "登剑",
-  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：不计入次数限制）。",
+  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的非转化的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：不计入次数限制）。",
   ["os__xinshou"] = "心授",
   [":os__xinshou"] = "当你于出牌阶段内使用【杀】时，若此【杀】颜色与你本回合使用过的【杀】颜色均不同，你可选择一项本回合未执行过的效果：1.摸一张牌；2.交给一名其他角色一张牌。" ..
     "当你使用【杀】时，若你本回合执行过〖心授〗的所有效果，你可令〖登剑〗失效并选择一名其他角色，其视为拥有〖登剑〗直到你的下回合开始。若其拥有〖登剑〗时使用【杀】造成过伤害，则你的下回合开始时，你的〖登剑〗生效。",

@@ -4005,6 +4005,8 @@ local yanxiang = General(extension, "yanxiang", "qun", 3)
 local os__kujian = fk.CreateActiveSkill{
   name = "os__kujian",
   anim_type = "support",
+  prompt = "#os__kujian-active",
+  mute = true,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -4019,6 +4021,9 @@ local os__kujian = fk.CreateActiveSkill{
   target_num = 1,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
+    local player = room:getPlayerById(effect.from)
+    room:notifySkillInvoked(player, self.name, "support", effect.tos)
+    player:broadcastSkillInvoke(self.name, 1)
     table.forEach(effect.cards, function(cid)
       room:setCardMark(Fk:getCardById(cid), "@@os__kujian", 1)
     end)
@@ -4053,7 +4058,12 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_trigger = function(self, event, target, player, data)
     if event ~= fk.AfterCardsMove then
-      self:doCost(event, target, player, data)
+      local num = #table.filter(Card:getIdList(data.card), function(id)
+        return Fk:getCardById(id):getMark("@@os__kujian") > 0
+      end)
+      for _ = 1, num, 1 do
+        self:doCost(event, target, player, data)
+      end
     else
       local room = player.room
       local targets = {}
@@ -4078,9 +4088,9 @@ local os__kujian_judge = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("os__kujian")
     if event ~= fk.AfterCardsMove then
       room:notifySkillInvoked(player, "os__kujian", "drawcard")
+      player:broadcastSkillInvoke("os__kujian", 3)
       table.forEach(Card:getIdList(data.card), function(id)
         return room:setCardMark(Fk:getCardById(id), "@@os__kujian", 0)
       end)
@@ -4089,6 +4099,7 @@ local os__kujian_judge = fk.CreateTriggerSkill{
       target:drawCards(1, self.name)
     else
       room:notifySkillInvoked(player, "os__kujian", "negative")
+      player:broadcastSkillInvoke("os__kujian", 2)
       room:doIndicate(player.id, {target.id})
       for _, move in ipairs(data) do
         if move.from ~= player.id and move.moveReason ~= fk.ReasonUse and move.moveReason ~= fk.ReasonResonpse then
@@ -4171,7 +4182,6 @@ local os__ruilian = fk.CreateTriggerSkill{
         end
       end
       if #cids > 0 then
-        --self.cost_data = cids
         return true
       end
       return false
@@ -4216,6 +4226,7 @@ Fk:loadTranslationTable{
   ["os__ruilian"] = "睿敛",
   [":os__ruilian"] = "每轮开始时，你可选择一名角色，其下个回合结束前，若其此回合弃置的牌数不小于2，你可选择其此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌。",
 
+  ["#os__kujian-active"] = "你可发动“苦谏”，将至多三张手牌标记为“谏”并交给一名其他角色",
   ["#os__kujian-discard"] = "苦谏：请弃置一张牌",
   ["#os__kujian_judge"] = "苦谏",
   ["#os__ruilian-ask"] = "你可对一名角色发动“睿敛”",
@@ -4224,9 +4235,9 @@ Fk:loadTranslationTable{
   ["#os__ruilian-type"] = "睿敛：你可选择 %src 此回合弃置过的牌中的一种类别，你与其各从弃牌堆中获得一张此类别的牌",
   ["@@os__kujian"] = "谏",
 
-  ["$os__kujian1"] = "吾之所言，皆为公之大业。",
-  ["$os__kujian2"] = "公岂徒有纳谏之名乎！",
-  ["$os__kujian3"] = "明公虽奕世克昌，未若有周之盛。",
+  ["$os__kujian1"] = "吾之所言，皆为公之大业。", -- 给牌
+  ["$os__kujian2"] = "公岂徒有纳谏之名乎！", -- 弃牌
+  ["$os__kujian3"] = "明公虽奕世克昌，未若有周之盛。", -- 摸牌
   ["$os__ruilian1"] = "公若擅进庸肆，必失民心！",
   ["$os__ruilian2"] = "外敛虚进之势，内减弊民之政。",
   ["~yanxiang"] = "若遇明主，或可青史留名……",
