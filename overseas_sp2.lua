@@ -3421,6 +3421,7 @@ Fk:loadTranslationTable{
 
 local os__haomeng = General(extension, "os__haomeng", "qun", 4)
 
+---@param player Player
 local function getTrueSkills(player)
   local skills = {}
   for _, s in ipairs(player.player_skills) do
@@ -5592,7 +5593,173 @@ Fk:loadTranslationTable{
   ["$os__quanqian2"] = "吴郡僻远，宜迁都秣陵，以承王业。",
   ["$os__rouke1"] = "宽以待人，柔能克刚，则英雄莫敌。",
   ["$os__rouke2"] = "务崇宽惠，顺天命以行诛。",
-  ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",  
+  ["~zhanghong"] = "惟愿主公从善如流，老臣去矣……",
+}
+
+local yanliang = General(extension, "yanliang", "qun", 4)
+local os__duwang = fk.CreateTriggerSkill{
+  name = "os__duwang",
+  frequency = Skill.Quest,
+  events = {fk.EventPhaseStart},
+  can_trigger = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and (player.phase == Player.Play or
+      (player.phase == Player.Start and player:getMark("_os__duwang") > 0 and player:getQuestSkillState(self.name) ~= "succeed"))
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    if player.phase == Player.Start then
+      self.cost_data = room:askForChoice(player, {"os__duwang_obtain_xiayong", "os__duwang_upgrade_yanshi"}, self.name)
+      return true
+    else
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper),
+        1, 3, "#os__duwang-invoke", self.name, true)
+      if #tos > 0 then
+        self.cost_data = {tos = tos}
+        return true
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if player.phase == Player.Start then
+      room:updateQuestSkillState(player, self.name, true)
+      room:updateQuestSkillState(player, self.name, false)
+      local choice = self.cost_data
+      if choice == "os__duwang_obtain_xiayong" then
+        room:handleAddLoseSkills(player, "os__xiayong")
+      else
+        room:setPlayerMark(player, "@@os__yanshiUp", 1)
+      end
+    else
+      local tos = self.cost_data.tos ---@type integer[]
+      local num = #tos
+      player:drawCards(num + 1, self.name)
+      if player.dead then return end
+      local card = Fk:cloneCard("duel")
+      card.skillName = self.name
+      for _, pid in ipairs(tos) do
+        local to = room:getPlayerById(pid)
+        if not (to.dead or player.dead or to:isNude()) then
+          local cards = {}
+          for _, id in ipairs(to:getCardIds("he")) do
+            card:clearSubcards()
+            card:addSubcard(id)
+            if U.canUseCardTo(room, to, player, card) then
+              table.insert(cards, id)
+            end
+          end
+          if #cards > 0 then
+            cards = table.concat(cards, ",")
+            local card = room:askForCard(to, 1, 1, true, self.name, false, ".|.|.|.|.|.|" .. cards, "#os__duwang-duel::" .. player.id)
+            room:useVirtualCard("duel", card, to, player, self.name, true)
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:getQuestSkillState(self.name) ~= "succeed"
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn_event == nil then return false end
+    local end_id = turn_event.id
+    local num = #room.players < 4 and 3 or 4
+    if #room.logic:getEventsByRule(GameEvent.UseCard, num, function (e)
+      local use = e.data[1]
+      return use.card.trueName == "duel" and (use.from == player.id or table.contains(TargetGroup:getRealTargets(use.tos), player.id))
+    end, end_id) == num then
+      room:setPlayerMark(player, "_os__duwang", 1)
+    end
+  end,
+}
+local os__duwang_prohibit = fk.CreateProhibitSkill{
+  name = "#os__duwang_prohibit",
+  is_prohibited = function (self, from, to, card)
+    return card.trueName == "peach" and to:hasSkill(os__duwang) and to:getQuestSkillState(os__duwang.name) ~= "succeed" and from ~= to
+  end
+}
+os__duwang:addRelatedSkill(os__duwang_prohibit)
+
+local os__yanshih = fk.CreateViewAsSkill{
+  name = "os__yanshih",
+  frequency = Skill.Limited,
+  pattern = "duel,enemy_at_the_gates,dismantlement,nullification,ex_nihilo",
+  interaction = function()
+    local all_names = {"duel", "enemy_at_the_gates", "dismantlement", "nullification", "ex_nihilo"}
+    local names = U.getViewAsCardNames(Self, "taoluan", all_names)
+    if #names > 0 then
+      return U.CardNameBox { choices = names, all_choices = all_names }
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 1 then return false end
+    return Fk:getCardById(to_select).trueName == "slash"
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return nil end
+    local c = Fk:cloneCard(self.interaction.data)
+    c.skillName = self.name
+    c:addSubcard(cards[1])
+    return c
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  enabled_at_response = function (self, player, response)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and not response
+  end
+}
+local os__yanshih_delay = fk.CreateTriggerSkill{
+  name = "#os__yanshih_delay",
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:usedSkillTimes(os__yanshih.name) > 0 and player:getMark("@@os__yanshiUp") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:setSkillUseHistory(os__yanshih.name, 0, Player.HistoryGame)
+  end
+}
+os__yanshih:addRelatedSkill(os__yanshih_delay)
+
+
+yanliang:addSkill(os__duwang)
+yanliang:addSkill(os__yanshih)
+yanliang:addRelatedSkill("os__xiayong")
+
+Fk:loadTranslationTable{
+  ["yanliang"] = "颜良",
+  ["#yanliang"] = "何惧华雄",
+  ["illustrator:yanliang"] = "Mr_Sleeping",
+
+  ["os__duwang"] = "独往",
+  [":os__duwang"] = "①出牌阶段开始时，你可选择至多三名其他角色并摸X+1张牌（X为选择的角色数），然后令这些角色依次将一张牌当【决斗】对你使用。" ..
+  "②使命技，准备阶段，你的上个回合你使用【决斗】与成为【决斗】目标的次数之和不小于4（若游戏人数小于4则改为3）。" ..
+  "成功：你选择一项：1.获得〖狭勇〗；2.复原并修改〖延势〗。" ..
+  "完成前：当你处于濒死状态时，其他角色不能对你使用【桃】。" ..
+  "<br/><font color='grey'>#\"<b>使命技(国际服)</b>\"：在成功后失效，完成前有一定的惩罚。</font>",
+  ["os__yanshih"] = "延势",
+  [":os__yanshih"] = "一级：限定技，你可将一张【杀】当【决斗】、【兵临城下】或<u>智囊</u>牌使用。" ..
+  "<br/>二级：限定技，你可将一张【杀】当【决斗】、【兵临城下】或<u>智囊</u>牌使用。<u>历战</u>：复原此技能。" ..
+  "<font color='grey'><br/>#\"<b>智囊</b>\" 即【过河拆桥】【无懈可击】【无中生有】。" ..
+  "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改。",
+
+  ["os__duwang_obtain_xiayong"] = "获得〖狭勇〗",
+  ["os__duwang_upgrade_yanshi"] = "复原并修改〖延势〗",
+  ["@@os__yanshiUp"] = "延势 已升级",
+  ["#os__duwang-invoke"] = "你可以发动〖独往〗，选择至多三名其他角色并摸X+1张牌（X为选择的角色数），<br/>然后令这些角色依次将一张牌当【决斗】对你使用",
+  ["#os__duwang-duel"] = "独往：将一张牌当【决斗】对 %dest 使用",
+
+  ["$os__duwang1"] = "阿瞒聚众来犯，吾一人可挡万敌！",
+  ["$os__duwang2"] = "勇绝河北，吾足以一柱擎天！",
+  ["$os__yanshih1"] = "今破曹军，明日当直取许都！",
+  ["$os__yanshih2"] = "全军整肃，此战不得有失！",
+  ["$os__xiayong_yanliang1"] = "呃啊，马失前蹄，大意了！",
+  ["$os__xiayong_yanliang2"] = "哈哈哈，先发制人！",
+  ["~yanliang"] = "哥哥，切不可轻敌……",
 }
 
 local wenchou = General(extension, "wenchou", "qun", 4)
@@ -5717,7 +5884,7 @@ Fk:loadTranslationTable{
   ["$os__juexing2"] = "杀！尽歼贼败军之众！",
   ["$os__xiayong1"] = "一招之差，不足决此战胜负！",
   ["$os__xiayong2"] = "这般身手，也敢来战我？",
-  ["~wenchou"] = "黄泉路上，你我兄弟亦不可独行……",  
+  ["~wenchou"] = "黄泉路上，你我兄弟亦不可独行……",
 }
 
 local yuantan = General(extension, "yuantan", "qun", 4)

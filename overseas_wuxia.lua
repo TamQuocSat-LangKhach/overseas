@@ -615,14 +615,7 @@ local os__duoren = fk.CreateTriggerSkill{
     room:changeMaxHp(player, -1)
     local skills = table.map(table.filter(target.player_skills, function(s)
         return s:isPlayerSkill(target) and not s.lordSkill
-      end), function(skill)
-        return skill.name 
-      end) or {}
-    table.insertTable(skills, table.map(table.filter(target.derivative_skills, function(s)
-        return s:isPlayerSkill(target) and not s.lordSkill
-      end)), function(skill)
-        return skill.name 
-      end)
+      end), Util.NameMapper) or {}
     local names = table.concat(skills, "|")
     room:handleAddLoseSkills(player, names, nil)
     room:setPlayerMark(player, "@os__duoren", target.general)
@@ -1077,7 +1070,9 @@ local shenyi = fk.CreateTriggerSkill{
   name = "os__shenyi",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if not (player:hasSkill(self) and (player:inMyAttackRange(target) or player == target) and U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == target end)[1].data[1] == data and player:usedSkillTimes(self.name) == 0) then return false end
+    if not (player:hasSkill(self) and (player:inMyAttackRange(target) or player == target) and
+      U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == target and e.data[1].from and e.data[1].from ~= player end)[1].data[1] == data and
+      player:usedSkillTimes(self.name) == 0) then return false end
     local all_names = U.getAllCardNames("bdt")
     return #U.getMark(player, "@$os__shenyi") < #all_names
   end,
@@ -2008,7 +2003,7 @@ Fk:loadTranslationTable{
   ["#shie"] = "剑术登峰",
 
   ["os__dengjian"] = "登剑",
-  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的非转化的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：不计入次数限制）。",
+  [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的非转化的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：无次数限制）。",
   ["os__xinshou"] = "心授",
   [":os__xinshou"] = "当你于出牌阶段内使用【杀】时，若此【杀】颜色与你本回合使用过的【杀】颜色均不同，你可选择一项本回合未执行过的效果：1.摸一张牌；2.交给一名其他角色一张牌。" ..
     "当你使用【杀】时，若你本回合执行过〖心授〗的所有效果，你可令〖登剑〗失效并选择一名其他角色，其视为拥有〖登剑〗直到你的下回合开始。若其拥有〖登剑〗时使用【杀】造成过伤害，则你的下回合开始时，你的〖登剑〗生效。",
