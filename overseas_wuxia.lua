@@ -13,6 +13,7 @@ local os__chaofeng = fk.CreateViewAsSkill{
   name = "os__chaofeng",
   pattern = "slash,jink",
   card_num = 1,
+  prompt = "#os__chaofeng-prompt",
   card_filter = function(self, to_select, selected)
     if #selected == 1 then return false end
     local _c = Fk:getCardById(to_select)
@@ -96,90 +97,100 @@ local os__chuanshu = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+    and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    local target = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#os__chuanshu-ask", self.name, true)
-    if #target > 0 then
-      self.cost_data = target[1]
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#os__chuanshu-ask", self.name, true)
+    if #tos > 0 then
+      self.cost_data = {tos = tos}
       return true
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local target = room:getPlayerById(self.cost_data)
-    for _, name in ipairs({"@os__chuanshu", "_os__chuanshu_slash"}) do
-      local os__chuanshuRecord = type(target:getMark(name)) == "table" and target:getMark(name) or {}
-      table.insert(os__chuanshuRecord, name == "@os__chuanshu" and player.general or player.id)
-      room:setPlayerMark(target, name, os__chuanshuRecord)
-    end
-    room:setPlayerMark(player, "_os__chuanshu", {target.id, player.general})
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    room:addTableMark(to, "@os__chuanshu", player.general)
+    room:addTableMark(to, "_os__chuanshu_slash", player.id)
+    room:addTableMark(player, "_os__chuanshu", {to.id, player.general})
   end,
+}
 
-  refresh_events = {fk.TurnStart, fk.PindianCardsDisplayed, fk.PreCardUse, fk.DamageCaused, fk.Death}, --要改
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.PindianCardsDisplayed then
+local os__chuanshu_delay = fk.CreateTriggerSkill{
+  name = "#os__chuanshu_delay",
+  events = {fk.DamageCaused, fk.PindianCardsDisplayed},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.DamageCaused then
+      if player:getMark("@os__chuanshu") == 0 then return false end
+      local parentUseEvent = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if parentUseEvent then
+        local parentUseData = parentUseEvent.data[1]
+        if parentUseData.card == data.card and (parentUseData.extra_data or {}).os__chuanshuUser == player.id then
+          local froms = (parentUseData.extra_data or {}).os__chuanshuSource
+          return #froms > 1 or froms[1] ~= data.to.id
+        end
+      end
+    else
       return player:getMark("@os__chuanshu") ~= 0 and (data.from == player or table.contains(data.tos, player))
     end
-    if target ~= player then return false end
-    if event == fk.TurnStart then
-      return player:getMark("_os__chuanshu") ~= 0
-    elseif event == fk.Death then
-      return player:getMark("_os__chuanshu") ~= 0
-    elseif event == fk.PreCardUse then
-      return player:getMark("_os__chuanshu_slash") ~= 0
-    else
-      if player:getMark("@os__chuanshu") == 0 then return false end
-      local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      if parentUseData and (parentUseData.data[1].extra_data or {}).os__chuanshuUser == player.id and data.card and data.card.trueName == "slash" then
-        return not table.contains((parentUseData.data[1].extra_data or {}).os__chuanshu, data.to.id)
-      end
-    end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TurnStart or event == fk.Death then
-      local target = room:getPlayerById(player:getMark("_os__chuanshu")[1])
-      if target:isAlive() then
-        local os__chuanshuRecord = type(target:getMark("@os__chuanshu")) == "table" and target:getMark("@os__chuanshu") or {}
-        table.removeOne(os__chuanshuRecord, player:getMark("_os__chuanshu")[2])
-        os__chuanshuRecord = #os__chuanshuRecord == 0 and 0 or os__chuanshuRecord
-        room:setPlayerMark(target, "@os__chuanshu", os__chuanshuRecord)
+    if event == fk.DamageCaused then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      player:broadcastSkillInvoke("os__chuanshu")
+      local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if parentUseData == nil then return end
+      local invoker = {}
+      local froms = (parentUseData.data[1].extra_data or {}).os__chuanshuSource
+      table.removeOne(froms, data.to.id)
+      data.damage = data.damage + #froms
+      for _, pid in ipairs(froms) do
+        local p = room:getPlayerById(pid)
+        if not p.dead and pid ~= player.id then
+          p:drawCards(data.damage, "os__chuanshu")
+        end
       end
-      room:setPlayerMark(player, "_os__chuanshu", 0)
-    elseif event == fk.PindianCardsDisplayed then
-      room:notifySkillInvoked(player, self.name)
-      player:broadcastSkillInvoke(self.name)
+    else
+      room:notifySkillInvoked(player, self.name, "special")
+      player:broadcastSkillInvoke("os__chuanshu")
       local num = 3 * #player:getMark("@os__chuanshu")
       if data.from == player then
         data.fromCard.number = math.min(data.fromCard.number + num, 13)
       else
         data.results[player.id].toCard.number = math.min(data.results[player.id].toCard.number + num, 13)
       end
+    end
+  end,
+
+  refresh_events = {fk.TurnStart, fk.PreCardUse, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if target ~= player then return false end
+    if event == fk.TurnStart or event == fk.BuryVictim then
+      return player:getMark("_os__chuanshu") ~= 0
+    elseif event == fk.PreCardUse then
+      return player:getMark("_os__chuanshu_slash") ~= 0 and data.card.trueName == "slash"
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart or event == fk.BuryVictim then
+      for _, dat in ipairs(player:getMark("_os__chuanshu")) do
+        room:removeTableMark(room:getPlayerById(dat[1]), "@os__chuanshu", dat[2])
+      end
+      room:setPlayerMark(player, "_os__chuanshu", 0)
     elseif event == fk.PreCardUse then
       data.extra_data = data.extra_data or {}
       data.extra_data.os__chuanshuUser = player.id
-      data.extra_data.os__chuanshu = player:getMark("_os__chuanshu_slash")
+      data.extra_data.os__chuanshuSource = player:getMark("_os__chuanshu_slash")
       room:setPlayerMark(player, "_os__chuanshu_slash", 0)
-    else
-      room:notifySkillInvoked(player, self.name, "offensive")
-      player:broadcastSkillInvoke(self.name)
-      local parentUseData = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      local os__chuanshuRecord = table.clone((parentUseData.data[1].extra_data or {}).os__chuanshu)
-      if not table.contains(os__chuanshuRecord, data.to.id) then
-        data.damage = data.damage + #os__chuanshuRecord
-      end
-      table.removeOne(os__chuanshuRecord, player.id)
-      for _, pid in ipairs(os__chuanshuRecord) do
-        local p = room:getPlayerById(pid)
-        if not p.dead then
-          p:drawCards(data.damage, self.name)
-        end
-      end
     end
   end,
 }
+os__chuanshu:addRelatedSkill(os__chuanshu_delay)
 
 os__tongyuan:addSkill(os__chaofeng)
 os__tongyuan:addSkill(os__chuanshu)
@@ -193,12 +204,14 @@ Fk:loadTranslationTable{
   [":os__chaofeng"] = "①你可将【杀】当【闪】、【闪】当任意【杀】使用或打出。②出牌阶段开始时，你可与至多三名角色共同拼点：赢的角色视为对所有没赢的角色使用一张火【杀】。" ..
   "<br/><font color='grey'>#\"<b>共同拼点</b>\"<br/>所有角色一起比大小（而非“同时拼点”：发起者和其余角色两两各比大小）。",
   ["os__chuanshu"] = "传术",
-  [":os__chuanshu"] = "限定技，准备阶段开始时，你可选择一名角色：直到你下回合开始，其拼点牌点数+3，且使用下一张【杀】对其他角色造成伤害+1，且此【杀】造成伤害时，若其不为你，你摸等同伤害值的牌。",
+  [":os__chuanshu"] = "限定技，准备阶段开始时，你可选择一名角色：直到你下回合开始，其拼点牌点数+3，且其使用下一张【杀】对你以外的角色造成伤害+1，且此【杀】造成伤害时，若其不为你，你摸等同伤害值的牌。",
 
   ["#os__chaofeng_pd"] = "朝凤",
-  ["#os__chaofeng-ask"] = "朝凤：你可与至多三名角色共同拼点",
-  ["#os__chuanshu-ask"] = "你可对一名角色发动“传术”，收其为徒",
+  ["#os__chaofeng-ask"] = "朝凤：你可与至多三名角色共同拼点，赢的角色视为对没赢的角色使用火【杀】",
+  ["#os__chaofeng-prompt"] = "朝凤：你可将【杀】当【闪】、【闪】当任意【杀】使用或打出",
+  ["#os__chuanshu-ask"] = "传术：选择一名角色：其拼点牌点数+3且下一张【杀】伤害+1直到你下回合开始",
   ["@os__chuanshu"] = "传术",
+  ["#os__chuanshu_delay"] = "传术",
 
   ["$os__chaofeng1"] = "枪出惊百鸟，技现震诸雄。",
   ["$os__chaofeng2"] = "出如鸾凤高翱，收若百鸟归林。",
