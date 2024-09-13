@@ -1499,7 +1499,7 @@ local os__zhengrong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
       if event == fk.Damage then
-        local _data = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end, Player.HistoryPhase)
+        local _data = player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end, Player.HistoryPhase)
         return #_data > 0 and _data[1].data[1] == data
       else
         return (data.extra_data or {}).os__zhengrong_able

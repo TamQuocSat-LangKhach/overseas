@@ -1084,7 +1084,7 @@ local shenyi = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     if not (player:hasSkill(self) and (player:inMyAttackRange(target) or player == target) and
-      U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == target and e.data[1].from and e.data[1].from ~= player end)[1].data[1] == data and
+      player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == target and e.data[1].from and e.data[1].from ~= player end)[1].data[1] == data and
       player:usedSkillTimes(self.name) == 0) then return false end
     local all_names = U.getAllCardNames("bdt")
     return #U.getMark(player, "@$os__shenyi") < #all_names

@@ -1004,4 +1004,102 @@ Fk:loadTranslationTable{
   ["~os_if__jiangwei"] = "九州未定，维有负丞相遗托。",
 }
 
+local simayi = General(extension, "os_if__simayi", "wei", 3)
+local os__zongquan = fk.CreateTriggerSkill{
+  name = "os__zongquan",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and (player.phase == Player.Start or player.phase == Player.Finish)
+  end,
+  on_cost = function (self, event, target, player, data)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper),
+      1, 1, "#os__zongquan-invoke", self.name, true)
+    if #tos > 0 then
+      self.cost_data = {tos = tos}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|heart,diamond",
+    }
+    room:judge(judge)
+    local card = judge.card
+    if not to.dead then
+      local record = player:getTableMark("_os__zongquan")
+      local num = (record[1] == to.id and record[2] ~= card.color and
+        card.color ~= Card.NoColor and record[2] ~= Card.NoColor) and 3 or 1
+      record = {to.id, card.color}
+      room:setPlayerMark(player, "_os__zongquan", record)
+      if card.color == Card.Red then
+        to:drawCards(num)
+      elseif card.color == Card.Black and not to:isNude() then
+        room:askForDiscard(to, num, num, true, self.name, false, nil, "#os__zongquan-discard:::" .. num)
+      end
+    end
+    if room:getCardArea(card) == Card.Processing and not player.dead then
+      local tar = room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper),
+        1, 1, "#os__zongquan-obtain:::" .. card:toLogString(), self.name, false)[1]
+      room:obtainCard(tar, card, true, fk.ReasonPrey, player.id, self.name)
+    end
+  end,
+}
+
+local os__guimou = fk.CreateTriggerSkill{
+  name = "os__guimou",
+  anim_type = "control",
+  events = {fk.AskForRetrial},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name) < 2
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(4, "bottom")
+    local result = room:askForArrangeCards(player, self.name, {cards, "Bottom", {}, "Retrial", {}, "Top"},
+      "#os__guimou-retrial::" .. target.id .. ":" .. data.reason, true, 4, {0, 1, 3}, {0, 1, 3})
+    local card = result[2][1]
+    player.room:retrial(Fk:getCardById(card), player, data, self.name)
+    if player.dead then return end
+    local top = table.reverse(result[3])
+    room:moveCards({
+      ids = top,
+      from = target.id,
+      toArea = Card.DrawPile,
+      moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
+      moveVisible = false,
+      visiblePlayers = player.id,
+    })
+  end,
+}
+
+simayi:addSkill(os__zongquan)
+simayi:addSkill(os__guimou)
+
+Fk:loadTranslationTable{
+  ["os_if__simayi"] = "幻司马懿",
+  ["#os_if__simayi"] = "权谋并施",
+  ["os__zongquan"] = "纵权",
+  [":os__zongquan"] = "准备阶段或结束阶段，你可以选择一名角色，然后你进行判定：若结果为红色，你令其摸一张牌；" ..
+  "若结果为黑色，你令其弃置一张牌；若你本次与上一次发动〖纵权〗所选择的目标角色相同但结果颜色不同，则改为摸/弃置三张牌。若如此做，你令一名角色获得判定牌。",
+  ["os__guimou"] = "鬼谋",
+  [":os__guimou"] = "每回合限两次，当一名角色的判定牌生效前，你可观看牌堆底的四张牌，选择其中一张牌代替之，然后将其余牌以任意顺序置于牌堆顶。",
+
+  ["#os__zongquan-invoke"] = "你可对一名角色发动〖纵权〗",
+  ["#os__zongquan-discard"] = "纵权：请弃置 %arg 张牌",
+  ["#os__zongquan-obtain"] = "纵权：你令一名角色获得%arg",
+  ["#os__guimou-retrial"] = "鬼谋：选择一张牌改判%dest的%arg，其余置于牌堆顶",
+
+  ["$os__zongquan1"] = "大权不可旁落，且由老夫暂领。",
+  ["$os__zongquan2"] = "再立大魏新政，诏天下怀魏之人。",
+  ["$os__guimou1"] = "将在外而君死社稷，自不受他人之治。",
+  ["$os__guimou2"] = "诸葛贼计已穷，且看老夫此番谋略何如。",
+  ["~os_if__simayi"] = "天命已定，汝竟能逆之……",
+}
+
 return extension

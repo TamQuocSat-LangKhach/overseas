@@ -4642,7 +4642,7 @@ local os__youye = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventPhaseEnd then
       return target.phase == Player.Finish and player:hasSkill(self) and target ~= player and #player:getPile("os__poise") < 5
-      and #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == player end) == 0
+      and #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == player end) == 0
     else
       return player == target and player:hasSkill(self) and #player:getPile("os__poise") > 0
     end
@@ -4669,7 +4669,7 @@ local os__youye = fk.CreateTriggerSkill{
       if #residue == 0 then
         room:obtainCard(current, toCurrent, true, fk.ReasonGive)
       else
-        local move = U.askForDistribution(player, residue, room.alive_players, self.name, #residue, #residue, "#os__youye-give2", "os__poise", true)
+        local move = room:askForYiji(player, residue, room.alive_players, self.name, #residue, #residue, "#os__youye-give2", "os__poise", true)
         local str = string.format("%.0f", current.id)
         move[str] = move[str] or {}
         table.insertTable(move[str], toCurrent)
@@ -4732,7 +4732,7 @@ local os__xingluan = fk.CreateTriggerSkill{
       end
       local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
       local cards = cardsMap[choice]
-      local move = U.askForDistribution(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
+      local move = room:askForYiji(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
       local num = #move[string.format("%.0f", player.id)] or 0
       local victims = {}
       for p, c in pairs(move) do
@@ -6227,11 +6227,11 @@ zhugejun:addSkill(cairu)
 
 Fk:loadTranslationTable{
   ["zhugejun"] = "诸葛均",
-  ["#zhugejun"] = "",
+  ["#zhugejun"] = "待兄归乡",
 
   ["os__shouzhu"] = "受嘱",
-  [":os__shouzhu"] = "出牌阶段开始时，你的同心角色可至多交给你四张牌，若X不小于2，则其摸一张牌，然后执行同心：观看牌堆顶X张牌，然后将其中任意张牌置于牌堆底，将其余牌置入弃牌堆。（X为你本次以此法获得牌的数量）" ..
-    "<br/><font color='grey'>#\"<b>同心</b>\"：回合开始时，你可选择一名其他角色为你的同心角色，直到你的下个回合开始；执行同心效果时，你先执行，然后你的同心角色执行。",
+  [":os__shouzhu"] = "出牌阶段开始时，你的同心角色可至多交给你四张牌，若X不小于2，则其摸一张牌，然后执行同心效果：观看牌堆顶X张牌，然后将其中任意张牌置于牌堆底，将其余牌置入弃牌堆。（X为你本次以此法获得牌的数量）" ..
+    "<br/><font color='grey'>#\"<b>同心</b>\"：回合开始时，你可选择一名其他角色为你的同心角色，直到你的下个回合开始；执行同心效果时，你先执行，然后若你有同心角色，其执行。",
   ["os__daigui"] = "待归",
   [":os__daigui"] = "出牌阶段结束时，若你手牌的颜色均相同，你可选择至多X名角色，然后亮出牌堆底等同这些角色数的牌，这些角色依次获得其中的一张（X为你的手牌数）。",
   ["os__cairu"] = "才濡",
@@ -6245,6 +6245,14 @@ Fk:loadTranslationTable{
   ["#os__daigui-card"] = "待归：选择一张牌获得",
   ["@$os__cairu-turn"] = "才濡 已使用",
   ["#os__cairu-active"] = "才濡：将两张颜色不同的牌当【火攻】/【铁索连环】/【无中生有】使用（每回合每牌名限两次）",
+
+  ["$os__shouzhu1"] = "临别教诲，均谨记在心。",
+  ["$os__shouzhu2"] = "兄长此去，恰如龙入青天。",
+  ["$os__daigui1"] = "勤耕陇亩地，并修德与身。",
+  ["$os__daigui2"] = "田垄不可废，耕读不可怠。",
+  ["$os__cairu1"] = "勤学广才，秉宁静以待致远。",
+  ["$os__cairu2"] = "读群书而后知，见众贤而思进。",
+  ["~zhugejin"] = "战火延绵，不知兄长归期。",
 }
 
 local guonvwang = General(extension, "os__guozhao", "wei", 3, 3, General.Female)
@@ -6291,6 +6299,7 @@ local yichong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke("yichong")
     if event == fk.EventPhaseStart then
       local to = room:getPlayerById(self.cost_data)
       local suits = {"log_spade", "log_club", "log_heart", "log_diamond"}
@@ -6379,8 +6388,6 @@ Fk:loadTranslationTable{
   ['@os__yichong'] = "易宠",
   ["#os__yichong-choose"] = "你可以发动 易宠，选择一名其他角色，获得其一种花色的所有牌",
 
-  ["$os__yichong1"] = "处椒房之尊，得陛下隆宠！",
-  ["$os__yichong2"] = "三千宠爱？当聚于我一身！",
   ["~os__guozhao"] = "不觉泪下……沾衣裳……",
 }
 

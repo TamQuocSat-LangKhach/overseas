@@ -421,7 +421,7 @@ local os_ex__jingce = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local invoke = false
     local room = player.room
-    if #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) > 0 then
+    if #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) > 0 then
       invoke = true
     end
     if not invoke and #room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
