@@ -113,7 +113,10 @@ local os__chenglong = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   frequency = Skill.Wake,
   can_trigger = function (self, event, target, player, data)
-    return player:hasSkill(self) and target.phase == Player.Finish
+    return
+      player:hasSkill(self) and
+      target.phase == Player.Finish and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function (self, event, target, player, data)
     return player:getMark("_os__ciyin_choice") == "allDone"
