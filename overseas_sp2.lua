@@ -4733,14 +4733,14 @@ local os__xingluan = fk.CreateTriggerSkill{
       local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
       local cards = cardsMap[choice]
       local move = room:askForYiji(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
-      local num = #move[string.format("%.0f", player.id)] or 0
+      local num = #move[player.id]
       local victims = {}
       for p, c in pairs(move) do
         if #c >= num and #c > 0 then
           table.insert(victims, tonumber(p))
         end
       end
-      U.doDistribution(room, move, player.id, self.name)
+      room:doYiji(room, move, player.id, self.name)
       room:sortPlayersByAction(victims)
       for _, pid in ipairs(victims) do
         local p = room:getPlayerById(pid)
@@ -4749,16 +4749,7 @@ local os__xingluan = fk.CreateTriggerSkill{
         end
       end
     end
-    cids = table.filter(cids, function(id) return room:getCardArea(id) == Card.Processing end)
-    if #cids > 0 then
-      room:moveCards({
-        ids = cids,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonPutIntoDiscardPile,
-        skillName = self.name,
-        proposer = player.id,
-      })
-    end
+    room:cleanProcessingArea(cids, self.name)
   end,
 }
 os__fanchou:addSkill(os__xingluan)
