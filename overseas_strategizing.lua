@@ -1829,128 +1829,105 @@ local zaoli = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    --local cards = table.clone(player.player_cards[Player.Equip]) or {}
-    local cards = table.clone(player.player_cards[Player.Equip])
-    table.insertTable(cards, room:askForDiscard(player, 1, player:getHandcardNum(), false, self.name, true, nil, "#os__zaoli-discard", true))
-    room:throwCard(cards, self.name, player, player)
-    player:drawCards(#cards, self.name)
-    local cids = {}
+    local subTypes = {}
+    local cards = table.filter(player:getCardIds("he"), function (id)
+      return Fk:getCardById(id).type == Card.TypeEquip
+    end)
     for _, id in ipairs(cards) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeEquip then
-        table.insertTable(cids, room:getCardsFromPileByRule(".|.|.|.|.|" .. card:getSubtypeString()))
+      table.insertIfNeed(subTypes, card:getSubtypeString())
+    end
+    table.insertTable(cards, room:askForDiscard(player, 1, 9999, false, self.name, true, ".|.|.|.|.|^equip", "#os__zaoli-discard", true))
+    room:throwCard(cards, self.name, player, player)
+    player:drawCards(#cards, self.name)
+    if player.dead then return end
+    local cids = {}
+    for _, subType in ipairs(subTypes) do
+      local equips = room:getCardsFromPileByRule(".|.|.|.|.|" .. subType)
+      if #equips > 0 and player:canMoveCardIntoEquip(equips[1], false) then
+        table.insert(cids, equips[1])
       end
     end
     if #cids > 0 then
-      local subTypes, equips = {}, {}
-      for _, id in ipairs(cids) do
-        local name = Fk:getCardById(id).sub_type
-        if not player:getEquipment(name) and not table.contains(subTypes, name) then
-          table.insert(equips, id)
-          table.insert(subTypes, name)
-        end
-      end
-      if #equips > 0 then
-        room:moveCardTo(equips, Card.PlayerEquip, player, fk.ReasonJustMove, self.name)
-        if #equips > 2 then
-          room:loseHp(player, 1, self.name)
-        end
+      room:moveCardIntoEquip(player, cids, self.name, false, player)
+      if #cids > 2 and not player.dead then
+        room:loseHp(player, 1, self.name)
       end
     end
-  end,
-}
-local zaoli_record = fk.CreateTriggerSkill{
-  name = "#os__zaoli_record",
-  events = {fk.AfterCardsMove},
-  mute = true,
-  can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) or player.phase == Player.NotActive then return false end
-    local room = player.room
-    local current = room.current
-    for _, move in ipairs(data) do
-      if current and move.to == current.id and move.toArea == Card.PlayerHand then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
-            return true
-          end
-        end
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local mark = player:getMark("_os__zaoli_record")
-    if mark == 0 then mark = {} end
-    local current = room.current
-    for _, move in ipairs(data) do
-      if current and move.to == current.id and move.toArea == Card.PlayerHand then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
-            table.insertIfNeed(mark, id)
-            room:setCardMark(Fk:getCardById(id), "@@os__zaoli-turn", 1)
-          end
-        end
-      end
-    end
-    room:setPlayerMark(player, "_os__zaoli_record", mark)
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.Death},
+  refresh_events = {fk.AfterCardsMove, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.Death and player ~= target then return false end
-    return type(player:getMark("_os__zaoli_record")) == "table"
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local mark = player:getMark("_os__zaoli_record")
+    if not player:hasSkill(self, true) or player.phase == Player.NotActive or player:isKongcheng() then return false end
     if event == fk.AfterCardsMove then
+      local room = player.room
       for _, move in ipairs(data) do
-        if room.current and (move.to ~= room.current.id or move.toArea ~= Card.PlayerHand) then
+        if move.to == player.id and move.toArea == Player.Hand then
+          return true
+        end
+      end
+    else
+      return target == player and data == self
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local record_data = {}
+    if event == fk.AfterCardsMove then
+      record_data = {data}
+    else
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+        table.insert(record_data, e.data)
+      end, Player.HistoryTurn)
+    end
+    local handcards = player.player_cards[Player.Hand]
+    local to_mark = {}
+    for _, _data in ipairs(record_data) do
+      for _, move in ipairs(_data) do
+        if move.to == player.id and move.toArea == Player.Hand then
           for _, info in ipairs(move.moveInfo) do
-            table.removeOne(mark, info.cardId)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@os__zaoli-turn", 0)
+            if table.contains(handcards, info.cardId) then
+              table.insertIfNeed(to_mark, info.cardId)
+            end
           end
         end
       end
-      room:setPlayerMark(player, "_os__zaoli_record", mark)
-    elseif event == fk.TurnEnd then
-      room:setPlayerMark(player, "_os__zaoli_record", 0)
-    elseif event == fk.Death then
-      for _, id in ipairs(mark) do
-        if table.every(room.alive_players, function (p)
-          local p_mark = p:getMark("_os__zaoli_record")
-          return not (type(p_mark) == "table" and table.contains(p_mark, id))
-        end) then
-        room:setCardMark(Fk:getCardById(id), "@@os__zaoli-turn", 0)
-        end
-      end
-      room:setPlayerMark(player, "_os__zaoli_record", 0)
+    end
+    for _, cid in ipairs(to_mark) do
+      room:setCardMark(Fk:getCardById(cid), "@@os__zaoli-turn-inhand", 1)
     end
   end,
 }
 local zaoli_prohibit = fk.CreateProhibitSkill{
   name = "#os__zaoli_prohibit",
   prohibit_use = function(self, from, card)
-    return from:hasSkill(zaoli.name) and from.phase == Player.Play and (from:getMark("_os__zaoli_record") == 0 or not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id))
+    if from:hasSkill(zaoli) and from.phase == Player.Play then
+      local cardIds = Card:getIdList(card)
+      return table.find(cardIds, function(id)
+        return Fk:getCardById(id):getMark("@@os__zaoli-turn-inhand") == 0 and table.contains(from.player_cards[Player.Hand], id)
+      end)
+    end
   end,
   prohibit_response = function(self, from, card)
-    return from:hasSkill(zaoli.name) and from.phase == Player.Play and (from:getMark("_os__zaoli_record") == 0 or not table.contains(from:getMark("_os__zaoli_record"), card:getEffectiveId()) or not table.contains(from.player_cards[Player.Hand], card.id))
+    if from:hasSkill(zaoli) and from.phase == Player.Play then
+      local cardIds = Card:getIdList(card)
+      return table.find(cardIds, function(id)
+        return Fk:getCardById(id):getMark("@@os__zaoli-turn-inhand") == 0 and table.contains(from.player_cards[Player.Hand], id)
+      end)
+    end
   end,
 }
-zaoli:addRelatedSkill(zaoli_record)
 zaoli:addRelatedSkill(zaoli_prohibit)
 sunyi:addSkill(zaoli)
 
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",
+  ["#os__sunyi"] = "骁悍激躁",
   ["os__zaoli"] = "躁厉",
-  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置任意张手牌和装备区里的所有牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
+  [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置你所有装备牌和任意张非装备牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
 
-  ["@@os__zaoli-turn"] = "躁厉",
-  ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，弃置这些牌和装备区里的所有牌",
+  ["@@os__zaoli-turn-inhand"] = "躁厉",
+  ["#os__zaoli-discard"] = "躁厉：选择任意张手牌，你须弃置这些牌和所有装备牌，摸等量张牌",
 
   ["$os__zaoli1"] = "喜怒不形于色，诈伪要明之徒。",
   ["$os__zaoli2"] = "摇舌鼓唇，竖子是之也！",
