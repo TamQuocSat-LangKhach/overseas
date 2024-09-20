@@ -5620,6 +5620,7 @@ local os__duwang = fk.CreateTriggerSkill{
         room:handleAddLoseSkills(player, "os__xiayong")
       else
         room:setPlayerMark(player, "@@os__yanshiUp", 1)
+        player:setSkillUseHistory("os__yanshih", 0, Player.HistoryGame)
       end
     else
       local tos = self.cost_data.tos ---@type integer[]
