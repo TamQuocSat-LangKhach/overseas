@@ -261,7 +261,15 @@ local os__shengxi = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self) and (player.phase == Player.Start or (player.phase == Player.Finish and player:getMark("_os__shengxi_use-turn") > 0 and player:getMark("_os__shengxi_damage-turn") == 0))
+    if player == target and player:hasSkill(self) then
+      if player.phase == Player.Start then return true end
+      if player.phase == Player.Finish then
+        return #player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+          return e.data[1].from == player.id
+        end, Player.HistoryTurn) > 0 and
+        #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) == 0
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
     if player.phase == Player.Start then
@@ -298,14 +306,6 @@ local os__shengxi = fk.CreateTriggerSkill{
       end
       player:drawCards(1, self.name)
     end
-  end,
-
-  refresh_events = {fk.PreCardUse, fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and player.phase ~= Player.NotActive
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, event == fk.PreCardUse and "_os__shengxi_use-turn" or "_os__shengxi_damage-turn", 1)
   end,
 }
 
