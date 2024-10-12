@@ -187,6 +187,10 @@ local underhandingSkill = fk.CreateActiveSkill{
   prompt = "#underhanding_skill",
   min_target_num = 1,
   max_target_num = 2,
+  mod_target_filter = function(self, to_select, selected, user, card)
+    local player = Fk:currentRoom():getPlayerById(to_select)
+    return user ~= to_select and not player:isAllNude()
+  end,
   target_filter = function(self, to_select, selected)
     local p = Fk:currentRoom():getPlayerById(to_select)
     return to_select ~= Self.id and not p:isAllNude()
@@ -256,6 +260,7 @@ local redistributeSkill = fk.CreateActiveSkill{
   name = "redistribute_skill",
   prompt = "#redistribute_skill",
   target_num = 2,
+  mod_target_filter = Util.TrueFunc,
   target_filter = function(self, to_select, selected)
     if #selected == 1 then
       return Fk:currentRoom():getPlayerById(to_select):getHandcardNum() ~= Fk:currentRoom():getPlayerById(selected[1]):getHandcardNum()
@@ -347,6 +352,9 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
   name = "enemy_at_the_gates_skill",
   prompt = "#enemy_at_the_gates_skill",
   target_num = 1,
+  mod_target_filter = function(self, to_select, selected, user, card)
+    return user ~= to_select
+  end,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and Self.id ~= to_select
   end,
@@ -360,11 +368,11 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
       room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
       local card = Fk:getCardById(id)
       if card.trueName == "slash" and not player:prohibitUse(card) and not player:isProhibited(to, card) and to:isAlive() then
+        card.skillName = self.name
         room:useCard({
           card = card,
           from = player.id,
           tos = { {to.id} },
-          skillName = self.name,
           extraUse = true,
         })
       end
@@ -378,7 +386,6 @@ local enemyAtTheGates = fk.CreateTrickCard{
   suit = Card.Spade,
   number = 7,
   skill = enemyAtTheGatesSkill,
-  is_damage_card = true,
 }
 extension:addCards{
   enemyAtTheGates,
