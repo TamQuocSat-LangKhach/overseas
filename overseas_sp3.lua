@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   ["overseas_sp3"] = "国际服专属3",
 }
 
-local licuilianquanding = General(extension, "licuilianquanding", "qun", 3, 3, General.Bigender)
+local licuilianquanding = General(extension, "licuilianquanding", "shu", 3, 3, General.Bigender)
 local os__ciyin = fk.CreateTriggerSkill{
   name = "os__ciyin",
   events = {fk.EventPhaseStart, fk.TurnStart},
