@@ -194,7 +194,7 @@ Fk:loadTranslationTable{
   ["$os__ciyin2"] = "纵有狼虎于前，定保吾儿平安。",
   ["$os__chenglong1"] = "这次，换孩儿来保护母亲！",
   ["$os__chenglong2"] = "儿虽年幼，亦当立丈夫之志！",
-  ["~licuilianquanding"] = "（李翠莲）吾儿，前路坎坷，为母恐不能再行。（全定）母亲，母亲……",
+  ["~licuilianquanding"] = "（李翠莲）吾儿，前路坎坷，为母恐不能再行……（全定）母亲！母亲……",
 }
 
 return extension

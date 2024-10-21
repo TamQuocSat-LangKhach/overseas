@@ -30,7 +30,7 @@ local osBeiding = fk.CreateTriggerSkill{
     local cardNames = U.getAllCardNames("bt")
     cardNames = table.filter(
       cardNames,
-      function(name) return not table.contains(U.getMark(player, "@$os__beiding_names"), name) end
+      function(name) return not table.contains(player:getTableMark("@$os__beiding_names"), name) end
     )
 
     local realNameMapper = {}
@@ -70,7 +70,7 @@ local osBeiding = fk.CreateTriggerSkill{
     local room = player.room
     local namesChosen = self.cost_data
 
-    local namesChosenThisTurn = U.getMark(player, "os__beiding_names-turn")
+    local namesChosenThisTurn = player:getTableMark("os__beiding_names-turn")
     table.insert(namesChosenThisTurn, namesChosen)
     room:setPlayerMark(player, "os__beiding_names-turn", namesChosen)
 
@@ -78,7 +78,7 @@ local osBeiding = fk.CreateTriggerSkill{
       local realName = name:split("__")
       return realName[#realName]
     end)
-    local beidingNames = U.getMark(player, "@$os__beiding_names")
+    local beidingNames = player:getTableMark("@$os__beiding_names")
     table.insertTable(beidingNames, namesChosen)
     room:setPlayerMark(player, "@$os__beiding_names", beidingNames)
 
@@ -102,7 +102,7 @@ local osBeidingUse = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local namesChosenThisTurn = U.getMark(player, "os__beiding_names-turn")
+    local namesChosenThisTurn = player:getTableMark("os__beiding_names-turn")
     for _, name in ipairs(namesChosenThisTurn) do
       if not player:isAlive() then
         break
@@ -259,12 +259,12 @@ local osHuanBeiding = fk.CreateTriggerSkill{
     return
       target == player and
       player:hasSkill(self) and
-      table.contains(U.getMark(player, "@$os__beiding_names"), data.card.trueName)
+      table.contains(player:getTableMark("@$os__beiding_names"), data.card.trueName)
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name)
-    local beidingNames = U.getMark(player, "@$os__beiding_names")
+    local beidingNames = player:getTableMark("@$os__beiding_names")
     table.removeOne(beidingNames, data.card.trueName)
     if #beidingNames == 0 then
       beidingNames = 0
@@ -286,7 +286,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
       return
         target == player and
         player:hasSkill(self) and
-        table.contains(U.getMark(player, "@$os__beiding_names"), data.card.trueName)
+        table.contains(player:getTableMark("@$os__beiding_names"), data.card.trueName)
     elseif event == fk.AfterCardsMove then
       return table.find(data, function(move)
         if move.to == player.id and move.toArea == Card.PlayerHand then
@@ -294,7 +294,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
             table.find(
               move.moveInfo,
               function(moveInfo)
-                return table.contains(U.getMark(player, "@$os__beiding_names"), Fk:getCardById(moveInfo.cardId).trueName)
+                return table.contains(player:getTableMark("@$os__beiding_names"), Fk:getCardById(moveInfo.cardId).trueName)
               end
             )
         end
@@ -311,7 +311,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
         if move.to == player.id and move.toArea == Card.PlayerHand then
           for _, moveInfo in ipairs(move.moveInfo) do
             local card = Fk:getCardById(moveInfo.cardId)
-            if table.contains(U.getMark(player, "@$os__beiding_names"), card.trueName) then
+            if table.contains(player:getTableMark("@$os__beiding_names"), card.trueName) then
               player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
             end
           end
@@ -320,7 +320,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
     elseif event == fk.EventAcquireSkill then
       for _, id in ipairs(player:getCardIds("h")) do
         local card = Fk:getCardById(id)
-        if table.contains(U.getMark(player, "@$os__beiding_names"), card.trueName) then
+        if table.contains(player:getTableMark("@$os__beiding_names"), card.trueName) then
           player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
         end
       end
@@ -402,7 +402,7 @@ local osHuanji = fk.CreateActiveSkill{
     local cardNames = U.getAllCardNames("bt")
     cardNames = table.filter(
       cardNames,
-      function(name) return not table.contains(U.getMark(from, "@$os__beiding_names"), name) end
+      function(name) return not table.contains(from:getTableMark("@$os__beiding_names"), name) end
     )
 
     if #cardNames == 0 then
@@ -411,7 +411,7 @@ local osHuanji = fk.CreateActiveSkill{
     cardNames = table.filter(cardNames, function(name) return #name:split("__") == 1 end)
 
     local namesChosen = room:askForChoices(from, cardNames, from.hp, from.hp, self.name, "#os__beiding-choose:::" .. from.hp, false)
-    local beidingNames = U.getMark(from, "@$os__beiding_names")
+    local beidingNames = from:getTableMark("@$os__beiding_names")
     table.insertTable(beidingNames, namesChosen)
     room:setPlayerMark(from, "@$os__beiding_names", beidingNames)
 
@@ -651,7 +651,7 @@ local function addXianyuanMark(room, player, target, num)
   n = math.min(3, num + n)
   room:setPlayerMark(target, "@os__xianyuan", n)
   if player ~= target then
-    local mark = U.getMark(player, "_os__xianyuan")
+    local mark = player:getTableMark("_os__xianyuan")
     table.insertIfNeed(mark, target.id)
     room:setPlayerMark(player, "_os__xianyuan", mark)
   end
@@ -732,7 +732,7 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
         room:setPlayerMark(target, "@os__xianyuan", 0)
         local mark
         for _, p in ipairs(room.alive_players) do
-          mark = U.getMark(p, "_os__xianyuan")
+          mark = p:getTableMark("_os__xianyuan")
           if table.removeOne(mark, target.id) then
             if #mark == 0 then mark = 0 end
             room:setPlayerMark(p, "_os__xianyuan", mark)
@@ -751,7 +751,7 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
     if player:getMark("_os__xianyuan") ~= 0 then
       for _, p in ipairs(room.alive_players) do
         if p:getMark("@os__xianyuan") > 0 and not table.find(room.alive_players, function (p2)
-          return table.contains(U.getMark(p2, "_os__xianyuan"), p.id)
+          return table.contains(p2:getTableMark("_os__xianyuan"), p.id)
         end) then
           room:setPlayerMark(p, "@os__xianyuan", 0)
         end

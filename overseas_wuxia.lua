@@ -858,7 +858,7 @@ local os__kaizeng_others = fk.CreateActiveSkill{
         to:drawCards(1, "os__kaizeng")
       end
       local CardType = (choice == "trick" or choice == "equip")
-      if table.find(table.map(cids, function(cid) return Fk:getCardById(cid) end), function(card)
+      if table.find(table.map(cids, Util.Id2CardMapper), function(card)
         return (CardType and card:getTypeString() == choice or card.trueName == choice)
       end) then
         local id = room:getCardsFromPileByRule(CardType and ".|.|.|.|.|^" .. choice or "^" .. choice .. "|.|.|.|.|basic")
@@ -1087,7 +1087,7 @@ local shenyi = fk.CreateTriggerSkill{
       player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == target and e.data[1].from and e.data[1].from ~= player end)[1].data[1] == data and
       player:usedSkillTimes(self.name) == 0) then return false end
     local all_names = U.getAllCardNames("bdt")
-    return #U.getMark(player, "@$os__shenyi") < #all_names
+    return #player:getTableMark("@$os__shenyi") < #all_names
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, target == player and "#os__shenyi-ask_own" or "#os__shenyi-ask_other::" .. target.id)
@@ -1095,7 +1095,7 @@ local shenyi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local all_names = U.getAllCardNames("bdt")
-    local record = U.getMark(player, "@$os__shenyi")
+    local record = player:getTableMark("@$os__shenyi")
     local choices = table.filter(all_names, function(name) return not table.contains(record, name) end)
     local choice = room:askForChoice(player, choices, self.name, "#os__shenyi-choose", false, all_names)
     table.insert(record, choice)
@@ -1476,19 +1476,19 @@ local chengxi = fk.CreateActiveSkill{
   name = "os__chengxi",
   can_use = function(self, player)
     return table.find(Fk:currentRoom().alive_players, function(p)
-      return p.id ~= player.id and player:canPindian(p, true) and not table.contains(U.getMark(player, "_os__chengxi-turn"), p.id)
+      return p.id ~= player.id and player:canPindian(p, true) and not table.contains(player:getTableMark("_os__chengxi-turn"), p.id)
     end)
   end,
   target_num = 1,
   target_filter = function(self, to_select, selected, selected_cards)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return to_select ~= Self.id and Self:canPindian(target, true) and not table.contains(U.getMark(Self, "_os__chengxi-turn"), to_select) and #selected == 0
+    return to_select ~= Self.id and Self:canPindian(target, true) and not table.contains(Self:getTableMark("_os__chengxi-turn"), to_select) and #selected == 0
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local record = U.getMark(player, "_os__chengxi-turn")
+    local record = player:getTableMark("_os__chengxi-turn")
     table.insert(record, target.id)
     room:setPlayerMark(player, "_os__chengxi-turn", record)
     player:drawCards(1, self.name)
@@ -1873,7 +1873,7 @@ local os__dengjian = fk.CreateTriggerSkill{
   can_trigger = function (self, event, target, player, data)
     if not (target.phase == Player.Discard and player:hasSkill(self) and player ~= target) then return end
     local cards = {}
-    local record = U.getMark(player, "_os__dengjian-round")
+    local record = player:getTableMark("_os__dengjian-round")
     player.room.logic:getActualDamageEvents(1, function (e)
       local damage = e.data[1]
       if damage.from == target and damage.card then
@@ -1894,7 +1894,7 @@ local os__dengjian = fk.CreateTriggerSkill{
     local cards = self.cost_data
     local card = table.random(cards) ---@type integer
     room:obtainCard(player, card, true, fk.ReasonPrey, player.id, self.name, "@@os__fencing-inhand")
-    local record = U.getMark(player, "_os__dengjian-round")
+    local record = player:getTableMark("_os__dengjian-round")
     table.insert(record, Fk:getCardById(card, true).color)
     room:setPlayerMark(player, "_os__dengjian-round", record)
   end
@@ -1913,7 +1913,7 @@ local os__xinshou = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function (self, event, target, player, data)
     if target ~= player or not player:hasSkill(self) or data.card.trueName ~= "slash" then return end
-    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    local record = player:getTableMark("_os__xinshou_choice-turn")
     if #record == 2 then
       return player:hasSkill("os__dengjian")
     elseif player.phase == Player.Play then
@@ -1933,7 +1933,7 @@ local os__xinshou = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function (self, event, target, player, data)
-    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    local record = player:getTableMark("_os__xinshou_choice-turn")
     if #record == 2 then
       local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__xinshou-invoke2", self.name, true)
       if #to > 0 then
@@ -1954,7 +1954,7 @@ local os__xinshou = fk.CreateTriggerSkill{
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local record = U.getMark(player, "_os__xinshou_choice-turn")
+    local record = player:getTableMark("_os__xinshou_choice-turn")
     if #record == 2 then
       local to = room:getPlayerById(self.cost_data)
       room:setPlayerMark(player, "_os__xinshou_target", to.id)

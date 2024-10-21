@@ -1677,7 +1677,7 @@ local os__xingwu = fk.CreateTriggerSkill{
       room:damage{
         from = player,
         to = to,
-        damage = to.gender == General.Male and 2 or 1,
+        damage = to:isMale() and 2 or 1,
         skillName = self.name,
       }
     end
@@ -3117,7 +3117,7 @@ local os__fupan = fk.CreateTriggerSkill{
     local plist, cid = room:askForChooseCardAndPlayers(player, availableTargets, 1, 1, nil, "#os__fupan-give", self.name, false)
     local pid = plist[1]
     room:moveCardTo(cid, Player.Hand, room:getPlayerById(pid), fk.ReasonGive, self.name, nil, false)
-    local os__fupan_once = U.getMark(player, "_os__fupan_once")
+    local os__fupan_once = player:getTableMark("_os__fupan_once")
 
     local targetedFirstTime = table.contains(os__fupan_once, pid)
     table.insertIfNeed(os__fupan_once, pid)

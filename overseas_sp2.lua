@@ -662,10 +662,10 @@ local os__sidao_select = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   expand_pile = function (self)
-    return U.getMark(Self, "os__sidao_cards")
+    return Self:getTableMark("os__sidao_cards")
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and table.contains(U.getMark(Self, "os__sidao_cards"), to_select)
+    return #selected == 0 and table.contains(Self:getTableMark("os__sidao_cards"), to_select)
     and Self:canUseTo(Fk:getCardById(to_select), Self)
   end,
 }
@@ -1786,11 +1786,11 @@ local os__gongsun = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local target = room:getPlayerById(self.cost_data[1])
-    local targets = U.getMark(player, "_os__gongsun")
+    local targets = player:getTableMark("_os__gongsun")
     table.insertIfNeed(targets, target.id)
     room:setPlayerMark(player, "_os__gongsun", targets)
     for _, p in ipairs({player, target}) do
-      local suitsRecorded = U.getMark(p, "@os__gongsun")
+      local suitsRecorded = p:getTableMark("@os__gongsun")
       table.insert(suitsRecorded, self.cost_data[2])
       room:setPlayerMark(p, "@os__gongsun", suitsRecorded)
     end
@@ -1980,7 +1980,7 @@ local os__qirang = fk.CreateTriggerSkill{
     local cids = room:getCardsFromPileByRule(".|.|.|.|.|trick")
     if #cids > 0 then
       local cid = cids[1]
-      local cidsRecorded = U.getMark(player, "_os__qirangTrick-phase")
+      local cidsRecorded = player:getTableMark("_os__qirangTrick-phase")
       table.insert(cidsRecorded, cid)
       room:setPlayerMark(player, "_os__qirangTrick-phase", cidsRecorded)
       room:obtainCard(player, cid, false, fk.ReasonPrey)
@@ -3260,7 +3260,7 @@ local os__gezhi = fk.CreateTriggerSkill{
       else
         choices = allChoices
       end
-      local record = U.getMark(target, "_os__gezhi")
+      local record = target:getTableMark("_os__gezhi")
       local choice = room:askForChoice(target, choices, self.name)
       if choice == "os__gezhi_lordskill" then
         local skills = {}
@@ -3612,7 +3612,7 @@ local os__jichou = fk.CreateViewAsSkill{
   pattern = ".|.|.|.|.|trick",
   interaction = function(self)
     local allCardNames, cardNames = {}, {}
-    local os__jichouRecord = U.getMark(Self, "@$os__jichou")
+    local os__jichouRecord = Self:getTableMark("@$os__jichou")
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
       if card:isCommonTrick() and not table.contains(allCardNames, card.name) and not table.contains(os__jichouRecord, card.name) and not card.is_derived then
@@ -3633,13 +3633,13 @@ local os__jichou = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, use)
     if player:hasSkill("os__jilun") then
-      local record = U.getMark(player, "@$os__jilun")
+      local record = player:getTableMark("@$os__jilun")
       table.insert(record, use.card.name)
       player.room:setPlayerMark(player, "@$os__jilun", record)
     end
   end,
   enabled_at_play = function(self, player)
-    local os__jichouRecord = U.getMark(player, "@$os__jichou")
+    local os__jichouRecord = player:getTableMark("@$os__jichou")
     if player:usedSkillTimes(self.name) > 0 then return false end
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
@@ -3650,7 +3650,7 @@ local os__jichou = fk.CreateViewAsSkill{
     return false
   end,
   enabled_at_response = function(self, player)
-    local os__jichouRecord = U.getMark(player, "@$os__jichou")
+    local os__jichouRecord = player:getTableMark("@$os__jichou")
     if player:usedSkillTimes(self.name) > 0 then return false end
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:cloneCard(Fk:getCardById(id).name)
@@ -3665,7 +3665,7 @@ local os__jichou_prohibit = fk.CreateProhibitSkill{
   name = "#os__jichou_prohibit",
   prohibit_use = function(self, player, card)
     if not table.contains(player:getCardIds(Player.Hand), card.id) then return false end
-    return table.contains(U.getMark(player, "@$os__jichou"), card.name)
+    return table.contains(player:getTableMark("@$os__jichou"), card.name)
   end,
 }
 local os__jichou_dr = fk.CreateTriggerSkill{
@@ -3673,7 +3673,7 @@ local os__jichou_dr = fk.CreateTriggerSkill{
   anim_type = "negative",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return table.contains(U.getMark(player, "@$os__jichou"), data.card.name)
+    return table.contains(player:getTableMark("@$os__jichou"), data.card.name)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -3691,7 +3691,7 @@ local os__jichou_dr = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
-      local record = U.getMark(player, "@$os__jichou")
+      local record = player:getTableMark("@$os__jichou")
       table.insert(record, data.card.name)
       player.room:setPlayerMark(player, "@$os__jichou", record)
     else
@@ -3707,7 +3707,7 @@ local os__jichou_give = fk.CreateActiveSkill{
   end,
   card_num = 1,
   card_filter = function(self, to_select, selected)
-    return table.contains(U.getMark(Self, "@$os__jichou"), Fk:getCardById(to_select).name) and #selected == 0
+    return table.contains(Self:getTableMark("@$os__jichou"), Fk:getCardById(to_select).name) and #selected == 0
   end,
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id
@@ -3726,9 +3726,9 @@ local os__jilun = fk.CreateTriggerSkill{ --机论的获得技能
   events = {fk.Damaged},
   anim_type = "masochism",
   on_cost = function(self, event, target, player, data)
-    local num = #U.getMark(player, "@$os__jichou")
+    local num = #player:getTableMark("@$os__jichou")
     local choices = {"os__jilun_draw:::" .. math.min(math.max(num, 1), 5), "Cancel"}
-    local os__jilunRecord = U.getMark(player, "@$os__jilun")
+    local os__jilunRecord = player:getTableMark("@$os__jilun")
     for _, name in ipairs(os__jilunRecord) do
       local card = Fk:cloneCard(name)
       if not player:prohibitUse(card) and player:canUse(card) then
@@ -3770,7 +3770,7 @@ local os__jilun_vs = fk.CreateViewAsSkill{
   pattern = "nullification",
   interaction = function(self)
     local allCardNames = {}
-    local os__jilunRecord = U.getMark(Self, "@$os__jilun")
+    local os__jilunRecord = Self:getTableMark("@$os__jilun")
     for _, name in ipairs(os__jilunRecord) do
       local card = Fk:cloneCard(name)
       card.skillName = self.name
@@ -3788,7 +3788,7 @@ local os__jilun_vs = fk.CreateViewAsSkill{
     return c
   end,
   before_use = function(self, player, use)
-    local os__jilunRecord = U.getMark(player, "@$os__jilun")
+    local os__jilunRecord = player:getTableMark("@$os__jilun")
     table.removeOne(os__jilunRecord, use.card.name)
     player.room:setPlayerMark(player, "@$os__jilun", os__jilunRecord)
   end,
@@ -3822,7 +3822,7 @@ Fk:loadTranslationTable{
   ["os__jilun_use"] = "视为使用一种以“急筹”使用过的牌（每牌名限一次）",
   ["#os__jilun-vs"] = "视为使用一种以“急筹”使用过的牌（每牌名限一次）",
   ["os__jilun_vs"] = "机论",
-  
+
   ["$os__jichou1"] = "此危亡之时，当出此急谋。",
   ["$os__jichou2"] = "急筹布画，运策捭阖。",
   ["$os__jilun1"] = "时移不移，违天之祥也。",
@@ -4002,6 +4002,9 @@ yangang:addSkill(os__xianfeng)
 
 Fk:loadTranslationTable{
   ["yangang"] = "严纲",
+  ["#yangang"] = "马下败将",
+  ["illustrator:yangang"] = "鱼仔",
+
   ["os__zhiqu"] = "直取",
   [":os__zhiqu"] = "结束阶段开始时，你可选择一名其他角色并依次亮出牌堆顶X张牌，对其使用其中的【杀】。（X为你至其距离1以内的角色数）若搏击：改为使用其中的【杀】和锦囊牌，这些牌只能指定你或其为目标。" ..
   "<br/><font color='grey'>#\"<b>搏击</b>\"：你与其在彼此的攻击范围内",
@@ -4134,6 +4137,9 @@ gongsunfan:addSkill(os__shoushou)
 
 Fk:loadTranslationTable{
   ["gongsunfan"] = "公孙范",
+  ["#gongsunfan"] = "助瓒讨袁",
+  ["illustrator:gongsunfan"] = "鱼仔",
+
   ["os__huiyuan"] = "回援",
   [":os__huiyuan"] = "当你于出牌阶段使用牌结算结束后，若此阶段你未获得过此类型的牌，你可选择一名角色并展示其一张手牌，若与你使用的牌类型：相同，你获得此牌，不同：你弃置其此牌，其摸一张牌。若游击：你对其造成1点伤害。" ..
   "<br/><font color='grey'>#\"<b>游击</b>\"：其在你攻击范围内，你不在其攻击范围内",
@@ -4609,7 +4615,7 @@ local os__dingzhen = fk.CreateTriggerSkill{
         local discard = room:askForDiscard(p, 1, 1, true, self.name, true, "slash", "#os__dingzhen-discard::" .. player.id)
         if #discard == 0 then
           room:setPlayerMark(p, "@@os__dingzhen-round", 1)
-          local record = U.getMark(p, "_os__dingzhen_to-round")
+          local record = p:getTableMark("_os__dingzhen_to-round")
           table.insert(record, player.id)
           room:setPlayerMark(p, "_os__dingzhen_to-round", record)
         end
@@ -4628,7 +4634,7 @@ local os__dingzhen = fk.CreateTriggerSkill{
 local os__dingzhen_prohibit = fk.CreateProhibitSkill{
   name = "#os__dingzhen_prohibit",
   is_prohibited = function(self, from, to, card)
-    return from:getMark("@@os__dingzhen-round") > 0 and table.contains(U.getMark(from, "_os__dingzhen_to-round"), to.id)
+    return from:getMark("@@os__dingzhen-round") > 0 and table.contains(from:getTableMark("_os__dingzhen_to-round"), to.id)
     and from:getMark("_os__dingzhen_use-turn") == 0 and from.phase ~= Player.NotActive
   end,
 }
@@ -5887,7 +5893,7 @@ local qiaosih = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not (player == target and player:hasSkill(self) and player.phase == Player.Finish) then return end
     local room = player.room
-    local ids = table.filter(U.getMark(player, "_os__qiaosih-turn"), function(id) return room:getCardArea(id) == Card.DiscardPile end)
+    local ids = table.filter(player:getTableMark("_os__qiaosih-turn"), function(id) return room:getCardArea(id) == Card.DiscardPile end)
     if #ids > 0 then 
       self.cost_data = ids
       return true
@@ -5908,7 +5914,7 @@ local qiaosih = fk.CreateTriggerSkill{
   end,
   on_refresh = function (self, event, target, player, data)
     local room = player.room
-    local record = U.getMark(player, "_os__qiaosih-turn")
+    local record = player:getTableMark("_os__qiaosih-turn")
     for _, move in ipairs(data) do
       if move.from and move.from ~= player.id and move.to ~= move.from then
         for _, info in ipairs(move.moveInfo) do
@@ -6169,7 +6175,7 @@ local cairu = fk.CreateViewAsSkill{
   interaction = function()
     local all_names = {"fire_attack", "iron_chain", "ex_nihilo"}
     local names = U.getViewAsCardNames(Self, "os__cairu", all_names)
-    names = table.filter(names, function(n) return not table.contains(U.getMark(Self, "@$os__cairu-turn"), n) end)
+    names = table.filter(names, function(n) return not table.contains(Self:getTableMark("@$os__cairu-turn"), n) end)
     if #names > 0 then
       return UI.ComboBox { choices = names, all_choices = all_names }
     end
@@ -6192,11 +6198,11 @@ local cairu = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, use)
     local name = use.card.name
-    local record = U.getMark(player, "_os__cairu-turn")
+    local record = player:getTableMark("_os__cairu-turn")
     record[name] = (record[name] or 0) + 1
     player.room:setPlayerMark(player, "_os__cairu-turn", record)
     if record[name] >= 2 then
-      record = U.getMark(player, "@$os__cairu-turn")
+      record = player:getTableMark("@$os__cairu-turn")
       table.insert(record, name)
       player.room:setPlayerMark(player, "@$os__cairu-turn", record)
     end
@@ -6204,13 +6210,13 @@ local cairu = fk.CreateViewAsSkill{
   enabled_at_play = function(self, player)
     local all_names = {"fire_attack", "iron_chain", "ex_nihilo"}
     local names = U.getViewAsCardNames(Self, "os__cairu", all_names)
-    return table.find(names, function(n) return not table.contains(U.getMark(Self, "@$os__cairu-turn"), n) end)
+    return table.find(names, function(n) return not table.contains(Self:getTableMark("@$os__cairu-turn"), n) end)
   end,
   enabled_at_response = function(self, player, response)
     if response then return end
     local all_names = {"fire_attack", "iron_chain", "ex_nihilo"}
     local names = U.getViewAsCardNames(Self, "os__cairu", all_names)
-    return table.find(names, function(n) return not table.contains(U.getMark(Self, "@$os__cairu-turn"), n) end)
+    return table.find(names, function(n) return not table.contains(Self:getTableMark("@$os__cairu-turn"), n) end)
   end
 }
 zhugejun:addSkill(shouzhu)

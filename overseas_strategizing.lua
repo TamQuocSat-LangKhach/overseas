@@ -1007,7 +1007,7 @@ local os__guoyi = fk.CreateTriggerSkill{
     local all_choices = {"os__guoyi_prohibit", "os__guoyi_discard:::" .. num}
     local choices = table.clone(all_choices)
     if target:isNude() then table.remove(choices) end
-    local mark = U.getMark(target, "_os__guoyi-turn")
+    local mark = target:getTableMark("_os__guoyi-turn")
     if table.contains(mark, 1) then table.remove(choices, 1) end
     if #choices > 0 then
       local choice = table.indexOf(all_choices, room:askForChoice(target, choices, self.name, "os__guoyi-ask:" .. player.id, false, all_choices))
@@ -1107,13 +1107,13 @@ local os__chuhai = fk.CreateTriggerSkill{
   refresh_events = {fk.EnterDying},
   can_refresh = function(self, event, target, player, data)
     return player:hasSkill(self) and data.damage and data.damage.from == player and
-      player:getQuestSkillState(self.name) ~= "succeed" and target ~= player and not table.contains(U.getMark(player, "_os__chuhai"), target.id)
+      player:getQuestSkillState(self.name) ~= "succeed" and target ~= player and not table.contains(player:getTableMark("_os__chuhai"), target.id)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, self.name, "offensive")
     player:broadcastSkillInvoke(self.name, math.random(2))
-    local record = U.getMark(player, "_os__chuhai")
+    local record = player:getTableMark("_os__chuhai")
     table.insert(record, target.id)
     room:setPlayerMark(player, "_os__chuhai", record)
     room:addPlayerMark(player, "@os__chuhai")
