@@ -624,7 +624,7 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
     if event == fk.AfterCardUseDeclared then
       return player.room:askForSkillInvoke(player, self.name)
     else
-      local targets = U.getUseExtraTargets(player.room, data, false, false)
+      local targets = player.room:getUseExtraTargets(data)
       if #targets == 0 then return false end
       local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#os_ex__lihuo-targets", self.name, true)
       if #tos > 0 then

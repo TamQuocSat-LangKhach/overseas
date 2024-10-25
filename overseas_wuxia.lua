@@ -1356,14 +1356,14 @@ local huzhong = fk.CreateTriggerSkill{
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget and data.card.name == "slash" and U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and
-    ((#U.getUseExtraTargets(player.room, data, true, true) > 0 and table.find(player:getCardIds("h"), function(c) return not player:prohibitDiscard(Fk:getCardById(c)) end)) or not player.room:getPlayerById(data.to):isKongcheng())
+    ((#player.room:getUseExtraTargets(data, true, true) > 0 and table.find(player:getCardIds("h"), function(c) return not player:prohibitDiscard(Fk:getCardById(c)) end)) or not player.room:getPlayerById(data.to):isKongcheng())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)
     local all_choices = {"os__huzhong_own", "os__huzhong_other::" .. data.to}
     local choices = table.simpleClone(all_choices)
-    local targets = U.getUseExtraTargets(room, data, true, true)
+    local targets = room:getUseExtraTargets(data, true, true)
     if #targets == 0 then
       table.remove(choices, 1)
     end
@@ -1565,7 +1565,8 @@ local os__chue = fk.CreateTriggerSkill{
       return player:getMark("@os__bravery") >= player.hp and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
     end
     if target ~= player then return false end
-    return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1 and #U.getUseExtraTargets(player.room, data, true, true) > 0)
+    return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1 and
+      #player.room:getUseExtraTargets(data, true, true) > 0)
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.TargetSpecifying then
@@ -1581,7 +1582,7 @@ local os__chue = fk.CreateTriggerSkill{
     if event == fk.TargetSpecifying then
       room:loseHp(player, 1, self.name)
       if player.dead then return end
-      local availableTargets = U.getUseExtraTargets(room, data, true, true)
+      local availableTargets = room:getUseExtraTargets(data, true, true)
       local num = player.hp
       if #availableTargets > 0 and num > 0 then
         local targets = room:askForChoosePlayers(player, availableTargets, 1, num,

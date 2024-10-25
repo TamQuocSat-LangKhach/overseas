@@ -1102,4 +1102,137 @@ Fk:loadTranslationTable{
   ["~os_if__simayi"] = "天命已定，汝竟能逆之……",
 }
 
+local weiyan = General(extension, "os_if__weiyan", "shu", 4)
+local piankuang = fk.CreateTriggerSkill{
+  name = "os__piankuang",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.DamageCaused, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" then
+      if event == fk.DamageCaused then
+        return player.room.logic:damageByCardEffect() and
+          #player.room.logic:getActualDamageEvents(1, function (e)
+            local damage = e.data[1]
+            return damage.from == player and damage.card and damage.card.trueName == "slash"
+          end, Player.HistoryTurn) > 0
+      elseif event == fk.CardUseFinished and not data.damageDealt then
+        local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+        return turn_event and turn_event.data[1] == player
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.DamageCaused then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      data.damage = data.damage + 1
+    else
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:addPlayerMark(player, MarkEnum.MinusMaxCards.."-turn", 1)
+    end
+  end
+}
+local qiji = fk.CreateTriggerSkill{
+  name = "os__qiji",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function (p)
+        return player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local types = {}
+    for _, id in ipairs(player:getCardIds("h")) do
+      table.insertIfNeed(types, Fk:getCardById(id).type)
+    end
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
+      "#os__qiji-invoke:::"..#types, self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local types = {}
+    for _, id in ipairs(player:getCardIds("h")) do
+      table.insertIfNeed(types, Fk:getCardById(id).type)
+    end
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    for i = 1, #types, 1 do
+      if to.dead then break end
+      room:useVirtualCard("slash", nil, player, to, self.name, true)
+    end
+  end,
+}
+local qiji_delay = fk.CreateTriggerSkill{
+  name = "#os__qiji_delay",
+  mute = true,
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    return target:usedSkillTimes("os__qiji", Player.HistoryPhase) > 0 and data.to == player.id and
+      table.contains(data.card.skillNames, "os__qiji") and
+      not (data.extra_data and data.extra_data.os__qiji) and
+      table.find(player.room:getOtherPlayers(player), function (p)
+        return target ~= p and not table.contains(player:getTableMark("os__qiji-turn"), p.id)
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return target ~= p and not table.contains(player:getTableMark("os__qiji-turn"), p.id)
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#os__qiji-choose", "os__qiji", true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    data.extra_data = data.extra_data or {}
+    data.extra_data.os__qiji = true
+    local to = room:getPlayerById(self.cost_data)
+    room:addTableMark(player, "os__qiji-turn", to.id)
+    to:drawCards(1, "os__qiji-turn")
+    if not to.dead and table.contains(room:getUseExtraTargets(data, true, true), to.id) and
+      room:askForSkillInvoke(to, "os__qiji", nil, "#os__qiji-ask:"..player.id) then
+      AimGroup:cancelTarget(data, player.id)
+      AimGroup:addTargets(room, data, to.id)
+    end
+  end,
+}
+qiji:addRelatedSkill(qiji_delay)
+weiyan:addSkill(qiji)
+weiyan:addSkill(piankuang)
+Fk:loadTranslationTable{
+  ["os_if__weiyan"] = "幻魏延",
+  ["#os_if__weiyan"] = "自矜功伐",
+
+  ["os__qiji"] = "奇击",
+  [":os__qiji"] = "出牌阶段开始时，你可以视为对一名其他角色使用X张无距离限制且不计入次数的【杀】，此【杀】指定目标时，其可以选择一名本回合"..
+  "未以此法选择过的其他角色，被选择的角色摸一张牌，然后其可以将此【杀】的目标转移给自己（X为出牌阶段开始时你手牌的类别数）。",
+  ["os__piankuang"] = "偏狂",
+  [":os__piankuang"] = "锁定技，当你使用【杀】对目标角色造成伤害时，若你本回合使用【杀】造成过伤害，此伤害+1。你的回合内，当你使用【杀】"..
+  "结算后，若此【杀】未造成伤害，本回合你手牌上限-1。",
+  ["#os__qiji-invoke"] = "奇击：你可以视为对一名其他角色使用%arg张【杀】！",
+  ["#os__qiji_delay"] = "奇击",
+  ["#os__qiji-choose"] = "奇击：你可以选择一名角色摸一张牌，其可以将此【杀】转移给其",
+  ["#os__qiji-ask"] = "奇击：是否将对 %src 使用的【杀】转移给你？",
+
+  ["$os__qiji1"] = "久攻不克？待吾奇兵灭敌！",
+  ["$os__qiji2"] = "依我此计，魏都不日可下！",
+  ["$os__piankuang1"] = "有延一人，足为我主克魏吞吴！",
+  ["$os__piankuang2"] = "非我居功自傲，实为吴魏之辈不足一提！",
+  ["~os_if__weiyan"] = "若无粮草之急，何致有今日此败！",
+}
+
 return extension
