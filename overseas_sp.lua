@@ -1527,7 +1527,7 @@ local os__zhengrong = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local card = room:askForCardChosen(player, to, "he", self.name)
-    player:addToPile("os__glory", card, false, self.name)
+    player:addToPile("$os__glory", card, false, self.name)
   end,
 
   refresh_events = {fk.CardUseFinished},
@@ -1555,17 +1555,17 @@ local os__hongju = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return #player:getPile("os__glory") > 2
+    return #player:getPile("$os__glory") > 2
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if #player:getPile("os__glory") > 0 then
-      player:drawCards(#player:getPile("os__glory"), self.name)
-      if not player.dead and #player:getPile("os__glory") > 0 and not player:isKongcheng() then
+    if #player:getPile("$os__glory") > 0 then
+      player:drawCards(#player:getPile("$os__glory"), self.name)
+      if not player.dead and #player:getPile("$os__glory") > 0 and not player:isKongcheng() then
         local cids = room:askForArrangeCards(player, self.name,
-        {player:getPile("os__glory"), player:getCardIds(Player.Hand), "os__glory", "$Hand"}, "#os__hongju-exchange", true)
-        U.swapCardsWithPile(player, cids[1], cids[2], self.name, "os__glory")
+        {player:getPile("$os__glory"), player:getCardIds(Player.Hand), "$os__glory", "$Hand"}, "#os__hongju-exchange", true)
+        U.swapCardsWithPile(player, cids[1], cids[2], self.name, "$os__glory")
       end
     end
     room:handleAddLoseSkills(player, "os__qingce", nil)
@@ -1582,18 +1582,18 @@ local os__qingce = fk.CreateActiveSkill{
   anim_type = "control",
   target_num = 1,
   card_num = 1,
-  expand_pile = "os__glory",
+  expand_pile = "$os__glory",
   prompt = "#os__qingce",
   target_filter = function(self, to_select, selected)
     return to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isAllNude()
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Self:getPileNameOfId(to_select) == "os__glory"
+    return #selected == 0 and Self:getPileNameOfId(to_select) == "$os__glory"
   end,
   on_use = function(self, room, use)
     local player = room:getPlayerById(use.from)
     local target = room:getPlayerById(use.tos[1])
-    room:moveCardTo(use.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "os__glory")
+    room:moveCardTo(use.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, "$os__glory")
     local card = room:askForCardChosen(player, target, "hej", self.name)
     room:throwCard(card, self.name, target, player)
   end,
@@ -1635,7 +1635,7 @@ Fk:loadTranslationTable{
   [":os__saotao"] = "锁定技，你使用的【杀】和普通锦囊牌不能被响应。",
 
   ["#os__zhengrong-ask"] = "征荣：你可选择一名其他角色，将其一张牌置于你的武将牌上",
-  ["os__glory"] = "荣",
+  ["$os__glory"] = "荣",
   ["#os__hongju-exchange"] = "鸿举：可用任意张手牌替换等量的“荣”",
   ["os__hongju_saotao"] = "减1点体力上限，获得〖扫讨〗（锁定技，你使用的【杀】和普通锦囊牌不能被响应）",
   ["#os__qingce"] = "可将一张“荣”置入弃牌堆，弃置其他角色区域内的一张牌",

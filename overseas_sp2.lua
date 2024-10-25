@@ -5762,7 +5762,7 @@ Fk:loadTranslationTable{
 
 local wenchou = General(extension, "wenchou", "qun", 4)
 local juexing = fk.CreateViewAsSkill{
-  name = "os__juexing",
+  name = "$os__juexing",
   prompt = "#os__juexing",
   pattern = "duel",
   card_filter = Util.FalseFunc,
@@ -5797,7 +5797,7 @@ local juexing_delay = fk.CreateTriggerSkill{
       for _, pid in ipairs(targets) do
         local p = room:getPlayerById(pid)
         if not p.dead then
-          p:addToPile("os__juexing", p:getCardIds(Player.Hand), false, self.name)
+          p:addToPile("$os__juexing", p:getCardIds(Player.Hand), false, self.name)
           if not p.dead then
             local cards = p:drawCards(p.hp + p:getMark("@os__juexing"), self.name)
             table.forEach(cards, function(id) room:setCardMark(Fk:getCardById(id), "@@os__juexing-inhand", 1) end)
@@ -5815,7 +5815,7 @@ local juexing_delay = fk.CreateTriggerSkill{
             room:throwCard(cards, self.name, p)
           end
           if not p.dead then
-            room:obtainCard(pid, p:getPile("os__juexing"), false)
+            room:obtainCard(pid, p:getPile("$os__juexing"), false)
           end
         end
       end
@@ -5868,7 +5868,7 @@ Fk:loadTranslationTable{
   ["#wenchou"] = "有去无回",
   ["illustrator:wenchou"] = "Mr_Sleeping",
 
-  ["os__juexing"] = "绝行",
+  ["$os__juexing"] = "绝行",
   [":os__juexing"] = "出牌阶段限一次，你可视为对一名其他角色使用一张【决斗】，该【决斗】生效时，你与其将所有手牌扣置于各自武将牌上，然后摸等同于当前体力值的牌；该【决斗】结算结束后，你与其弃置以此法摸的牌，然后获得扣置于武将牌上的牌。<u>历战</u>：你以此法摸牌时，摸牌数+1。" ..
   "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
   ["os__xiayong"] = "狭勇",
