@@ -387,7 +387,7 @@ local os__xiawang = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target:distanceTo(player) < 2 and data.card and data.card.color == Card.Black and not (target.dead or player.dead) and data.from and not (data.from.dead or data.from == player)
   end,
   on_cost = function(self, event, target, player, data)
-    local use = player.room:askForUseCard(player, "slash", nil, "#os__xiawang-ask:" .. data.from.id, true, { include_targets = {data.from.id}, bypass_distances = true })
+    local use = player.room:askForUseCard(player, "slash", nil, "#os__xiawang-ask:" .. data.from.id, true, { exclusive_targets = {data.from.id}, bypass_distances = true })
     if use then
       self.cost_data = use
       return true
