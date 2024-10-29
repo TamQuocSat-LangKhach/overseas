@@ -4682,7 +4682,7 @@ local os__youye = fk.CreateTriggerSkill{
         local str = string.format("%.0f", current.id)
         move[str] = move[str] or {}
         table.insertTable(move[str], toCurrent)
-        U.doDistribution(room, move, player.id, self.name)
+        room:doYiji(move, player.id, self.name)
       end
     end
   end,
