@@ -365,7 +365,7 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
     for _ = 1, 4, 1 do
       local id = room:getNCards(1)[1]
       table.insert(cards, id)
-      room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name)
+      room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
       local card = Fk:getCardById(id)
       if card.trueName == "slash" and not player:prohibitUse(card) and not player:isProhibited(to, card) and to:isAlive() then
         card.skillName = self.name
@@ -396,6 +396,7 @@ Fk:loadTranslationTable{
   ["enemy_at_the_gates"] = "兵临城下", -- 根据实际结算修改描述
   [":enemy_at_the_gates"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一名其他角色<br /><b>效果</b>：你依次展示牌堆顶四张牌，若为【杀】，你对目标使用之；若不为【杀】，将此牌置入弃牌堆。",
   ["#enemy_at_the_gates_skill"] = "选择一名其他角色，你依次展示牌堆顶四张牌，若为【杀】，你对其使用之；若不为【杀】，将此牌置入弃牌堆",
+  ["enemy_at_the_gates_skill"] = "兵临城下",
 }
 
 return extension
