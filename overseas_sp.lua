@@ -3841,7 +3841,7 @@ local os__queshi = fk.CreateTriggerSkill{
     local room = player.room
     local cardId = U.prepareDeriveCards(room, {{"moon_spear", Card.Diamond, 12}}, "os__queshi_spear")[1]
     if U.canMoveCardIntoEquip(player, cardId, true) then
-      U.moveCardIntoEquip(room, player, cardId, self.name, true, player)
+      room:moveCardIntoEquip(player, cardId, self.name, true, player)
     end
   end,
 
