@@ -883,10 +883,10 @@ local os__sidai = fk.CreateViewAsSkill{
 local os__sidai_tm = fk.CreateTargetModSkill{
   name = "#os__sidai_tm",
   bypass_times = function (self, player, skill, scope, card, to)
-    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, os__sidai.name))
+    return (player:hasSkill(os__sidai) and card and table.contains(card.skillNames, os__sidai.name))
   end,
   bypass_distances = function (self, player, skill, card, to)
-    return (player:hasSkill(os__sidai.name) and card and table.contains(card.skillNames, os__sidai.name))
+    return (player:hasSkill(os__sidai) and card and table.contains(card.skillNames, os__sidai.name))
   end
 }
 

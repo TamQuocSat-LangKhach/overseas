@@ -111,7 +111,7 @@ local os__wuhun = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damaged, fk.Damage, fk.Death},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name, false, true) then
+    if target == player and player:hasSkill(self, false, true) then
       if event == fk.Damaged then
         return data.from and not data.from.dead and not player.dead
       elseif event == fk.Damage then
@@ -233,7 +233,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
   name = "#os__shelie_extra",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(os__shelie.name) and player.phase == Player.Finish and type(player:getMark("@os__shelie-turn")) == "table" and #player:getMark("@os__shelie-turn") == 4 and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+    return target == player and player:hasSkill(os__shelie) and player.phase == Player.Finish and type(player:getMark("@os__shelie-turn")) == "table" and #player:getMark("@os__shelie-turn") == 4 and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     local choices = {"phase_draw", "phase_play"}
@@ -257,7 +257,7 @@ local os__shelie_extra = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
+    return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
   on_refresh = function(self, event, target, player, data)
     local suitsRecorded = type(player:getMark("@os__shelie-turn")) == "table" and player:getMark("@os__shelie-turn") or {}
@@ -406,7 +406,7 @@ local gundam__shelie_extra = fk.CreateTriggerSkill{
   name = "#gundam__shelie_extra",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(gundam__shelie.name) and player.phase == Player.Finish and player:getMark("@gundam__shelie-turn") ~= 0 and #player:getMark("@gundam__shelie-turn") >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+    return target == player and player:hasSkill(gundam__shelie) and player.phase == Player.Finish and player:getMark("@gundam__shelie-turn") ~= 0 and #player:getMark("@gundam__shelie-turn") >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#gundam__shelie_extra-ask")
@@ -424,7 +424,7 @@ local gundam__shelie_extra = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
+    return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
   on_refresh = function(self, event, target, player, data)
     local suitsRecorded = type(player:getMark("@gundam__shelie-turn")) == "table" and player:getMark("@gundam__shelie-turn") or {}
@@ -2713,10 +2713,10 @@ local zhilue_draw = fk.CreateTriggerSkill{
 local zhilue_buff = fk.CreateTargetModSkill{
   name = "#os_xing__zhilue_buff",
   residue_func = function(self, player, skill, scope, card)
-    return (player:hasSkill(zhilue.name) and skill.trueName == "slash_skill") and 1 or 0
+    return (player:hasSkill(zhilue) and skill.trueName == "slash_skill") and 1 or 0
   end,
   distance_limit_func = function(self, player, skill, card)
-    return (player:hasSkill(zhilue.name) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryTurn) == 0) and 998 or 0
+    return (player:hasSkill(zhilue) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryTurn) == 0) and 998 or 0
   end,
 }
 zhilue:addRelatedSkill(zhilue_draw)
@@ -2840,7 +2840,7 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(os__jianwei.name) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
+    if not player:hasSkill(os__jianwei) or target.phase ~= Player.Start or target:isKongcheng() or not player:getEquipment(Card.SubtypeWeapon) then return false end
     if target == player then
       return table.find(player.room.alive_players, function(p)
         return player:canPindian(p) and player:inMyAttackRange(p)
@@ -3055,18 +3055,18 @@ local os__yujue_skill = fk.CreateTriggerSkill{
   events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(os__yujue.name, true)
+      return player:hasSkill(os__yujue, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == os__yujue and player == target
     else
-      return target == player and player:hasSkill(os__yujue.name, true, true)
+      return target == player and player:hasSkill(os__yujue, true, true)
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(os__yujue.name, true) then
+      if player:hasSkill(os__yujue, true) then
         for _, p in ipairs(room:getOtherPlayers(player)) do
           room:handleAddLoseSkills(p, "os__yujue_others&", nil, false, true)
         end
@@ -5059,11 +5059,11 @@ local os__shijun = fk.CreateTriggerSkill{
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self and target == player
     else
-      return target == player and player:hasSkill(self.name, true, true)
+      return target == player and player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -5073,7 +5073,7 @@ local os__shijun = fk.CreateTriggerSkill{
     end)]]
     local targets = room:getOtherPlayers(player)
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         table.forEach(targets, function(p)
           room:handleAddLoseSkills(p, "os__shijun_other&", nil, false, true)
         end)

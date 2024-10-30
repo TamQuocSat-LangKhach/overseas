@@ -743,7 +743,7 @@ local os__renchou = fk.CreateTriggerSkill{
   events = {fk.Death},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name, false, true) or (target ~= player and player:getMark("_os__yanshi") ~= target.id) then return false end 
+    if not player:hasSkill(self, false, true) or (target ~= player and player:getMark("_os__yanshi") ~= target.id) then return false end 
     local from = player.dead and player.room:getPlayerById(player:getMark("_os__yanshi")) or player
     return from and not from.dead and data.damage and data.damage.from and not data.damage.from.dead and data.damage.from ~= from
   end,
@@ -793,17 +793,17 @@ local os__kaizeng = fk.CreateTriggerSkill{
   events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     else
-      return target == player and player:hasSkill(self.name, true, true)
+      return target == player and player:hasSkill(self, true, true)
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         for _, p in ipairs(room:getOtherPlayers(player)) do
           room:handleAddLoseSkills(p, "os__kaizeng_others&", nil, false, true)
         end
@@ -887,7 +887,7 @@ local os__yangming = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
     return target == player and
-      player:hasSkill(self.name, true) and player.phase == Player.Play and
+      player:hasSkill(self, true) and player.phase == Player.Play and
       (type(player:getMark("@os__yangming-phase")) ~= "table" or
       not table.contains(player:getMark("@os__yangming-phase"), data.card:getTypeString() .. "_char"))
   end,
