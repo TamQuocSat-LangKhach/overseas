@@ -4676,12 +4676,11 @@ local os__youye = fk.CreateTriggerSkill{
       end
       local residue = table.filter(cards, function(id) return not table.contains(toCurrent, id) end)
       if #residue == 0 then
-        room:obtainCard(current, toCurrent, true, fk.ReasonGive)
+        room:obtainCard(current, toCurrent, true, fk.ReasonGive, player.id, self.name)
       else
         local move = room:askForYiji(player, residue, room.alive_players, self.name, #residue, #residue, "#os__youye-give2", "os__poise", true)
-        local str = string.format("%.0f", current.id)
-        move[str] = move[str] or {}
-        table.insertTable(move[str], toCurrent)
+        move[current.id] = move[current.id] or {}
+        table.insertTable(move[current.id], toCurrent)
         room:doYiji(move, player.id, self.name)
       end
     end
