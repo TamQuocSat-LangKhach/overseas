@@ -5743,7 +5743,7 @@ Fk:loadTranslationTable{
   "完成前：当你处于濒死状态时，其他角色不能对你使用【桃】。",
   ["os__yanshih"] = "延势",
   [":os__yanshih"] = "一级：限定技，你可将一张【杀】当【决斗】、【兵临城下】或<a href='bag_of_tricks'>智囊</a>牌使用。" ..
-  "<br/>二级：限定技，你可将一张【杀】当【决斗】、【兵临城下】或<<a href='bag_of_tricks'>>智囊</a>牌使用。<a href='os__veteran'>历战</a>：复原此技能。",
+  "<br/>二级：限定技，你可将一张【杀】当【决斗】、【兵临城下】或<a href='bag_of_tricks'>智囊</a>牌使用。<a href='os__veteran'>历战</a>：复原此技能。",
 
   ["os__veteran"] = "#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
 

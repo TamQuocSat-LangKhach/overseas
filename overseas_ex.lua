@@ -29,11 +29,8 @@ local os_ex__paoxiaoAudio = fk.CreateTriggerSkill{
 }
 local os_ex__paoxiao = fk.CreateTargetModSkill{
   name = "os_ex__paoxiao",
-  residue_func = function(self, player, skill, scope)
-    if player:hasSkill(self) and skill.trueName == "slash_skill"
-      and scope == Player.HistoryPhase then
-      return 999
-    end
+  bypass_times = function (self, player, skill, scope, card, to)
+    return player:hasSkill(self) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase
   end,
   bypass_distances = function(self, player, skill, scope)
     return player:hasSkill(self) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryPhase) > 0
@@ -453,15 +450,7 @@ local os_ex__yuzhang = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseChanging then
-      local phase_name_table = {
-        [2] = "phase_start",
-        [3] = "phase_judge",
-        [4] = "phase_draw",
-        [5] = "phase_play",
-        [6] = "phase_discard",
-        [7] = "phase_finish",
-      }
-      return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__yuzhang:::" .. phase_name_table[data.to])
+      return player.room:askForSkillInvoke(player, self.name, data, "#os_ex__yuzhang:::" .. Util.PhaseStrMapper(data.to))
     else
       local pid = data.from.id
       local choice = player.room:askForChoice(player, {"os_ex__yuzhang_disable::" .. pid, "os_ex__yuzhang_discard::" .. pid, "Cancel"}, self.name, "#os_ex__yuzhang-ask::" .. pid)
@@ -860,6 +849,18 @@ local os_ex__jiefan = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected)
     return #selected == 0
   end,
+  target_tip = function (self, to_select, selected, selected_cards, card, selectable, extra_data)
+    if #selected == 0 then return end
+    if to_select == selected[1] then
+      return "jiefan_target"
+    else
+      local p = Fk:currentRoom():getPlayerById(to_select)
+      local target = Fk:currentRoom():getPlayerById(selected[1])
+      if p:inMyAttackRange(target) then
+        return { {content = "jiefaned", type = "warning"} }
+      end
+    end
+  end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(room:getPlayerById(effect.from), "_os_ex__jiefan", target.id)
@@ -899,7 +900,7 @@ Fk:loadTranslationTable{
   [":os_ex__gongqi"] = "①你的攻击范围无限。②出牌阶段限一次，你可弃置一张牌，你于此阶段内使用与弃置的牌花色相同的【杀】无次数限制。若弃置的为装备牌，你可弃置一名其他角色的一张牌。",
   ["os_ex__jiefan"] = "解烦",
   [":os_ex__jiefan"] = "限定技，出牌阶段，你可选择一名角色，令攻击范围内有其的所有角色选择一项：1.弃置一张武器牌；2.令其摸一张牌。当你上一次发动〖解烦〗指定的角色进入濒死状态时，此技能视为未发动过。",
-  
+
   ["#os_ex__gongqi-ask"] = "弓骑：你可弃置一名其他角色的一张牌",
   ["#os_ex__jiefan-discard"] = "解烦：弃置一张武器牌，否则 %dest 摸一张牌",
 
@@ -915,6 +916,9 @@ local os_ex__shenxing = fk.CreateActiveSkill{
   name = "os_ex__shenxing",
   anim_type = "drawcard",
   can_use = Util.TrueFunc,
+  prompt = function (self, selected_cards, selected_targets)
+    return "#os_ex__shenxing-active:::" .. math.min(Self:getMark("@os_ex__shenxing"), 2)
+  end,
   card_filter = function(self, to_select, selected)
     return #selected < math.min(Self:getMark("@os_ex__shenxing"), 2)
   end,
@@ -976,6 +980,8 @@ Fk:loadTranslationTable{
   [":os_ex__shenxing"] = "出牌阶段，你可弃置X张牌，摸一张牌（X为你发动过〖慎行〗的次数且至多为2）。",
   ["os_ex__bingyi"] = "秉壹",
   [":os_ex__bingyi"] = "结束阶段开始时，你可展示所有手牌，若颜色均相同或类型均相同，你令至多X名角色各摸一张牌（X为你的手牌数）。若你展示的牌数大于1且这些牌颜色和类型均相同，则〖慎行〗的X修改为0。",
+
+  ["#os_ex__shenxing-active"] = "慎行：你可弃置 %arg 张牌，然后摸一张牌",
 
   ["@os_ex__shenxing"] = "慎行",
   ["$os_ex__shenxing1"] = "事前多思，事后少悔。",
