@@ -3100,43 +3100,51 @@ local os__fupan = fk.CreateTriggerSkill{
   name = "os__fupan",
   events = {fk.Damage, fk.Damaged},
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not player.dead
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(data.damage, self.name)
-    local os__fupan_invalid = player:getMark("_os__fupan_invalid") ~= 0 and player:getMark("_os__fupan_invalid") or {}
+    if player.dead then return end
+    local os__fupan_invalid = player:getTableMark("_os__fupan_invalid")
     local availableTargets = table.map(
-      table.filter(room:getOtherPlayers(player), function(p)
+      table.filter(room:getOtherPlayers(player, false), function(p)
         return not table.contains(os__fupan_invalid, p.id)
       end),
       Util.IdMapper
     )
     if #availableTargets == 0 or player:isNude() then return false end
-    local plist, cid = room:askForChooseCardAndPlayers(player, availableTargets, 1, 1, nil, "#os__fupan-give", self.name, false)
+    local plist, cid = room:askForChooseCardAndPlayers(player, availableTargets, 1, 1, nil,
+      "#os__fupan-give", self.name, false, false, "os__fupan_tip")
     local pid = plist[1]
     room:moveCardTo(cid, Player.Hand, room:getPlayerById(pid), fk.ReasonGive, self.name, nil, false)
-    local os__fupan_once = player:getTableMark("_os__fupan_once")
 
-    local targetedFirstTime = table.contains(os__fupan_once, pid)
-    table.insertIfNeed(os__fupan_once, pid)
-    room:setPlayerMark(player, "_os__fupan_once", os__fupan_once)
+    if player.dead then return end
+    local targetedFirstTime = table.contains(player:getTableMark("_os__fupan_once"), pid)
 
     if not targetedFirstTime then
+      room:addTableMark(player, "_os__fupan_once", pid)
       player:drawCards(2, self.name)
-    else
-      if room:askForChoice(player, {"os__fupan_dmg", "Cancel"}, self.name) ~= "Cancel" then
-        table.insertIfNeed(os__fupan_invalid, pid)
-        room:setPlayerMark(player, "_os__fupan_invalid", os__fupan_invalid)
-        room:damage{
-          from = player,
-          to = room:getPlayerById(pid),
-          damage = 1,
-          skillName = self.name,
-        }
-      end
+    elseif room:askForChoice(player, {"os__fupan_dmg::" .. pid, "Cancel"}, self.name) ~= "Cancel" then
+      table.insertIfNeed(os__fupan_invalid, pid)
+      room:setPlayerMark(player, "_os__fupan_invalid", os__fupan_invalid)
+      room:damage{
+        from = player,
+        to = room:getPlayerById(pid),
+        damage = 1,
+        skillName = self.name,
+      }
     end
+  end,
+  on_lose = function (self, player, is_death)
+    local room = player.room
+    room:setPlayerMark(player, "_os__fupan_once", 0)
+    room:setPlayerMark(player, "_os__fupan_invalid", 0)
+  end
+}
+Fk:addTargetTip{
+  name = "os__fupan_tip",
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable)
+    if not selectable then return end
+    return table.contains(Self:getTableMark("_os__fupan_once"), to_select) and "#os__fupan_tip_once" or "#os__fupan_tip_notyet"
   end,
 }
 
@@ -3150,9 +3158,11 @@ Fk:loadTranslationTable{
 
   ["os__fupan"] = "复叛",
   [":os__fupan"] = "当你造成或受到伤害后，你可摸X张牌（X为伤害值），然后交给一名其他角色一张牌。若你未以此法交给过其牌，你摸两张牌；否则，你可对其造成1点伤害，然后你不能再以此法交给其牌。",
-  
+
   ["#os__fupan-give"] = "复叛：交给一名其他角色一张牌",
-  ["os__fupan_dmg"] = "对其造成1点伤害，然后不能再以此法交给其牌",
+  ["os__fupan_dmg"] = "对%dest造成1点伤害，然后不能再以此法交给其牌",
+  ["#os__fupan_tip_once"] = "可对其造成伤害",
+  ["#os__fupan_tip_notyet"] = "你摸两张牌",
 
   ["$os__fupan1"] = "胜者为王，吾等……无话可说……",
   ["$os__fupan2"] = "今乱平阳之地，汉人如何可防？",
@@ -3363,7 +3373,7 @@ local os__bingde_record = fk.CreateTriggerSkill{
   name = "#os__bingde_record",
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.card.suit ~= Card.NoSuit and player:getMark("_os__bingde_" .. data.card.suit .. "-phase") ~= "x"
+    return target == player and player:hasSkill(os__bingde) and player.phase == Player.Play and data.card.suit ~= Card.NoSuit and player:getMark("_os__bingde_" .. data.card.suit .. "-phase") ~= "x"
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -3390,14 +3400,14 @@ local os__qingtao = fk.CreateTriggerSkill{ --……
       self.cost_data = id
       return true
     end
-    return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:recastCard(self.cost_data[1], player, self.name)
+    if player.dead then return end
     local card = Fk:getCardById(self.cost_data[1])
     if card.name == "analeptic" or card.type ~= Card.TypeBasic then player:drawCards(1, self.name) end
-    if event == fk.EventPhaseEnd then room:setPlayerMark(player, "_os__qingtao_invoked-turn", 1) end
+    room:setPlayerMark(player, "_os__qingtao_invoked-turn", 1)
   end,
 }
 
@@ -3448,7 +3458,7 @@ local os__jiekuang = fk.CreateTriggerSkill{
       if choice ~= "Cancel" then
         self.cost_data = choice
         return true
-      end 
+      end
       return false
     else
       return true
