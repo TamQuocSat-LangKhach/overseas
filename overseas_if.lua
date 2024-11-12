@@ -1139,7 +1139,7 @@ local qiji = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
       not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function (p)
         return player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
       end)
