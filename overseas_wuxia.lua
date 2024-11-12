@@ -1977,7 +1977,8 @@ local os__xinshou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage},
   can_refresh = function (self, event, target, player, data)
-    return target:hasSkill("os__dengjian") and player:getMark("_os__xinshou_target") == target.id and data.card and data.card.trueName == "slash"
+    return target and target:hasSkill("os__dengjian") and player:getMark("_os__xinshou_target") == target.id
+    and data.card and data.card.trueName == "slash"
   end,
   on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "_os__xinshou_invalid", 0)
