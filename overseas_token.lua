@@ -185,16 +185,13 @@ Fk:loadTranslationTable{
 local underhandingSkill = fk.CreateActiveSkill{
   name = "underhanding_skill",
   prompt = "#underhanding_skill",
+  can_use = Util.CanUse,
   min_target_num = 1,
   max_target_num = 2,
   mod_target_filter = function(self, to_select, selected, user, card)
-    local player = Fk:currentRoom():getPlayerById(to_select)
-    return user ~= to_select and not player:isAllNude()
+    return user ~= to_select and not Fk:currentRoom():getPlayerById(to_select):isAllNude()
   end,
-  target_filter = function(self, to_select, selected)
-    local p = Fk:currentRoom():getPlayerById(to_select)
-    return to_select ~= Self.id and not p:isAllNude()
-  end,
+  target_filter = Util.TargetFilter,
   on_effect = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
@@ -259,9 +256,11 @@ Fk:loadTranslationTable{
 local redistributeSkill = fk.CreateActiveSkill{
   name = "redistribute_skill",
   prompt = "#redistribute_skill",
+  can_use = Util.CanUse,
   target_num = 2,
   mod_target_filter = Util.TrueFunc,
-  target_filter = function(self, to_select, selected)
+  target_filter = function(self, to_select, selected, _, card)
+    if Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card) then return end
     if #selected == 1 then
       return Fk:currentRoom():getPlayerById(to_select):getHandcardNum() ~= Fk:currentRoom():getPlayerById(selected[1]):getHandcardNum()
     end
@@ -351,13 +350,12 @@ Fk:loadTranslationTable{
 local enemyAtTheGatesSkill = fk.CreateActiveSkill{
   name = "enemy_at_the_gates_skill",
   prompt = "#enemy_at_the_gates_skill",
+  can_use = Util.CanUse,
   target_num = 1,
   mod_target_filter = function(self, to_select, selected, user, card)
     return user ~= to_select
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and Self.id ~= to_select
-  end,
+  target_filter = Util.TargetFilter,
   on_effect = function(self, room, cardEffectEvent)
     local player = room:getPlayerById(cardEffectEvent.from)
     local to = room:getPlayerById(cardEffectEvent.to)
