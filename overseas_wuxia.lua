@@ -722,17 +722,12 @@ local os__yanshi = fk.CreateTriggerSkill{
     end
   end,
 }
-local os__yanshi_distance = fk.CreateDistanceSkill{
+local os__yanshi_distance = fk.CreateTargetModSkill{
   name = "#os__yanshi_distance",
-  correct_func = function(self, from, to)
-    if from:hasSkill(self) then
-      if to:getMark("@@os__oath") > 0 then
-        from:setFixedDistance(to, 1)
-      else
-        from:removeFixedDistance(to)
-      end
+  bypass_distances = function(self, from, _, _, to)
+    if from and from:hasSkill(self) and to then
+      return to:getMark("@@os__oath") > 0
     end
-    return 0
   end,
 }
 os__yanshi:addRelatedSkill(os__yanshi_distance)
