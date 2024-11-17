@@ -1102,7 +1102,7 @@ local shenyi = fk.CreateTriggerSkill{
     if #card > 0 then
       player:addToPile("os__chivalry&", card[1], true, self.name)
     end
-    if target ~= player then
+    if target ~= player and not target.dead and not player:isKongcheng() then
       local cards = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, nil, "#os__shenyi-give::" .. target.id)
       if #cards == 0 then return end
       room:moveCardTo(cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
@@ -1138,11 +1138,12 @@ local shenyi_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(shenyi.name)
-    room:notifySkillInvoked(player, shenyi.name, "drawcard")
     for _, cid in ipairs(self.cost_data) do
       room:setCardMark(Fk:getCardById(cid), "@@os__shenyi", 0)
     end
+    if player.dead then return end
+    player:broadcastSkillInvoke(shenyi.name)
+    room:notifySkillInvoked(player, shenyi.name, "drawcard")
     player:drawCards(#self.cost_data, shenyi.name)
   end,
 }

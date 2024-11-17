@@ -4743,12 +4743,12 @@ local os__xingluan = fk.CreateTriggerSkill{
       local move = room:askForYiji(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
       local num = #move[player.id]
       local victims = {}
-      for p, c in pairs(move) do
+      for pid, c in pairs(move) do
         if #c >= num and #c > 0 then
-          table.insert(victims, tonumber(p))
+          table.insert(victims, pid)
         end
       end
-      room:doYiji(room, move, player.id, self.name)
+      room:doYiji(move, player.id, self.name)
       room:sortPlayersByAction(victims)
       for _, pid in ipairs(victims) do
         local p = room:getPlayerById(pid)
@@ -4767,7 +4767,7 @@ Fk:loadTranslationTable{
   ["os__xingluan"] = "兴乱",
   [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌分配给任意名角色（每名角色至多三张），以此法获得牌数大于0且不小于你的角色依次失去1点体力。",
   ["#os__xingluan-ask"] = "兴乱：选择其中一种类别的牌并分配",
-  ["#os__xingluan-give"] = "兴乱：将 %arg 分配给任意名角色（每名角色至多三张）",
+  ["#os__xingluan-give"] = "兴乱：将这些牌分配给任意名角色（每名角色至多三张）",
   ["distribute_active"] = "分配牌",
   ["$os__xingluan1"] = "既朝廷不赦，何不反击一搏？",
   ["$os__xingluan2"] = "反扑长安，势要天翻地覆！",
