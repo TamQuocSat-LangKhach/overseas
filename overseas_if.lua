@@ -1235,4 +1235,355 @@ Fk:loadTranslationTable{
   ["~os_if__weiyan"] = "若无粮草之急，何致有今日此败！",
 }
 
+local liushan = General(extension, "os_if__liushan", "shu", 3)
+local guihanh = fk.CreateActiveSkill{
+  name = "os__guihanh",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = 3,
+  prompt = "#os__guihanh",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected, selected_cards)
+    return #selected < 3 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local c = room:getNCards(1)
+    local type = Fk:getCardById(c[1]):getTypeString()
+    room:moveCardTo(c, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+    room:sortPlayersByAction(effect.tos)
+    local n = 0
+    for _, id in ipairs(effect.tos) do
+      local target = room:getPlayerById(id)
+      if not target.dead then
+        local card = room:askForCard(target, 1, 1, true, self.name, true, ".|.|.|.|.|"..type, "#os__guihanh-ask:::"..type)
+        if #card > 0 then
+          n = n + 1
+          room:moveCards({
+            ids = card,
+            from = target.id,
+            toArea = Card.DrawPile,
+            moveReason = fk.ReasonPut,
+            skillName = self.name,
+            moveVisible = true,
+            drawPilePosition = 1,
+          })
+        else
+          room:loseHp(target, 1, self.name)
+        end
+      end
+    end
+    U.clearRemainCards(room, c)
+    if player.dead then return end
+    local choices = {"os__guihanh2:::"..(n + 1)}
+    if n > 0 then
+      table.insert(choices, 1, "os__guihanh1:::"..n)
+    end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice[11] == "1" then
+      player:drawCards(n, self.name)
+    else
+      local ids = {}
+      if #room.draw_pile > n then
+        table.insert(ids, room.draw_pile[n + 1])
+      end
+      if #room.draw_pile > n + 1 then
+        table.insert(ids, room.draw_pile[n + 2])
+      end
+      if #ids == 0 then return end
+      room:moveCardTo(ids, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
+    end
+  end,
+}
+local renxian = fk.CreateActiveSkill{
+  name = "os__renxian",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#os__renxian",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      table.find(player:getCardIds("h"), function (id)
+        return Fk:getCardById(id).type == Card.TypeBasic and Fk:getCardById(id).trueName ~= "jink"
+      end)
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = table.filter(player:getCardIds("h"), function (id)
+      return Fk:getCardById(id).type == Card.TypeBasic and Fk:getCardById(id).trueName ~= "jink"
+    end)
+    room:moveCardTo(cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, false, player.id, "@@os__renxian-inhand")
+    if target.dead then return end
+    target:gainAnExtraTurn(true, self.name, {phase_table = {Player.Play}})
+  end,
+}
+local renxian_delay = fk.CreateTriggerSkill{
+  name = "#os__renxian_delay",
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if target ~= player or data.reason ~= "os__renxian" then
+      for _, id in ipairs(player:getCardIds("h")) do
+        room:setCardMark(Fk:getCardById(id), "@@os__renxian-inhand", 0)
+      end
+    else
+      room:setPlayerMark(player, "os__renxian-turn", 1)
+    end
+  end,
+}
+local renxian_targetmod = fk.CreateTargetModSkill{
+  name = "#os__renxian_targetmod",
+  bypass_times = function(self, player, skill, scope)
+    return skill.trueName == "slash_skill" and player:getMark("os__renxian-turn") > 0
+  end,
+}
+local renxian_prohibit = fk.CreateProhibitSkill{
+  name = "#os__renxian_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("os__renxian-turn") > 0 and card:getMark("@@os__renxian-inhand") == 0
+  end,
+  prohibit_response = function(self, player, card)
+    return player:getMark("os__renxian-turn") > 0 and card:getMark("@@os__renxian-inhand") == 0
+  end,
+}
+local yanzuo = fk.CreateTriggerSkill{
+  name = "os__yanzuok$",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player and player:hasSkill(self) and target and target.kingdom == "shu" and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 then
+      local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      return turn_event and turn_event.data[1] == target and turn_event.data[2].reason == "os__renxian"
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(2, self.name)
+  end,
+}
+renxian:addRelatedSkill(renxian_delay)
+renxian:addRelatedSkill(renxian_targetmod)
+renxian:addRelatedSkill(renxian_prohibit)
+liushan:addSkill(guihanh)
+liushan:addSkill(renxian)
+liushan:addSkill(yanzuo)
+Fk:loadTranslationTable{
+  ["os_if__liushan"] = "幻刘禅",
+  ["#os_if__liushan"] = "汉祚永延",
+
+  ["os__guihanh"] = "归汉",
+  [":os__guihanh"] = "出牌阶段限一次，你可以选择至多三名有手牌的其他角色，然后展示牌堆顶牌，这些角色依次选择一项：1.将一张同类别牌置于牌堆顶；"..
+  "2.失去1点体力。然后你选择一项：1.摸X张牌；2.获得牌堆第X+1张开始的两张牌。（X为以此法置于牌堆顶的牌数）",
+  ["os__renxian"] = "任贤",
+  [":os__renxian"] = "出牌阶段限一次，你可以将除【闪】以外的所有基本牌交给一名其他角色，此回合结束后，其执行一个只有出牌阶段的额外回合，"..
+  "该回合内其只能使用或打出你以此法交给其的牌且使用【杀】无次数限制。",
+  ["os__yanzuok"] = "延祚",
+  [":os__yanzuok"] = "主公技，锁定技，每回合限两次，当其他蜀势力角色于“任贤”回合内造成伤害后，你摸两张牌。",
+  ["#os__guihanh"] = "归汉：选择至多三名角色，这些角色选择将一张牌置于牌堆顶或失去1点体力",
+  ["#os__guihanh-ask"] = "归汉：将一张%arg置于牌堆顶，或点“取消”失去1点体力",
+  ["os__guihanh1"] = "摸%arg张牌",
+  ["os__guihanh2"] = "获得牌堆第%arg张开始的两张牌",
+  ["#os__renxian"] = "任贤：将所有非【闪】基本牌交给一名角色，其执行一个只能使用这些牌的额外回合",
+  ["@@os__renxian-inhand"] = "任贤",
+
+  ["$os__guihanh1"] = "天下分合，终不改汉祚之名！",
+  ["$os__guihanh2"] = "平安南北，终携百姓致太平！",
+  ["$os__renxian1"] = "朕虽驽钝，幸有众爱卿襄助！",
+  ["$os__renxian2"] = "知人善用，任人唯贤！",
+  ["$os__yanzuok1"] = "若无忠臣良将，焉有今日之功！",
+  ["$os__yanzuok2"] = "卿等安国定疆，方有今日之统！",
+  ["~os_if__liushan"] = "天下分崩离乱，再难建兴……",
+}
+
+local luxun = General(extension, "os_if__luxun", "wu", 3)
+local lifengh = fk.CreateActiveSkill{
+  name = "os__lifengh",
+  anim_type = "offensive",
+  card_num = 2,
+  target_num = 1,
+  prompt = "#os__lifengh",
+  can_use = Util.TrueFunc,
+  card_filter = function (self, to_select, selected)
+    if #selected < 2 and not Self:prohibitDiscard(to_select) then
+      if #selected == 0 then
+        return true
+      else
+        return Fk:getCardById(to_select).number ~= Fk:getCardById(selected[1]).number
+      end
+    end
+  end,
+  target_filter = function (self, to_select, selected, selected_cards)
+    if #selected_cards == 2 then
+      return Self:distanceTo(Fk:currentRoom():getPlayerById(to_select)) <=
+        math.abs(Fk:getCardById(selected_cards[1]).number - Fk:getCardById(selected_cards[2]).number)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local nums = table.map(effect.cards, function (id)
+      return Fk:getCardById(id).number
+    end)
+    room:throwCard(effect.cards, self.name, player, player)
+    if target.dead then return end
+    room:damage{
+      from = player,
+      to = target,
+      damage = 1,
+      skillName = self.name,
+      extra_data = {
+        os__lifengh = {player.id, nums},
+      }
+    }
+  end,
+}
+local lifengh_delay = fk.CreateTriggerSkill{
+  name = "#os__lifengh_delay",
+  mute = true,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.skillName == "os__lifengh"
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local src = room:getPlayerById(data.extra_data.os__lifengh[1])
+    local nums = data.extra_data.os__lifengh[2]
+    table.sort(nums)
+    local card = {}
+    if player:isKongcheng() and room:askForSkillInvoke(player, "os__lifengh", nil,
+      "#os__lifengh-draw:"..src.id..":"..nums[1]..":"..nums[2]) then
+      card = player:drawCards(1, "os__lifengh")
+    elseif not player:isKongcheng() then
+      card = room:askForCard(player, 1, 1, false, "os__lifengh", true, nil,
+      "#os__lifengh-recast:"..src.id.."::"..nums[1]..":"..nums[2])
+      if #card > 0 then
+        room:recastCard(card, player, "os__lifengh")
+      end
+    end
+    if #card > 0 then
+      local n = Fk:getCardById(card[1]).number
+      if n >= nums[1] and n <= nums[2] then
+        room:invalidateSkill(src, "os__lifengh", "-turn")
+        return true
+      end
+    end
+  end,
+}
+local niwo = fk.CreateTriggerSkill{
+  name = "os__niwo",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p)
+        return not p:isKongcheng()
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p)
+      return not p:isKongcheng()
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#os__niwo-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local extra_data = {}
+    local visible_data = {}
+    for _, id in ipairs(player:getCardIds("h")) do
+      if not player:cardVisible(id) then
+        visible_data[tostring(id)] = false
+      end
+    end
+    for _, id in ipairs(to:getCardIds("h")) do
+      if not player:cardVisible(id) then
+        visible_data[tostring(id)] = false
+      end
+    end
+    if next(visible_data) == nil then visible_data = nil end
+    extra_data.visible_data = visible_data
+    local cards = room:askForPoxi(player, "os__niwo", {
+      { player.general, player:getCardIds("h") },
+      { to.general, to:getCardIds("h") },
+    }, extra_data, true)
+    if #cards > 0 then
+      for _, id in ipairs(cards) do
+        room:setCardMark(Fk:getCardById(id), "@@os__niwo-inhand", 1)
+      end
+    end
+  end,
+}
+local niwo_prohibit = fk.CreateProhibitSkill{
+  name = "#os__niwo_prohibit",
+  prohibit_use = function(self, player, card)
+    return card:getMark("@@os__niwo-inhand") > 0
+  end,
+  prohibit_response = function(self, player, card)
+    return card:getMark("@@os__niwo-inhand") > 0
+  end,
+}
+Fk:addPoxiMethod{
+  name = "os__niwo",
+  prompt = "#os__niwo",
+  card_filter = function(to_select, selected, data)
+    return true
+  end,
+  feasible = function(selected, data)
+    if #selected > 0 and #selected % 2 == 0 then
+      return #table.filter(selected, function (id)
+        return table.contains(data[1][2], id)
+      end) == #table.filter(selected, function (id)
+        return table.contains(data[2][2], id)
+      end)
+    end
+  end,
+}
+lifengh:addRelatedSkill(lifengh_delay)
+niwo:addRelatedSkill(niwo_prohibit)
+luxun:addSkill(lifengh)
+luxun:addSkill(niwo)
+Fk:loadTranslationTable{
+  ["os_if__luxun"] = "幻陆逊",
+  ["#os_if__luxun"] = "审机而行",
+
+  ["os__lifengh"] = "砺锋",
+  [":os__lifengh"] = "出牌阶段，你可以弃置两张点数不同的牌，对一名距离X以内的角色造成1点伤害（X为这两张牌点数之差），其受到此伤害时，"..
+  "可以重铸一张手牌（没有手牌则改为摸一张牌），若此牌点数介于这两张牌点数闭区间，防止此伤害且本回合此技能失效。",
+  ["os__niwo"] = "逆涡",
+  [":os__niwo"] = "出牌阶段开始时，你可以选择一名其他角色，选择你与其等量的手牌，本回合你与其不能使用或打出这些牌。",
+  ["#os__lifengh"] = "砺锋：弃两张牌，对一名距离这两张牌点数之差以内的角色造成1点伤害",
+  ["#os__lifengh_delay"] = "砺锋",
+  ["#os__lifengh-draw"] = "砺锋：%src 对你造成伤害，是否摸一张牌？若点数介于[%arg, %arg2]则防止伤害且其“砺锋”失效",
+  ["#os__lifengh-recast"] = "砺锋：%src 对你造成伤害，是否重铸一张手牌？若点数介于[%arg, %arg2]则防止伤害且其“砺锋”失效",
+  ["#os__niwo-choose"] = "逆涡：你可以选择一名角色，选择双方等量的手牌本回合无法使用或打出",
+  ["#os__niwo"] = "逆涡：选择双方等量手牌，本回合不能使用或打出",
+  ["@@os__niwo-inhand"] = "逆涡",
+
+  ["$os__lifengh1"] = "十载磨一剑，今日欲以贼三军拭锋！",
+  ["$os__lifengh2"] = "业火炼锋，江水淬刃，方铸此师！",
+  ["$os__niwo1"] = "疲敌而取之以逸，其势易也！",
+  ["$os__niwo2"] = "调其心疲其士，则可以静制动，以弱胜强！",
+  ["~os_if__luxun"] = "但为大吴万世基业，臣死亦不改匡谏之心！",
+}
+
 return extension
