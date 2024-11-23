@@ -1528,7 +1528,7 @@ local niwo = fk.CreateTriggerSkill{
     }, extra_data, true)
     if #cards > 0 then
       for _, id in ipairs(cards) do
-        room:setCardMark(Fk:getCardById(id), "@@os__niwo-inhand", 1)
+        room:setCardMark(Fk:getCardById(id), "@@os__niwo-inhand-turn", 1)
       end
     end
   end,
@@ -1536,10 +1536,10 @@ local niwo = fk.CreateTriggerSkill{
 local niwo_prohibit = fk.CreateProhibitSkill{
   name = "#os__niwo_prohibit",
   prohibit_use = function(self, player, card)
-    return card:getMark("@@os__niwo-inhand") > 0
+    return card:getMark("@@os__niwo-inhand-turn") > 0
   end,
   prohibit_response = function(self, player, card)
-    return card:getMark("@@os__niwo-inhand") > 0
+    return card:getMark("@@os__niwo-inhand-turn") > 0
   end,
 }
 Fk:addPoxiMethod{
@@ -1577,7 +1577,7 @@ Fk:loadTranslationTable{
   ["#os__lifengh-recast"] = "砺锋：%src 对你造成伤害，是否重铸一张手牌？若点数介于[%arg, %arg2]则防止伤害且其“砺锋”失效",
   ["#os__niwo-choose"] = "逆涡：你可以选择一名角色，选择双方等量的手牌本回合无法使用或打出",
   ["#os__niwo"] = "逆涡：选择双方等量手牌，本回合不能使用或打出",
-  ["@@os__niwo-inhand"] = "逆涡",
+  ["@@os__niwo-inhand-turn"] = "逆涡",
 
   ["$os__lifengh1"] = "十载磨一剑，今日欲以贼三军拭锋！",
   ["$os__lifengh2"] = "业火炼锋，江水淬刃，方铸此师！",

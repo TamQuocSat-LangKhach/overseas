@@ -5940,62 +5940,32 @@ local baizu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player == target and target:hasSkill(self) and player.phase == Player.Finish and
-      player:isWounded() and not player:isKongcheng() and (player.hp + player:getMark("@os__baizu")) > 0
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local x = player.hp + player:getMark("@os__baizu")
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return not p:isKongcheng()
-    end), Util.IdMapper)
-    self.cost_data = #targets <= x and targets or room:askForChoosePlayers(player, targets, x, x, "#os__baizu-ask:::" .. x, self.name, false)
-    return true
+    player:isWounded() and not player:isKongcheng() and (player.hp + player:getMark("@os__baizu")) > 0 and
+    table.find(player.room.alive_players, function (p)
+      return p ~= player and not p:isKongcheng()
+    end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = self.cost_data
+    local x = player.hp + player:getMark("@os__baizu")
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return p ~= player and not p:isKongcheng()
+    end), Util.IdMapper)
+    if #targets > x then
+      targets = room:askForChoosePlayers(player, targets, x, x, "#os__baizu-ask:::" .. x, self.name, false)
+    else
+      room:doIndicate(player.id, targets)
+    end
     table.insert(targets, player.id)
-    room:doIndicate(player.id, targets)
-    room:sortPlayersByAction(targets)
     targets = table.map(targets, Util.Id2PlayerMapper)
-    local cardType
+    local cardsMap = U.askForJointCard(targets, 1, 1, false, self.name, false, nil, "#AskForDiscard:::1:1", nil, true)
+    local moveInfos = {}
     local victims = {}
-    local cardsMap = {}
+    local cardType = #cardsMap[player.id] > 0 and Fk:getCardById(cardsMap[player.id][1]).type or 0
     for _, p in ipairs(targets) do
-      cardsMap[p.id] = table.filter(p:getCardIds("he"), function(id)
-        return not p:prohibitDiscard(Fk:getCardById(id))
-      end)
-    end
-    local extra_data = {
-      num = 1,
-      min_num = 1, -- 不加会报错
-      include_equip = false,
-      skillName = self.name,
-      pattern = ".",
-      reason = self.name,
-    }
-    local toAsk = {}
-    for _, p in ipairs(targets) do
-      if #cardsMap[p.id] > 0 then
-        table.insert(toAsk, p)
-        p.request_data = json.encode({ "discard_skill", "#os__baizu-discard", false, extra_data })
-      end
-    end
-    if #toAsk > 0 then
-      room:notifyMoveFocus(targets, self.name)
-      room:doBroadcastRequest("AskForUseActiveSkill", toAsk)
-      local moveInfos = {}
-      for _, p in ipairs(toAsk) do
-        local throw
-        if p.reply_ready then
-          local replyCard = json.decode(p.client_reply).card
-          throw = json.decode(replyCard).subcards
-        else
-          throw = table.random(cardsMap[p.id], 1)
-        end
-        if p == player then
-          cardType = Fk:getCardById(throw[1]).type
-        elseif cardType == Fk:getCardById(throw[1]).type then
+      local throw = cardsMap[p.id]
+      if #throw > 0 then
+        if p ~= player and Fk:getCardById(throw[1]).type == cardType then
           table.insert(victims, p.id)
         end
         table.insert(moveInfos, {
@@ -6007,12 +5977,12 @@ local baizu = fk.CreateTriggerSkill{
           skillName = self.name,
         })
       end
-      room:moveCards(table.unpack(moveInfos))
-      room:delay(100 * #targets)
     end
+    if #moveInfos == 0 then return false end
+    room:moveCards(table.unpack(moveInfos))
+    if #victims == 0 then return false end
     room:sortPlayersByAction(victims)
     for _, pid in ipairs(victims) do
-      if player.dead then break end
       local p = room:getPlayerById(pid)
       if not p.dead then
         room:damage{
@@ -6027,11 +5997,15 @@ local baizu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player:usedSkillTimes(self.name) > 0
+    return player == target and player:hasSkill(self) and player:usedSkillTimes(self.name) > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@os__baizu")
-  end
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@os__baizu", 0)
+  end,
 }
 
 yuantan:addSkill(qiaosih)
@@ -6044,8 +6018,8 @@ Fk:loadTranslationTable{
   ["os__qiaosih"] = "峭嗣",
   [":os__qiaosih"] = "结束阶段，你可获得其他角色本回合进入弃牌堆的牌，然后若你以此法获得牌的数量小于X，你失去1点体力（X为你的体力值）。",
   ["os__baizu"] = "败族",
-  [":os__baizu"] = "锁定技，结束阶段，若你已受伤且有手牌，你须选择X名其他角色，令你与这些角色同时弃置一张手牌，然后你对弃置与你相同类型牌的其他角色造成1点伤害（X为你的体力值）。<a href='os__veteran'>历战</a>：X+1。" ..
-  "<br/><font color='grey'>#\"<b>历战</b>\"：发动过本技能的回合结束后，对本技能进行升级或修改，可叠加。",
+  [":os__baizu"] = "锁定技，结束阶段，若你已受伤且有手牌，你须选择X名其他角色，令你与这些角色同时弃置一张手牌，"..
+  "然后你对弃置与你相同类型牌的其他角色造成1点伤害（X为你的体力值）。<a href='os__veteran'>历战</a>：X+1。",
 
   ["@os__baizu"] = "败族",
   ["#os__baizu-ask"] = "败族：选择 %arg 名其他角色，你和这些角色各弃置一张手牌",
