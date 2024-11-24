@@ -109,7 +109,7 @@ local osBeidingUse = fk.CreateTriggerSkill{
       end
 
       local use = U.askForUseVirtualCard(room, player, name, nil, self.name, "#os__beiding-use:::" .. name, false, true, true)
-      if use and not table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+      if use and not table.contains(TargetGroup:getRealTargets(use.tos), target.id) and not target.dead then
         target:drawCards(1, self.name)
       end
     end
