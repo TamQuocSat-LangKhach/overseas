@@ -1586,4 +1586,544 @@ Fk:loadTranslationTable{
   ["~os_if__luxun"] = "但为大吴万世基业，臣死亦不改匡谏之心！",
 }
 
+local ifcaoang = General(extension, "os_if__caoang", "wei", 3, 4)
+
+Fk:loadTranslationTable{
+  ["os_if__caoang"] = "幻曹昂",
+  ["#os_if__caoang"] = "穿时寻冀",
+  ["~os_if__caoang"] = "",
+}
+
+local osChihui = fk.CreateTriggerSkill{
+  name = "os__chihui",
+  anim_type = "control",
+  events = {fk.TurnStart},
+  can_trigger = function (self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and not target.dead and #player:getAvailableEquipSlots() > 0
+  end,
+  on_cost = function (self, event, target, player, data)
+    local all_choices = {
+      "WeaponSlot",
+      "ArmorSlot",
+      "DefensiveRideSlot",
+      "OffensiveRideSlot",
+      "TreasureSlot"
+    }
+    local subtypes = {
+      Card.SubtypeWeapon,
+      Card.SubtypeArmor,
+      Card.SubtypeDefensiveRide,
+      Card.SubtypeOffensiveRide,
+      Card.SubtypeTreasure
+    }
+    local choices = {}
+    for i = 1, 5, 1 do
+      if #player:getAvailableEquipSlots(subtypes[i]) > 0 then
+        table.insert(choices, all_choices[i])
+      end
+    end
+    table.insert(all_choices, "Cancel")
+    table.insert(choices, "Cancel")
+    local choice = player.room:askForChoice(player, choices, self.name, "#os__chihui-choice::" .. target.id, false, all_choices)
+    if choice ~= "Cancel" then
+      player.room:doIndicate(player.id, {target.id})
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:abortPlayerArea(player, {self.cost_data})
+    if player.dead or target.dead then return false end
+
+    local subtype = Util.convertSubtypeAndEquipSlot(self.cost_data)
+    local mapper = {
+      [Card.SubtypeWeapon] = "weapon",
+      [Card.SubtypeArmor] = "armor",
+      [Card.SubtypeOffensiveRide] = "offensive_horse",
+      [Card.SubtypeDefensiveRide] = "defensive_horse",
+      [Card.SubtypeTreasure] = "treasure",
+    }
+    local all_choices = {
+      "os__chihui_discard::" .. target.id,
+      "os__chihui_putequip::" .. target.id .. ":" .. mapper[subtype],
+    }
+    local choices = {}
+    if not target:isAllNude() then
+      table.insert(choices, all_choices[1])
+    end
+    if target:hasEmptyEquipSlot(subtype) then
+      table.insert(choices, all_choices[2])
+    end
+    if #choices == 0 then return false end
+    local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
+    if choice == all_choices[1] then
+      room:throwCard(room:askForCardChosen(player, target, "hej", self.name), self.name, target, player)
+    else
+      local cards = table.filter(room.draw_pile, function(id) return Fk:getCardById(id).sub_type == subtype end)
+      if #cards > 0 then
+        room:moveCardIntoEquip(target, table.random(cards), self.name, false, player)
+      end
+    end
+
+    if player.dead then return false end
+    room:loseHp(player, 1, self.name)
+    if player.dead then return false end
+    local x = player:getLostHp()
+    if x > 0 then
+      room:drawCards(player, x, self.name)
+    end
+  end
+}
+Fk:loadTranslationTable{
+  ["os__chihui"] = "炽灰",
+  [":os__chihui"] = "其他角色的回合开始时，你可以废除一个装备栏，选择：1.弃置其区域里的一张牌；"..
+    "2.将牌堆里的一张对应副类别的牌置入其装备区。若如此做，你失去1点体力，摸X张牌（X为你已损失的体力值）。",
+
+  ["#os__chihui-choice"] = "是否对%dest发动 炽灰，选择要废除的装备栏",
+
+  ["os__chihui_discard"] = "弃置%dest区域里的一张牌",
+  ["os__chihui_putequip"] = "将%arg置入%dest的装备区",
+
+  ["$os__chihui1"] = "",
+  ["$os__chihui2"] = "",
+}
+
+ifcaoang:addSkill(osChihui)
+
+local osFuxi = fk.CreateTriggerSkill{
+  name = "os__fuxi",
+  anim_type = "defensive",
+  events = {fk.EnterDying, fk.AreaAborted},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self) then return false end
+    if event == fk.EnterDying then
+      return player.dying
+    elseif event == fk.AreaAborted then
+      return (#data.slots > 0 or data.slots[1] ~= Player.JudgeSlot) and #player:getAvailableEquipSlots() == 0
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local x = math.min(player.maxHp, 5)
+    local all_choices = {
+      "os__fuxi1",
+      "os__fuxi2",
+      "os__fuxi3:::" .. tostring(x),
+      "os__fuxi4"
+    }
+    local choices = {"os__fuxi2"}
+    if room.logic:getCurrentEvent():findParent(GameEvent.Turn, true) then
+      table.insert(choices, all_choices[1])
+    end
+    if player:getHandcardNum() < x then
+      table.insert(choices, all_choices[3])
+    end
+    if #player:getAvailableEquipSlots() == 0 then
+      table.insert(choices, all_choices[4])
+    end
+    choices = room:askForChoices(player, choices, 1, 2, self.name, "#os__fuxi-choice", true, false, all_choices)
+    if #choices > 0 then
+      self.cost_data = choices
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = self.cost_data
+    if table.contains(choices, "os__fuxi1") then
+      player:gainAnExtraTurn()
+    end
+    if table.find(
+      choices,
+      function (choice) return choice:startsWith("os__fuxi3")
+    end) then
+      local x = math.min(5, player.maxHp) - player:getHandcardNum()
+      if x > 0 then
+        room:drawCards(player,x, self.name)
+        if player.dead then return false end
+      end
+    end
+    if table.contains(choices, "os__fuxi4") then
+      local slots = table.simpleClone(player.sealedSlots)
+      table.removeOne(slots, Player.JudgeSlot)
+      local x = #slots
+      if x > 0 then
+        room:resumePlayerArea(player, slots)
+        if player.dead then return false end
+      end
+    end
+
+    local x = player.maxHp - player.hp
+    if x > 0 then
+      room:recover({
+        who = player,
+        num = x,
+        recoverBy = player,
+        skillName = self.name,
+      })
+      if player.dead then return false end
+    end
+
+    room:setPlayerMark(player, self.name, #choices)
+
+    local skills = table.contains(choices, "os__fuxi2") and "" or "-os__chihui|"
+    room:handleAddLoseSkills(player, skills .. "-os__fuxi|os__huangzhu|os__liyuan|os__jifa", nil, true, false)
+    if player.general == "os_if__caoang" then
+      player.general = "os_if_huan__caoang"
+      room:broadcastProperty(player, "general")
+    end
+    if player.deputyGeneral == "os_if__caoang" then
+      player.deputyGeneral = "os_if_huan__caoang"
+      room:broadcastProperty(player, "deputyGeneral")
+    end
+
+  end,
+}
+Fk:loadTranslationTable{
+  ["os__fuxi"] = "赴曦",
+  [":os__fuxi"] = "持恒技，当你进入濒死状态时，或你的装备栏均被废除后，你可以选择一至两项并“入幻”："..
+    "1.获得一个额外回合；2.此次“入幻”时保留〖炽灰〗；3.将手牌摸至X张（X为你的体力上限且至多为5）；"..
+    "4.恢复所有装备栏（你的装备栏均被废除时方可选择此项）。",
+
+  ["#os__fuxi-choice"] = "是否发动 赴曦，选择1-2项依序执行，然后“入幻”",
+  ["os__fuxi1"] = "获得额外回合",
+  ["os__fuxi2"] = "保留〖炽灰〗",
+  ["os__fuxi3"] = "将手牌摸至%arg张",
+  ["os__fuxi4"] = "恢复所有装备栏",
+
+  ["$os__fuxi1"] = "",
+  ["$os__fuxi2"] = "",
+}
+
+osFuxi.permanent_skill = true
+ifcaoang:addSkill(osFuxi)
+
+
+local huancaoang = General(extension, "os_if_huan__caoang", "wei", 3, 4)
+huancaoang.hidden = true
+
+Fk:loadTranslationTable{
+  ["os_if_huan__caoang"] = "幻曹昂",
+  ["#os_if_huan__caoang"] = "穿时寻冀",
+  --["~os_if_huan__caoang"] = "",
+}
+
+local osHuangzhu = fk.CreateTriggerSkill{
+  name = "os__huangzhu",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function (self, event, target, player, data)
+    if player:hasSkill(self) and target == player then
+      if player.phase == Player.Start then
+        return table.find(player.equipSlots, function (slot)
+          return table.contains(player.sealedSlots, slot)
+        end)
+      elseif player.phase == Player.Play then
+        return #player:getTableMark("@$os__huangzhu") > 0 and table.find(player.equipSlots, function (slot)
+          return table.contains(player.sealedSlots, slot)
+        end)
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if player.phase == Player.Start then
+      local all_choices = {
+        "WeaponSlot",
+        "ArmorSlot",
+        "DefensiveRideSlot",
+        "OffensiveRideSlot",
+        "TreasureSlot"
+      }
+      local choices = {}
+      for i = 1, 5, 1 do
+        if table.contains(player.sealedSlots, all_choices[i]) then
+          table.insert(choices, all_choices[i])
+        end
+      end
+      table.insert(all_choices, "Cancel")
+      table.insert(choices, "Cancel")
+      local choice = player.room:askForChoice(player, choices, self.name, "#os__huangzhu-choice", false, all_choices)
+      if choice ~= "Cancel" then
+        self.cost_data = choice
+        return true
+      end
+    elseif player.phase == Player.Play then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#os__huangzhu-invoke")
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if player.phase == Player.Start then
+      local subtype = Util.convertSubtypeAndEquipSlot(self.cost_data)
+      local cards = table.filter(room.discard_pile, function(id) return Fk:getCardById(id).sub_type == subtype end)
+      if #cards == 0 then
+        cards = table.filter(room.draw_pile, function(id) return Fk:getCardById(id).sub_type == subtype end)
+      end
+      if #cards == 0 then
+        cards = table.filter(room.discard_pile, function(id) return Fk:getCardById(id).type == Card.TypeEquip end)
+      end
+      if #cards == 0 then
+        cards = table.filter(room.draw_pile, function(id) return Fk:getCardById(id).type == Card.TypeEquip end)
+      end
+      if #cards == 0 then return false end
+      local card = Fk:getCardById(table.random(cards))
+      local card_names = player:getTableMark("@$os__huangzhu")
+      if table.insertIfNeed(card_names, card.name) then
+        room:setPlayerMark(player, "@$os__huangzhu", card_names)
+      end
+      room:obtainCard(player, card, true, fk.ReasonJustMove, player.id, self.name)
+    else
+      local card_names = player:getTableMark("@$os__huangzhu")
+      local names = {}
+      local choices = table.filter(card_names, function(name)
+        local card = Fk:cloneCard(name)
+        return table.contains(player.sealedSlots, Util.convertSubtypeAndEquipSlot(card.sub_type))
+      end)
+      if #choices == 0 then return false end
+      local name1 = room:askForChoice(player, choices, self.name)
+      table.insert(names, name1)
+      local subtype = Fk:cloneCard(name1).sub_type
+      choices = table.filter(choices, function(name)
+        local card = Fk:cloneCard(name)
+        return card.sub_type ~= subtype and table.contains(player.sealedSlots, Util.convertSubtypeAndEquipSlot(card.sub_type))
+      end)
+      if #choices > 0 then
+        table.insert(choices, "Cancel")
+        name1 = room:askForChoice(player, choices, self.name)
+        if name1 ~= "Cancel" then
+          table.insert(names, name1)
+        end
+      end
+      local all_slots = {
+        "WeaponSlot",
+        "ArmorSlot",
+        "DefensiveRideSlot",
+        "OffensiveRideSlot",
+        "TreasureSlot"
+      }
+      for _, slot in ipairs(all_slots) do
+        local name = player:getMark("@os__huangzhu_" .. slot)
+        if type(name) == "string" then
+          room:setPlayerMark(player, "@os__huangzhu_" .. slot, 0)
+          local card = Fk:cloneCard(name)
+          if card then
+            card:onUninstall(room, player)
+          end
+        end
+      end
+      for _, name in ipairs(names) do
+        local card = Fk:cloneCard(name)
+        if card then
+          room:setPlayerMark(player, "@os__huangzhu_" .. Util.convertSubtypeAndEquipSlot(card.sub_type), name)
+          card:onInstall(room, player)
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.AreaResumed},
+  can_refresh = function(self, event, target, player, data)
+    return player == target
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, slot in ipairs(data.slots) do
+      local name = player:getMark("@os__huangzhu_" .. slot)
+      if type(name) == "string" then
+        room:setPlayerMark(player, "@os__huangzhu_" .. slot, 0)
+        local card = Fk:cloneCard(name)
+        if card then
+          card:onUninstall(room, player)
+        end
+      end
+    end
+  end,
+
+  on_lose = function (self, player)
+    local room = player.room
+    room:setPlayerMark(player, "@$os__huangzhu", 0)
+    local all_slots = {
+      "WeaponSlot",
+      "ArmorSlot",
+      "DefensiveRideSlot",
+      "OffensiveRideSlot",
+      "TreasureSlot"
+    }
+    for _, slot in ipairs(all_slots) do
+      local name = player:getMark("@os__huangzhu_" .. slot)
+      if type(name) == "string" then
+        room:setPlayerMark(player, "@os__huangzhu_" .. slot, 0)
+        local card = Fk:cloneCard(name)
+        if card then
+          card:onUninstall(room, player)
+        end
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["os__huangzhu"] = "煌烛",
+  [":os__huangzhu"] = "准备阶段，你可以选择一个已被废除的装备栏，从牌堆或弃牌堆中随机获得一张对应副类别的装备牌"..
+    "（若无则随机获得一张装备牌），并记录此牌牌名。"..
+    "出牌阶段开始时，你可以选择或变更至多两个已记录且对应装备栏已被废除的装备牌牌名（每种副类别限一个），"..
+    "视为拥有这些装备牌的技能直到此装备栏被恢复。",
+
+  ["#os__huangzhu-choice"] = "是否发动 煌烛，选择一个已被废除的装备栏",
+  ["@$os__huangzhu"] = "煌烛",
+  ["#os__huangzhu-invoke"] = "是否发动 煌烛，视为拥有至多2张已记录的装备牌的技能",
+
+  ["@os__huangzhu_WeaponSlot"] = "",
+  ["@os__huangzhu_ArmorSlot"] = "",
+  ["@os__huangzhu_DefensiveRideSlot"] = "",
+  ["@os__huangzhu_OffensiveRideSlot"] = "",
+  ["@os__huangzhu_TreasureSlot"] = "",
+
+
+  ["$os__huangzhu1"] = "",
+  ["$os__huangzhu2"] = "",
+}
+
+huancaoang:addSkill(osHuangzhu)
+
+local osLiyuan = fk.CreateViewAsSkill{
+  name = "os__liyuan",
+  anim_type = "offensive",
+  prompt = "#os__liyuan-viewas",
+  pattern = "slash",
+  card_filter = function(self, to_select, selected)
+    if #selected > 0 then return false end
+    local card = Fk:getCardById(to_select)
+    return card.type == Card.TypeEquip and
+      table.contains(Self.sealedSlots, Util.convertSubtypeAndEquipSlot(card.sub_type))
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then
+      return nil
+    end
+    local c = Fk:cloneCard("slash")
+    c.skillName = self.name
+    c:addSubcard(cards[1])
+    return c
+  end,
+  before_use = function(self, player, use)
+    use.extraUse = true
+  end,
+  enabled_at_play = function(self, player)
+    return table.find(player.equipSlots, function (slot)
+      return table.contains(player.sealedSlots, slot)
+    end)
+  end,
+  enabled_at_response = function(self, player, response)
+    return table.find(player.equipSlots, function (slot)
+      return table.contains(player.sealedSlots, slot)
+    end)
+  end
+}
+local osLiyuanTrigger = fk.CreateTriggerSkill{
+  name = "#os__liyuan_trigger",
+  events = {fk.CardUsing, fk.CardResponding},
+  main_skill = osLiyuan,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(osLiyuan) and table.contains(data.card.skillNames, osLiyuan.name)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(2, osLiyuan.name)
+  end,
+}
+local osLiyuanTargetMod = fk.CreateTargetModSkill{
+  name = "#os__liyuan_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return table.contains(card.skillNames, osLiyuan.name)
+  end,
+  bypass_distances = function(self, player, skill, card)
+    return table.contains(card.skillNames, osLiyuan.name)
+  end,
+}
+Fk:loadTranslationTable{
+  ["os__liyuan"] = "离渊",
+  [":os__liyuan"] = "你可以将一张对应装备栏已被废除的装备牌当普【杀】使用或打出（无距离、次数限制，不计次数）。"..
+    "当你以此法使用或打出牌时，你摸两张牌。",
+  ["#os__liyuan_trigger"] = "离渊",
+
+  ["#os__liyuan-viewas"] = "发动 离渊，将1张对应装备栏已被废除的装备牌当普【杀】使用或打出，然后摸2张牌",
+
+  ["$os__liyuan1"] = "",
+  ["$os__liyuan2"] = "",
+}
+
+osLiyuan:addRelatedSkill(osLiyuanTrigger)
+osLiyuan:addRelatedSkill(osLiyuanTargetMod)
+huancaoang:addSkill(osLiyuan)
+
+local osJifa = fk.CreateTriggerSkill{
+  name = "os__jifa",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.dying
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:getMark(osFuxi.name)
+    if x > 0 then
+      room:changeMaxHp(player, -x)
+      if player.dead then return false end
+    end
+
+    x = player.maxHp - player.hp
+    if x > 0 then
+      room:recover({
+        who = player,
+        num = x,
+        recoverBy = player,
+        skillName = self.name,
+      })
+      if player.dead then return false end
+    end
+    local choices = {}
+    if player:hasSkill(osHuangzhu, true) then
+      table.insert(choices, osHuangzhu.name)
+    end
+    if player:hasSkill(osLiyuan, true) then
+      table.insert(choices, osLiyuan.name)
+    end
+    local skills = ""
+    if #choices == 2 then
+      table.removeOne(choices, room:askForChoice(player, choices, self.name, "#os__jifa-choice", true))
+      skills = "-" .. choices[1] .. "|"
+    end
+    room:handleAddLoseSkills(player, skills .. "-os__jifa|os__chihui|os__fuxi", nil, true, false)
+    if player.general == "os_if_huan__caoang" then
+      player.general = "os_if__caoang"
+      room:broadcastProperty(player, "general")
+    end
+    if player.deputyGeneral == "os_if_huan__caoang" then
+      player.deputyGeneral = "os_if__caoang"
+      room:broadcastProperty(player, "deputyGeneral")
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["os__jifa"] = "冀筏",
+  [":os__jifa"] = "锁定技，当你进入濒死状态时，你减X点体力上限（X为你上次发动〖赴曦〗时选择的项数），"..
+    "选择此次“退幻”时保留〖煌烛〗或〖离渊〗，然后“退幻”。",
+
+  ["#os__jifa-choice"] = "冀筏：选择本次“退幻”时保留的技能",
+  ["$os__jifa1"] = "",
+  ["$os__jifa2"] = "",
+}
+
+huancaoang:addSkill(osJifa)
+
+
+
+
+
+
+
+
 return extension
