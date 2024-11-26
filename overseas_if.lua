@@ -15,6 +15,7 @@ Fk:addSkill(ifzhugeliangwin)
 Fk:loadTranslationTable{
   ["os_if__zhugeliang"] = "幻诸葛亮",
   ["#os_if__zhugeliang"] = "天意可叹",
+  ["illustrator:os_if__zhugeliang"] = "黯荧岛",
   ["$os_if__zhugeliang_win_audio"] = "卧龙腾于九天，炎汉之火长明。",
   ["~os_if__zhugeliang"] = "先帝遗志未竟，吾怎可终于半途。",
 }
@@ -247,6 +248,7 @@ Fk:loadTranslationTable{
   ["os_if_huan"] = "入幻",
   ["os_if_huan__zhugeliang"] = "幻诸葛亮",
   ["#os_if_huan__zhugeliang"] = "天意可叹",
+  ["illustrator:os_if_huan__zhugeliang"] = "黯荧岛",
   ["$os_if_huan__zhugeliang_win_audio"] = "卧龙腾于九天，炎汉之火长明。",
   ["~os_if_huan__zhugeliang"] = "一人之愿，终难逆天命……",
 }
@@ -537,6 +539,7 @@ zhaoyun:addRelatedSkill("chongzhen")
 Fk:loadTranslationTable{
   ["os_if__zhaoyun"] = "幻赵云",
   ["#os_if__zhaoyun"] = "天武耆龙",
+  ["illustrator:os_if__zhaoyun"] = "铁杵",
   ["os__jiezhan"] = "竭战",
   [":os__jiezhan"] = "其他角色的出牌阶段开始时，若其在你攻击范围内，你可摸一张牌，然后其视为对你使用一张无距离限制且计入次数限制的【杀】。",
   ["os__longjin"] = "龙烬",
@@ -793,6 +796,8 @@ zhugeguo:addSkill(lingyin)
 Fk:loadTranslationTable{
   ["os_if__zhugeguo"] = "幻诸葛果",
   ["#os_if__zhugeguo"] = "悠游清汉",
+  ["illustrator:os_if__zhugeguo"] = "嵘金",
+
   ["os__xianyuan"] = "仙援",
   [":os__xianyuan"] = "①每轮开始时，你获得2枚“仙援”。（一名角色至多有3枚“仙缘”）②出牌阶段，你可以将任意枚“仙援”" ..
   "分配给其他角色。③有“仙援”的角色出牌阶段开始时，你选择一项：1. 观看其手牌，将其中至多X张牌" ..
@@ -981,6 +986,7 @@ jiangwei:addSkill(os__zhihuan)
 Fk:loadTranslationTable{
   ["os_if__jiangwei"] = "幻姜维",
   ["#os_if__jiangwei"] = "麒麟擎汉",
+  ["illustrator:os_if__jiangwei"] = "刘小狼Syaoran",
   ["os__qinghan"] = "擎汉",
   [":os__qinghan"] = "①出牌阶段限一次，你可用一张装备牌与一名角色拼点：若你赢，你可视为对其使用一张以其为唯一目标的普通锦囊牌；" ..
   "若两张拼点牌颜色相同，你与其获得对方的拼点牌。②你的拼点牌点数+X（X为你装备区牌数的两倍）。",
@@ -1084,6 +1090,7 @@ simayi:addSkill(os__guimou)
 Fk:loadTranslationTable{
   ["os_if__simayi"] = "幻司马懿",
   ["#os_if__simayi"] = "权谋并施",
+  ["illustrator:os_if__simayi"] = "凝聚永恒",
   ["os__zongquan"] = "纵权",
   [":os__zongquan"] = "准备阶段或结束阶段，你可以选择一名角色，然后你进行判定：若结果为红色，你令其摸一张牌；" ..
   "若结果为黑色，你令其弃置一张牌；若你本次与上一次发动〖纵权〗所选择的目标角色相同但结果颜色不同，则改为摸/弃置三张牌。若如此做，你令一名角色获得判定牌。",
@@ -1216,6 +1223,7 @@ weiyan:addSkill(piankuang)
 Fk:loadTranslationTable{
   ["os_if__weiyan"] = "幻魏延",
   ["#os_if__weiyan"] = "自矜功伐",
+  ["illustrator:os_if__weiyan"] = "凝聚永恒",
 
   ["os__qiji"] = "奇击",
   [":os__qiji"] = "出牌阶段开始时，你可以视为对一名其他角色使用X张无距离限制且不计入次数的【杀】，此【杀】指定目标时，其可以选择一名本回合"..

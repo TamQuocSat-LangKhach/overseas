@@ -1429,6 +1429,9 @@ os__xujing:addSkill(os__ejian)
 
 Fk:loadTranslationTable{
   ["os__xujing"] = "许靖",
+  ["#os__xujing"] = "篡贤取良",
+  ["illustrator:os__xujing"] = "凝聚永恒",
+
   ["os__boming"] = "博名",
   [":os__boming"] = "出牌阶段限两次，你可以将一张牌交给一名其他角色。结束阶段开始时，若其他角色于此回合内获得的牌数大于1，你摸两张牌。",
   ["os__ejian"] = "恶荐",
@@ -1557,6 +1560,9 @@ os__zongyu:addSkill(os__yuyan)
 
 Fk:loadTranslationTable{
   ["os__zongyu"] = "宗预",
+  ["#os__zongyu"] = "御严无惧",
+  ["illustrator:os__zongyu"] = "凝聚永恒",
+
   ["os__zhibian"] = "直辩",
   [":os__zhibian"] = "出牌阶段开始时，你可与一名角色拼点，若你赢，则你可选择一项：1. 将其场上的一张牌移动到你的对应区域，或将其区域内的一张牌置于你的手牌中；2. 回复1点体力；背水：弃置一张非基本牌；若你没赢，你失去1点体力。",
   ["os__yuyan"] = "御严",
@@ -1683,6 +1689,9 @@ os__chenwudongxi:addSkill(os__fenming)
 
 Fk:loadTranslationTable{
   ["os__chenwudongxi"] = "陈武董袭",
+  ["#os__chenwudongxi"] = "殒身不惧",
+  ["illustrator:os__chenwudongxi"] = "彭宇",
+
   ["os__yilie"] = "毅烈",
   [":os__yilie"] = "出牌阶段开始时，你可选择此阶段内：1.使用【杀】的次数上限+1；2.当你使用的【杀】指定处于连环状态的角色为目标后，或被【闪】抵消后，摸一张牌；背水：你失去1点体力。",
   ["os__fenming"] = "奋命",
@@ -1805,6 +1814,9 @@ os__jiangqin:addSkill(os__xiangyu)
 
 Fk:loadTranslationTable{
   ["os__jiangqin"] = "蒋钦",
+  ["#os__jiangqin"] = "折节尚义",
+  ["illustrator:os__jiangqin"] = "铁杵文化",
+
   ["os__shangyi"] = "尚义",
   [":os__shangyi"] = "出牌阶段限一次，你可弃置一张牌并令一名有手牌的其他角色观看你的手牌，然后你观看其手牌并选择一项：1. 弃置其中一张牌；2. 与其交换一张手牌。若弃置的为黑色牌或交换的两张均为红色牌，则你摸一张牌。",
   ["os__xiangyu"] = "翔羽",
@@ -1929,6 +1941,8 @@ sunyi:addSkill(zaoli)
 Fk:loadTranslationTable{
   ["os__sunyi"] = "孙翊",
   ["#os__sunyi"] = "骁悍激躁",
+  ["illustrator:os__sunyi"] = "凡果",
+
   ["os__zaoli"] = "躁厉",
   [":os__zaoli"] = "锁定技，出牌阶段，你只能使用或打出本回合获得的手牌。出牌阶段开始时，你弃置你所有装备牌和任意张非装备牌，然后摸X张牌，并从牌堆中将你弃置牌中相同子类别的装备牌置入装备区，若你以此法置入装备区的牌数大于2，你失去1点体力。（X为你以此法弃置的牌的总数）",
 

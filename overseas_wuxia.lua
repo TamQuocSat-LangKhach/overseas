@@ -1245,6 +1245,7 @@ liubei:addSkill(xinghan)
 Fk:loadTranslationTable{
   ["os__xia__liubei"] = "侠刘备",
   ["#os__xia__liubei"] = "为国为民",
+  ["illustrator:os__xia__liubei"] = "特特肉",
 
   ["os__shenyi"] = "伸义",
   [":os__shenyi"] = "每回合限一次，当你或你攻击范围内的角色此回合首次受到其他角色造成的伤害后，你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后将牌堆中一张此牌名的牌置于你的武将牌上（没有则改为该类别的一张牌），称为“侠义”，然后你可以将任意张手牌交给其，当其失去一张你以此法交给其的牌时，你摸一张牌。",
@@ -1333,6 +1334,7 @@ xiahoudun:addSkill(danlie)
 Fk:loadTranslationTable{
   ["os__xia__xiahoudun"] = "侠夏侯惇",
   ["#os__xia__xiahoudun"] = "刚烈勇猛",
+  ["illustrator:os__xia__xiahoudun"] = "鬼画府",
 
   ["os__danlie"] = "胆烈",
   [":os__danlie"] = "出牌阶段限一次，你可以与至多三名角色共同拼点，若你：赢，你对没赢的角色造成1点伤害；没赢，你失去1点体力。你的拼点牌点数+X（X为你已损失的体力值）。" ..
@@ -1446,7 +1448,10 @@ zhangwei:addSkill(huzhong)
 zhangwei:addSkill(fenwang)
 
 Fk:loadTranslationTable{
-  ["zhangwei"] = "张葳", -- 泪目
+  ["zhangwei"] = "张葳",
+  ["#zhangwei"] = "舍生取义",
+  ["illustrator:zhangwei"] = "腥鱼仔",
+
   ["os__huzhong"] = "护众",
   [":os__huzhong"] = "当你使用普【杀】于出牌阶段指定其他角色为唯一目标时，你可摸一张牌并选择一项：1.此【杀】可额外选择一个目标；2.你弃置其一张手牌。然后若此【杀】造成伤害，你本阶段使用【杀】次数+1。",
   ["os__fenwang"] = "焚亡",
@@ -1538,6 +1543,7 @@ xiahouzieh:addSkill(chengxi)
 Fk:loadTranslationTable{
   ["xiahouzieh"] = "夏侯子萼",
   ["#xiahouzieh"] = "承继婆娑",
+  ["illustrator:xiahouzieh"] = "错落宇宙",
 
   ["os__chengxi"] = "承袭",
   [":os__chengxi"] = "出牌阶段对每名角色限一次，你可摸一张牌并与一名角色拼点，若你：赢，你使用的下一张基本牌或普通锦囊牌结算结束后，你视为对相同目标使用一张无次数限制的同名牌；没赢，其视为对你使用一张无距离限制的【杀】。",
@@ -1662,6 +1668,7 @@ guanyu:addSkill(os__zhongyi)
 Fk:loadTranslationTable{
   ["os__xia__guanyu"] = "侠关羽",
   ["#os__xia__guanyu"] = "义薄云天",
+  ["illustrator:os__xia__guanyu"] = "zoo",
 
   ["os__chue"] = "除恶",
   [":os__chue"] = "①当你使用【杀】指定唯一目标时，若存在能成为此【杀】目标的一名角色，你可失去1点体力，额外指定至多X个目标。②当你受到伤害或失去体力后，你获得1枚“勇”。③每个回合结束时，你可弃X枚“勇”，视为使用一张【杀】，此【杀】的伤害值基数+1且额外选择X个目标。（X为你的体力值）",
@@ -1691,6 +1698,7 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["yuzhenzi"] = "玉真子",
   ["#yuzhenzi"] = "神功天授",
+  ["illustrator:yuzhenzi"] = "铁杵",
 
   ["os__huajing"] = "化境",
   [":os__huajing"] = "①游戏开始时，你获得6个（未生效的）“武”标记。②有“武”的角色攻击范围+X（X为其有的“武”数）。②出牌阶段限一次，你可展示至多四张手牌，随机获得其中花色数个“武”的效果直到回合结束。③若一名角色有“武”且有对应的效果，其装备区里武器牌的技能失效。<br/ ><font color='grey'>" ..
@@ -1841,6 +1849,7 @@ shitao:addSkill(enchou)
 Fk:loadTranslationTable{
   ["shitao"] = "石韬",
   ["#shitao"] = "快意恩仇",
+  ["illustrator:shitao"] = "鱼仔",
 
   ["os__jieqiu"] = "劫囚",
   [":os__jieqiu"] = "出牌阶段限一次，你可选择一名所有装备栏均未被废除的其他角色，废除其所有装备栏，然后其摸X张牌（X为废除前其装备区里的牌数）。其弃牌阶段结束时，其恢复等同于此阶段弃置手牌数量的装备栏。其回合结束时，若仍有装备栏被废除，则你可执行一个额外回合（每轮限一次）。",
@@ -2012,6 +2021,7 @@ shie:addSkill(os__xinshou)
 Fk:loadTranslationTable{
   ["shie"] = "史阿",
   ["#shie"] = "剑术登峰",
+  ["illustrator:shie"] = "凝聚永恒",
 
   ["os__dengjian"] = "登剑",
   [":os__dengjian"] = "其他角色的弃牌阶段结束时，你可从弃牌堆随机获得一张其本回合使用造成过伤害的非转化的【杀】（每轮每种颜色限一次），此【杀】标记为“剑法”（“剑法”：无次数限制）。",

@@ -499,6 +499,9 @@ os__dengzhi:addSkill(os__shuaiyan)
 
 Fk:loadTranslationTable{
   ["os__dengzhi"] = "邓芝",
+  ["#os__dengzhi"] = "绝境的外交家",
+  ["illustrator:os__dengzhi"] = "Monkey",
+
   ["os__jimeng"] = "急盟",
   [":os__jimeng"] = "出牌阶段限一次，你可获得一名其他角色区域内的一张牌，然后交给其一张牌。若其体力值不小于你，你摸一张牌。",
   ["os__shuaiyan"] = "率言",
@@ -1051,6 +1054,9 @@ os__furong:addSkill(os__liechi)
 
 Fk:loadTranslationTable{
   ["os__furong"] = "傅肜",
+  ["#os__furong"] = "危汉义烈",
+  ["illustrator:os__furong"] = "三道纹",
+
   ["os__xuewei"] = "血卫",
   [":os__xuewei"] = "每轮限一次，其他角色A的出牌阶段开始时，你可选择另一名其他角色B并令A选择一项：1. 直到本回合结束，其不能对B使用【杀】且手牌上限-2；2. 视为你对其使用一张【决斗】。",
   ["os__liechi"] = "烈斥",
@@ -1142,6 +1148,9 @@ liwei:addSkill(os__jiaohua)
 
 Fk:loadTranslationTable{
   ["liwei"] = "李遗",
+  ["#liwei"] = "伏被俞元",
+  ["illustrator:liwei"] = "付玉",
+
   ["os__jiaohua"] = "教化",
   [":os__jiaohua"] = "当你或体力值最小的角色摸牌后，你可选择一种其本次摸牌未获得的类别（每种类别每回合限一次），令其从牌堆中或弃牌堆中获得一张该类别的牌。",
 
@@ -1355,16 +1364,21 @@ niufudongxie:addRelatedSkill(os__xiongjun)
 
 Fk:loadTranslationTable{
   ["niufudongxie"] = "牛辅董翓",
+  ["#os_if__zhugeguo"] = "虺伴蝎行",
+  ["illustrator:os_if__zhugeguo"] = "王立雄",
+
   ["os__juntun"] = "军屯",
-  [":os__juntun"] = "游戏开始时或当其他角色死亡后，你可令一名没有〖凶军〗的角色获得〖凶军〗。当拥有〖凶军〗的其他角色造成伤害后，你获得等量暴虐值。<br/>" .. 
-    "<font color='grey'>#\"<b>暴虐值</b>\"<br/>当你造成或受到伤害后，你获得1点暴虐值。暴虐值上限为5。</font>",
+  [":os__juntun"] = "游戏开始时或当其他角色死亡后，你可令一名没有〖凶军〗的角色获得〖凶军〗。当拥有〖凶军〗的其他角色造成伤害后，你获得等量"..
+  "<a href='os__baonue_href'>暴虐值</a>。",
   ["os__xiongxi"] = "凶袭",
-  [":os__xiongxi"] = "出牌阶段限一次，你可弃置X张牌对一名其他角色造成1点伤害。（X=5-暴虐值，且可为0）",
+  [":os__xiongxi"] = "出牌阶段限一次，你可弃置X张牌对一名其他角色造成1点伤害。（X=5-<a href='os__baonue_href'>暴虐值</a>，且可为0）",
   ["os__xiafeng"] = "黠凤",
-  [":os__xiafeng"] = "出牌阶段开始时，你可消耗至多3点暴虐值，令你本回合使用的前X张牌无距离和次数限制且不可被响应，手牌上限+X。（X为消耗暴虐值）",
+  [":os__xiafeng"] = "出牌阶段开始时，你可消耗至多3点<a href='os__baonue_href'>暴虐值</a>，令你本回合使用的前X张牌无距离和次数限制且不可被响应，"..
+  "手牌上限+X。（X为消耗暴虐值）",
   ["os__xiongjun"] = "凶军",
   [":os__xiongjun"] = "锁定技，当你于一个回合内第一次造成伤害后，所有拥有〖凶军〗的角色各摸一张牌。",
 
+  ["os__baonue_href"] = "当你造成或受到伤害后，你获得1点暴虐值，暴虐值上限为5。",
   ["@os__baonue"] = "暴虐值",
   ["#os__juntun-ask"] = "军屯：你可令一名没有〖凶军〗的角色获得〖凶军〗",
   ["#os__xiafeng"] = "黠凤：本回合使用的前X张牌无距离和次数限制且不能被响应，手牌上限+X",
@@ -1780,20 +1794,24 @@ local os__kaiji = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
-    local num = player:getMark("@os__kaiji") + 1
-    local result = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, num, "#os__kaiji-ask:::" .. num, self.name, true)
-    if #result > 0 then
-      self.cost_data = result
+    local room = player.room
+    local targets = {}
+    room.logic:getEventsOfScope(GameEvent.Dying, 1, function (e)
+      table.insertIfNeed(targets, e.data[1].who)
+    end, Player.HistoryGame)
+    local num = 1 + #targets
+    local tos = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, num,
+      "#os__kaiji-ask:::" .. num, self.name, true)
+    if #tos > 0 then
+      room:sortPlayersByAction(tos)
+      self.cost_data = {tos = tos}
       return true
     end
-    return false
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local targets = self.cost_data
+    local room = player.roo
     local invoke = false
-    room:sortPlayersByAction(targets)
-    for _, pid in ipairs(targets) do
+    for _, pid in ipairs(self.cost_data.tos) do
       local p = room:getPlayerById(pid)
       if not p.dead then
         local cid = p:drawCards(1, self.name)[1]
@@ -1804,30 +1822,6 @@ local os__kaiji = fk.CreateTriggerSkill{
     end
     if invoke and not player.dead then
       player:drawCards(1, self.name)
-    end
-  end,
-
-  refresh_events = {fk.EnterDying, fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EnterDying then
-      return player:hasSkill(self, true) and target:getMark("_os__kaiji_enterdying") < 1
-    else
-      return target == player and data == self and player.room:getTag("RoundCount")
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.EnterDying then
-      room:addPlayerMark(target, "_os__kaiji_enterdying", 1)
-      room:addPlayerMark(player, "@os__kaiji", 1)
-    else
-      local events = room.logic.event_recorder[GameEvent.Dying] or Util.DummyTable
-      local targets = {}
-      for i = #events, 1, -1 do
-        local e = events[i]
-        table.insertIfNeed(targets, e.data[1].who)
-      end
-      room:addPlayerMark(player, "@os__kaiji", #targets)
     end
   end,
 }
@@ -1877,14 +1871,16 @@ os__wangchang:addSkill(os__shepan)
 
 Fk:loadTranslationTable{
   ["os__wangchang"] = "王昶",
+  ["#os__wangchang"] = "识度良臣",
+  ["illustrator:os__wangchang"] = "鬼画府",
+
   ["os__kaiji"] = "开济",
   [":os__kaiji"] = "准备阶段开始时，你可令至多X名角色各摸一张牌，若有角色以此法获得了非基本牌，你摸一张牌（X为本局游戏进入过濒死状态的角色数+1）。",
   ["os__shepan"] = "慑叛",
-  [":os__shepan"] = "每回合限一次，当你成为其他角色使用牌的目标时，你可选择一项：1. 摸一张牌，2. 将其区域内一张牌置于牌堆顶，然后若你与其手牌数相同，则此技能视为未发动过，且你可令此牌对你无效。",
+  [":os__shepan"] = "每回合限一次，当你成为其他角色使用牌的目标时，你可选择一项：1.摸一张牌；2.将其区域内一张牌置于牌堆顶，然后若你与其手牌数相同，则此技能视为未发动过，且你可令此牌对你无效。",
 
   ["#os__kaiji-ask"] = "开济：你可令至多 %arg 名角色各摸一张牌",
   ["#os__shepan"] = "你可选择一项，对 %dest 发动技能“慑叛”",
-  ["@os__kaiji"] = "开济",
   ["os__shepan_draw"] = "摸一张牌",
   ["os__shepan_put"] = "将其区域内一张牌置于牌堆顶",
   ["#os__shepan_nullify"] = "慑叛：你可令【%arg】对你无效",
@@ -2134,11 +2130,12 @@ local os__juchen = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Finish and not table.every(player.room:getOtherPlayers(player), function(p)
-      return p:getHandcardNum() <= player:getHandcardNum()
-    end) and not table.every(player.room:getOtherPlayers(player), function(p)
-      return p.hp <= player.hp
-    end)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish and
+      table.find(player.room:getOtherPlayers(player), function(p)
+        return p:getHandcardNum() > player:getHandcardNum()
+      end) and table.find(player.room:getOtherPlayers(player), function(p)
+        return p.hp > player.hp
+      end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2154,7 +2151,12 @@ local os__juchen = fk.CreateTriggerSkill{
         end
       end
     end
-    room:obtainCard(player, table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end), true, fk.ReasonJustMove) --?
+    ids = table.filter(ids, function(id)
+      return table.contains(room.discard_pile, id)
+    end)
+    if #ids > 0 and not player.dead then
+      room:moveCardTo(ids, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+    end
   end,
 }
 
@@ -2163,12 +2165,16 @@ os__zhangning:addSkill(os__juchen)
 
 Fk:loadTranslationTable{
   ["os__zhangning"] = "张宁",
+  ["#os__zhangning"] = "大贤后人",
+  ["illustrator:os__zhangning"] = "biou09",
+
   ["os__xingzhui"] = "星坠",
-  [":os__xingzhui"] = "出牌阶段限一次，你可以失去1点体力并施法X=1~3回合：亮出牌堆顶2X张牌，若其中有黑色牌，则你可令一名其他角色获得这些黑色牌，若这些牌的数量不小于X ，则你对其造成X点雷电伤害。" .. 
-    "<br/><font color='grey'>#\"<b>施法</b>\"<br/>一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
+  [":os__xingzhui"] = "出牌阶段限一次，你可以失去1点体力并<a href='os__shifa_href'>施法</a>X=1~3回合：亮出牌堆顶2X张牌，若其中有黑色牌，"..
+  "则你可令一名其他角色获得这些黑色牌，若这些牌的数量不小于X ，则你对其造成X点雷电伤害。",
   ["os__juchen"] = "聚尘",
   [":os__juchen"] = "结束阶段开始时，若你的手牌数和体力值均非全场最大，你可令所有角色弃置一张牌，然后你获得其中处于弃牌堆中的红色牌。",
 
+  ["os__shifa_href"] = "一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
   ["@os__xingzhui"] = "星坠",
   ["#os__xingzhui-ask"] = "星坠：你可令一名其他角色获得其中的黑色牌",
   ["#os__xingzhui-ask2"] = "星坠：你可令一名其他角色获得其中的黑色牌，然后对其造成 %arg 点雷电伤害",
@@ -2539,6 +2545,8 @@ Fk:loadTranslationTable{
   ["os__hejin"] = "何进",
   ["#os__hejin"] = "色厉内荏",
   ["cv:os__hejin"] = "冷泉月夜",
+  ["illustrator:os__hejin"] = "G.G.G.",
+
   ["os__mouzhu"] = "谋诛",
   [":os__mouzhu"] = "出牌阶段限一次，你可选择一名其他角色A，然后除其外体力值不大于你的其他角色B依次选择是否交给你一张牌。若你未因此获得牌，则你与所有B失去1点体力；否则A选择你视为对其使用一张伤害值基数为X的【杀】或【决斗】（X为你以此法获得的牌数且至多为4）。",
   ["os__yanhuo"] = "延祸",
@@ -2722,6 +2730,9 @@ os__zangba:addSkill(os__hengjiang)
 
 Fk:loadTranslationTable{
   ["os__zangba"] = "臧霸",
+  ["#os__zangba"] = "横行江表",
+  ["illustrator:os__zangba"] = "HOOO",
+
   ["os__hanyu"] = "捍御",
   [":os__hanyu"] = "锁定技，游戏开始时，你从牌堆获得不同类别的牌各一张。",
   ["os__hengjiang"] = "横江",
@@ -2937,6 +2948,9 @@ os__bianfuren:addSkill(os__yuejian)
 
 Fk:loadTranslationTable{
   ["os__bianfuren"] = "卞夫人",
+  ["#os__bianfuren"] = "内助贤后",
+  ["illustrator:os__bianfuren"] = "HEI-LEI",
+
   ["os__wanwei"] = "挽危",
   [":os__wanwei"] = "每回合限一次，当体力值最低的角色受到伤害时，若其不为你，你可以防止此伤害，然后失去1点体力；若其为你或你的体力上限全场最高，则你可在本回合结束阶段开始时获得牌堆底牌并展示之（若此牌能使用，则你使用之）。",
   ["os__yuejian"] = "约俭",
@@ -3087,6 +3101,9 @@ os__wuban:addSkill(os__jintao)
 
 Fk:loadTranslationTable{
   ["os__wuban"] = "吴班",
+  ["#os__wuban"] = "碧血的英豪",
+  ["illustrator:os__wuban"] = "铁杵文化",
+
   ["os__jintao"] = "进讨",
   [":os__jintao"] = "锁定技，你使用【杀】无距离限制且次数+1。你出牌阶段使用的第一张【杀】伤害值基数+1，第二张【杀】不可响应。",
 
@@ -3297,6 +3314,9 @@ os__qiaozhou:addSkill(os__xingbu)
 
 Fk:loadTranslationTable{
   ["os__qiaozhou"] = "谯周",
+  ["#os__qiaozhou"] = "观星知命",
+  ["illustrator:os__qiaozhou"] = "鬼画府",
+
   ["os__zhiming"] = "知命",
   [":os__zhiming"] = "准备阶段开始时或弃牌阶段结束时，你摸一张牌，然后你可将一张牌置于牌堆顶。",
   ["os__xingbu"] = "星卜",

@@ -750,8 +750,10 @@ os__gexuan:addSkill(os__lingbao)
 os__gexuan:addSkill(os__sidao)
 
 Fk:loadTranslationTable{
-  ["os__gexuan"] = "葛玄", --胜利台词……
+  ["os__gexuan"] = "葛玄",
   ["#os__gexuan"] = "冲应真人",
+  ["illustrator:os__gexuan"] = "凝聚永恒",
+
   ["os__danfa"] = "丹法",
   [":os__danfa"] = "①准备阶段或结束阶段开始时，你可将一张牌置于你的武将牌上，称为“丹”。②每回合每种花色限一次，当你使用与一张“丹”相同花色的牌时，你摸一张牌。", 
   ["os__lingbao"] = "灵宝",
@@ -1321,6 +1323,8 @@ jianshuo:addRelatedSkill(os__linglu)
 Fk:loadTranslationTable{
   ["jianshuo"] = "蹇硕",
   ["#jianshuo"] = "西园硕犀",
+  ["illustrator:jianshuo"] = "XXX",
+
   ["os__kunsi"] = "困兕",
   [":os__kunsi"] = "出牌阶段，你可视为对一名未以此法指定过的角色使用【杀】（无次数和距离限制）。若此【杀】未造成伤害，则其拥有〖令戮〗直到你的下个回合开始后。其指定你为〖令戮〗的目标时，可令〖令戮〗的失败结算进行两次。",
   ["os__linglu"] = "令戮",
@@ -1535,7 +1539,7 @@ local os__hucheer = General(extension, "os__hucheer", "qun", 4)
 local os__shenxing = fk.CreateDistanceSkill{
   name = "os__shenxing",
   correct_func = function(self, from, to)
-    if from:hasSkill(self) and from:getEquipment(Card.SubtypeOffensiveRide) == nil and from:getEquipment(Card.SubtypeDefensiveRide) == nil then
+    if from:hasSkill(self) and #from:getEquipments(Card.SubtypeOffensiveRide) + #from:getEquipments(Card.SubtypeDefensiveRide) == 0 then
       return -1
     end
   end,
@@ -1543,7 +1547,7 @@ local os__shenxing = fk.CreateDistanceSkill{
 local os__shenxing_maxcard = fk.CreateMaxCardsSkill{
   name = "#os__shenxing_maxcard",
   correct_func = function(self, player)
-    if player:hasSkill(self) and player:getEquipment(Card.SubtypeOffensiveRide) == nil and player:getEquipment(Card.SubtypeDefensiveRide) == nil then
+    if player:hasSkill(os__shenxing) and #player:getEquipments(Card.SubtypeOffensiveRide) + #player:getEquipments(Card.SubtypeDefensiveRide) == 0 then
       return 1
     end
     return 0
@@ -1595,6 +1599,9 @@ os__hucheer:addSkill(os__daoji)
 
 Fk:loadTranslationTable{
   ["os__hucheer"] = "胡车儿",
+  ["#os__hucheer"] = "夜盗神行",
+  ["illustrator:os__hucheer"] = "李敏然",
+
   ["os__shenxing"] = "神行",
   [":os__shenxing"] = "锁定技，若你的坐骑区没有牌，你与其他角色的距离-1，你的手牌上限+1。",
   ["os__daoji"] = "盗戟",
@@ -2593,6 +2600,8 @@ zhangmancheng:addRelatedSkill(os__didao)
 Fk:loadTranslationTable{
   ["zhangmancheng"] = "张曼成",
   ["#zhangmancheng"] = "南阳渠帅",
+  ["illustrator:zhangmancheng"] = "RF",
+
   ["os__fengji"] = "蜂集",
   [":os__fengji"] = "出牌阶段开始时，若你没有“示”，你可将一张牌置于武将牌上，称为“示”并施法X=1~3回合：{从牌堆中获得X张与“示”同名的牌，然后将“示”置入弃牌堆。}" .. 
   "<br/><font color='grey'>#\"<b>施法</b>\"<br/>一名角色的回合结束前，施法标记-1，减至0时执行施法效果。施法期间不能重复施法同一技能。",
@@ -3313,6 +3322,9 @@ liuhong:addSkill(os__fengqix)
 
 Fk:loadTranslationTable{
   ["os__liuhong"] = "刘宏",
+  ["#os__liuhong"] = "汉灵帝",
+  ["illustrator:os__liuhong"] = "biou09",
+
   ["os__yujue"] = "鬻爵",
   [":os__yujue"] = "①其他角色的出牌阶段，其可交给你任意张牌（每阶段至多两张）。②你的回合外，你每获得其他角色的一张牌，你可令其选择一项：1. 弃置攻击范围内的一名其他角色的一张牌；2. 使用下一张牌时获得一张同类型的牌。（每名角色每回合每项限一次）",
   ["os__gezhi"] = "革制",
@@ -3542,6 +3554,9 @@ os__haomeng:addSkill(os__gongge)
 
 Fk:loadTranslationTable{
   ["os__haomeng"] = "郝萌",
+  ["#os__haomeng"] = "悖虎之伥",
+  ["illustrator:os__haomeng"] = "黑白画谱",
+
   ["os__gongge"] = "攻阁",
   [":os__gongge"] = "每回合限一次，当你使用伤害类的牌指定目标后，你可选择一项：1. 摸X+1张牌，若此牌被其响应，你跳过下次摸牌阶段；" .. 
   "2. 弃置其X+1张牌，此牌结算后，若其体力值不小于你，你交给其X张牌；3. 此牌对其伤害值基数+X，此牌结算后其回复X点体力。（X为其武将技能数）",
@@ -3804,6 +3819,8 @@ Fk:loadTranslationTable{
   ["jiangji"] = "蒋济",
   ["#jiangji"] = "盛魏昌杰",
   ["designer:jiangji"] = "千幻",
+  ["illustrator:jiangji"] = "铁杵文化",
+
   ["os__jichou"] = "急筹",
   [":os__jichou"] = "①每回合限一次，你可视为使用一种普通锦囊牌，然后本局游戏你无法以此法或自手牌中使用此牌名的牌，且不可响应此牌名的牌。②出牌阶段限一次，你可将手牌中“急筹”使用过的其牌名的一张牌交给一名角色。",
   ["os__jilun"] = "机论",
@@ -4265,6 +4282,7 @@ Fk:loadTranslationTable{
   ["qiaorui"] = "桥蕤",
   ["#qiaorui"] = "穷勇技尽",
   ["designer:qiaorui"] = "暗夜决彻",
+
   ["os__xiawei"] = "狭威",
   [":os__xiawei"] = "游戏开始时，你将牌堆中两张基本牌置于你的武将牌上，称为“威”；你可将“威”如手牌般使用或打出；回合开始时，你将所有“威”置入弃牌堆。"..
   "<a href='os__presumption'>妄行</a>：准备阶段，你可将牌堆顶的X+1张牌置于你的武将牌上，称为“威”。",
@@ -4400,6 +4418,8 @@ Fk:loadTranslationTable{
   ["os__zhuling"] = "朱灵",
   ["#os__zhuling"] = "良将之亚",
   ["cv:os__zhuling"] = "秦且歌",
+  ["illustrator:os__zhuling"] = "NOVART",
+
   ["os__zhanyi"] = "战意",
   [":os__zhanyi"] = "出牌阶段限一次，你可弃置一张牌并失去1点体力，根据牌的种类获得以下效果直到出牌阶段结束，基本牌：你可将一张基本牌当成任意基本牌使用，你使用的第一张基本牌的伤害值或回复值基数+1；锦囊牌：你摸三张牌，你使用的锦囊牌不能被抵消；装备牌：当你使用【杀】指定一名角色为目标后，其弃置两张牌，你选择其中一张获得之。<br /><font color='red'>（注：【酒】不享受伤害值+1效果）</font>",
   ["#os__zhanyi-prompt"] = "战意:弃置一张牌并失去1点体力，根据弃置牌的种类获得效果",
@@ -4560,6 +4580,9 @@ os__simashi:addSkill(os__shanli)
 
 Fk:loadTranslationTable{
   ["os__simashi"] = "司马师",
+  ["#os__simashi"] = "摧坚荡异",
+  ["illustrator:os__simashi"] = "M云涯",
+
   ["os__baiyi"] = "败移",
   [":os__baiyi"] = "限定技，出牌阶段，若你已受伤，你可选择其他两名角色，令这两名角色交换座次。",
   ["os__jinglue"] = "景略",
@@ -5028,6 +5051,9 @@ weixu:addSkill(os__tuidao)
 
 Fk:loadTranslationTable{
   ["weixu"] = "魏续",
+  ["#weixu"] = "缚陈降曹",
+  ["illustrator:weixu"] = "XXX",
+
   ["os__suizheng"] = "随征",
   [":os__suizheng"] = "锁定技，游戏开始时，你选择一名其他角色。当其造成伤害后，你摸一张牌；当其受到伤害后，你须选择一项：1. 失去1点体力，令其从牌堆或弃牌堆中获得一张【杀】或【决斗】；2. 弃置两张基本牌，令其回复1点体力。",
   ["os__tuidao"] = "颓盗",
@@ -6014,6 +6040,7 @@ yuantan:addSkill(baizu)
 Fk:loadTranslationTable{
   ["yuantan"] = "袁谭",
   ["#yuantan"] = "兄弟阋墙",
+  ["illustrator:yuantan"] = "鬼画府",
 
   ["os__qiaosih"] = "峭嗣",
   [":os__qiaosih"] = "结束阶段，你可获得其他角色本回合进入弃牌堆的牌，然后若你以此法获得牌的数量小于X，你失去1点体力（X为你的体力值）。",
