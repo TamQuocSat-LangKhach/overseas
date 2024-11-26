@@ -3356,7 +3356,7 @@ local os__bingde = fk.CreateActiveSkill{
   end,
   target_num = 0,
   interaction = function(self)
-    local all = Self:getMark("_os__bingde_done-phase") ~= 0 and Self:getMark("_os__bingde_done-phase") or {}
+    local all = Self:getTableMark("_os__bingde_done-phase")
     local all_choices = {"log_spade", "log_club", "log_heart", "log_diamond"}
     return UI.ComboBox { choices = table.filter(all_choices, function(s)
       return not table.contains(all, s)
@@ -3377,9 +3377,7 @@ local os__bingde = fk.CreateActiveSkill{
     player:drawCards(player:getMark("_os__bingde_" .. suit .. "-phase"), self.name)
     if Fk:getCardById(effect.cards[1]).suit == suit then
       player:addSkillUseHistory(self.name, -1)
-      local os__bingde_done = player:getMark("_os__bingde_done-phase") ~= 0 and player:getMark("_os__bingde_done-phase") or {}
-      table.insert(os__bingde_done, suit_log)
-      room:setPlayerMark(player, "_os__bingde_done-phase", os__bingde_done)
+      room:addTableMark(player, "_os__bingde_done-phase", suit_log)
       room:setPlayerMark(player, "_os__bingde_" .. suit .. "-phase", "x")
       room:setPlayerMark(player, "@os__bingde-phase", string.format("%s-%s-%s-%s",
         player:getMark("_os__bingde_1-phase"),

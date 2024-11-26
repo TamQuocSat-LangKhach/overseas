@@ -406,7 +406,7 @@ local gundam__shelie_extra = fk.CreateTriggerSkill{
   name = "#gundam__shelie_extra",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(gundam__shelie) and player.phase == Player.Finish and player:getMark("@gundam__shelie-turn") ~= 0 and #player:getMark("@gundam__shelie-turn") >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
+    return target == player and player:hasSkill(gundam__shelie) and player.phase == Player.Finish and #player:getTableMark("@gundam__shelie-turn") >= player.hp and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     self.cost_data = player.room:askForChoice(player, {"phase_draw", "phase_play"}, self.name, "#gundam__shelie_extra-ask")
@@ -1223,7 +1223,7 @@ local os__kunsi_trig = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUseFinished then
       local targets = (data.extra_data or {}).os__kunsiTarget
-      local os__linglu = player:getMark("_os__linglu") ~= 0 and player:getMark("_os__linglu") or {}
+      local os__linglu = player:getTableMark("_os__linglu")
       table.insertTable(os__linglu, targets)
       room:setPlayerMark(player, "_os__linglu", os__linglu)
       for _, pid in ipairs(targets) do
@@ -3938,7 +3938,7 @@ local os__zhiqu = fk.CreateTriggerSkill{
         end
         --local use = room:askForUseCard(player, card.name, ".|.|.|.|.|.|" .. id, "#os__zhiqu-use::" .. to.id .. ":" .. card.name, false, {bypass_distances = true, bypass_times = true})
       end
-      U.clearRemainCards(room, {id}, self.name)
+      room:cleanProcessingArea({id}, self.name)
     end
     room:setPlayerMark(player, MarkEnum.BypassTimesLimit, 0)
     room:setPlayerMark(player, MarkEnum.BypassDistancesLimit, 0)
@@ -4753,17 +4753,16 @@ local os__xingluan = fk.CreateTriggerSkill{
       proposer = player.id,
     })
     if not player.dead then
-      local choices = {}
-      local cardsMap = {}
+      local listNames = {"basic", "trick", "equip"}
+      local listCards = { {}, {}, {} }
+      cids = table.filter(cids, function(id) return room:getCardArea(id) == Card.Processing end)
       for _, cid in ipairs(cids) do
-        local cardType = Fk:getCardById(cid):getTypeString()
-        table.insertIfNeed(choices, cardType)
-        cardsMap[cardType] = cardsMap[cardType] or {}
-        table.insert(cardsMap[cardType], cid)
+        local cardType = Fk:getCardById(cid).type
+        table.insertIfNeed(listCards[cardType], cid)
       end
-      local choice = room:askForChoice(player, choices, self.name, "#os__xingluan-ask", false, {"basic", "trick", "equip"})
-      local cards = cardsMap[choice]
-      local move = room:askForYiji(player, cards, room:getAlivePlayers(), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
+      local choice = U.askForChooseCardList(room, player, listNames, listCards, 1, 1, self.name, "#os__xingluan-ask", false, false)
+      local cards = listCards[table.indexOf(listNames, choice[1])]
+      local move = room:askForYiji(player, cards, room:getAlivePlayers(false), self.name, #cards, #cards, "#os__xingluan-give", cards, true, 3)
       local num = #move[player.id]
       local victims = {}
       for pid, c in pairs(move) do
@@ -4788,7 +4787,7 @@ Fk:loadTranslationTable{
   ["os__fanchou"] = "樊稠",
   ["#os__fanchou"] = "庸生变难",
   ["os__xingluan"] = "兴乱",
-  [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌分配给任意名角色（每名角色至多三张），以此法获得牌数大于0且不小于你的角色依次失去1点体力。",
+  [":os__xingluan"] = "结束阶段开始时，你可亮出牌堆顶的六张牌，然后将其中一种类别的牌分配给任意名角色（每名角色至多三张），以此法获得牌数大于0且不小于你的角色各失去1点体力。",
   ["#os__xingluan-ask"] = "兴乱：选择其中一种类别的牌并分配",
   ["#os__xingluan-give"] = "兴乱：将这些牌分配给任意名角色（每名角色至多三张）",
   ["distribute_active"] = "分配牌",

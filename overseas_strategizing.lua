@@ -1622,7 +1622,7 @@ local os__yilie_do = fk.CreateTriggerSkill{
       return target == player and player:getMark("@os__yilie-phase") ~= 0 and string.find(player:getMark("@os__yilie-phase"), "draw") and data.card.trueName == "slash"
     else
       if target == player and player:hasSkill(self) and
-      data.card.trueName == "slash" and 
+      data.card.trueName == "slash" and
       player:getMark("@os__yilie-phase") ~= 0 and string.find(player:getMark("@os__yilie-phase"), "draw") and data.to then
         local to = player.room:getPlayerById(data.to)
         return to.chained
