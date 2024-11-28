@@ -1887,16 +1887,16 @@ local osHuangzhu = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Start then
-      local subtype = Util.convertSubtypeAndEquipSlot(self.cost_data)
-      local cards = table.filter(room.discard_pile, function(id) return Fk:getCardById(id).sub_type == subtype end)
+      local subtype_string_table = {
+        [Player.ArmorSlot] = "armor",
+        [Player.WeaponSlot] = "weapon",
+        [Player.TreasureSlot] = "treasure",
+        [Player.DefensiveRideSlot] = "defensive_ride",
+        [Player.OffensiveRideSlot] = "offensive_ride",
+      }
+      local cards = room:getCardsFromPileByRule(".|.|.|.|.|" .. subtype_string_table[self.cost_data], 1, "allPiles")
       if #cards == 0 then
-        cards = table.filter(room.draw_pile, function(id) return Fk:getCardById(id).sub_type == subtype end)
-      end
-      if #cards == 0 then
-        cards = table.filter(room.discard_pile, function(id) return Fk:getCardById(id).type == Card.TypeEquip end)
-      end
-      if #cards == 0 then
-        cards = table.filter(room.draw_pile, function(id) return Fk:getCardById(id).type == Card.TypeEquip end)
+        cards = room:getCardsFromPileByRule(".|.|.|.|.|equip", 1, "allPiles")
       end
       if #cards == 0 then return false end
       local card = Fk:getCardById(table.random(cards))
