@@ -600,12 +600,22 @@ local os__lingbao = fk.CreateActiveSkill{
         if #target > 0 then
           target = room:getPlayerById(target[1])
           local card_data = {}
-          if target:getHandcardNum() > 0 then
-            local handcards = {}
-            for i = 1, target:getHandcardNum(), 1 do
-              table.insert(handcards, -1) -- 手牌不可见
+          local data = {
+            to = target.id,
+            skillName = self.name,
+            --prompt = "#os__lingbao-discard",
+          }
+          local visible_data = {}
+          local cards = target:getCardIds(Player.Hand)
+          if #cards > 0 then
+            table.insert(card_data, {"$Hand", cards})
+            for _, id in ipairs(cards) do
+              if not player:cardVisible(id) then
+                visible_data[tostring(id)] = false
+              end
             end
-            table.insert(card_data, {"$Hand", handcards})
+            if next(visible_data) == nil then visible_data = nil end
+            data.visible_data = visible_data
           end
           local areas = {["$Equip"] = Player.Equip, ["$Judge"] = Player.Judge}
           for k, v in pairs(areas) do
@@ -613,13 +623,8 @@ local os__lingbao = fk.CreateActiveSkill{
               table.insert(card_data, {k, target:getCardIds(v)})
             end
           end
-          local ret = room:askForPoxi(player, "os__lingbao_discard", card_data, nil, false)
-          local new_ret = table.filter(ret, function(id) return id ~= -1 end)
-          local hand_num = #ret - #new_ret
-          if hand_num > 0 then
-            table.insertTable(new_ret, table.random(target:getCardIds(Player.Hand), hand_num))
-          end
-          room:throwCard(new_ret, self.name, target, player)
+          cards = room:askForPoxi(player, "os__lingbao_discard", card_data, data, false)
+          room:throwCard(cards, self.name, target, player)
         end
       end
     else
@@ -636,7 +641,19 @@ local os__lingbao = fk.CreateActiveSkill{
 }
 Fk:addPoxiMethod{
   name = "os__lingbao_discard",
-  card_filter = Util.TrueFunc,
+  card_filter = function (to_select, selected, data, extra_data)
+    if #selected == 2 then return false end -- 至多两个区域
+    if data and #selected < #data then
+      for _, id in ipairs(selected) do
+        for _, v in ipairs(data) do
+          if table.contains(v[2], id) and table.contains(v[2], to_select) then
+            return false
+          end
+        end
+      end
+      return true
+    end
+  end,
   feasible = function(selected, data)
     if #selected < 1 or #selected > 2 then return false end
     local areas = {}
@@ -648,7 +665,7 @@ Fk:addPoxiMethod{
         end
       end
     end
-    return #areas == #selected
+    return #areas == #selected -- 选择的区域等于选择的牌数
   end,
   prompt = "#os__lingbao-discard",
   default_choice = function(data)
