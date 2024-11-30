@@ -2892,46 +2892,16 @@ local os__jianwei_pd = fk.CreateTriggerSkill{
       pd = target:pindian({pd_target}, self.name)
     end
     if pd.results[pd_target.id].winner == player then
-      if to:isAllNude() then return end
-      local card_data = {}
-      if to:getHandcardNum() > 0 then
-        local handcards = {}
-        for i = 1, to:getHandcardNum(), 1 do
-          table.insert(handcards, -1) -- 手牌不可见
-        end
-        table.insert(card_data, {"$Hand", handcards})
+      if player.dead or to:isAllNude() then return end
+      local cards = U.askforCardsChosenFromAreas(player, to, "hej", self.name, nil, nil, false)
+      if #cards > 0 then
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
       end
-      local areas = {["$Equip"] = Player.Equip, ["$Judge"] = Player.Judge}
-      for k, v in pairs(areas) do
-        if #to.player_cards[v] > 0 then
-          table.insert(card_data, {k, to:getCardIds(v)})
-        end
-      end
-      local ret = room:askForPoxi(player, "os__jianwei_get", card_data, nil, false)
-      local new_ret = table.filter(ret, function(id) return id ~= -1 end)
-      local hand_num = #ret - #new_ret
-      if hand_num > 0 then
-        table.insertTable(new_ret, table.random(to:getCardIds(Player.Hand), hand_num))
-      end
-      room:obtainCard(player, new_ret, false, fk.ReasonPrey)
     else
-      if player:getEquipment(Card.SubtypeWeapon) then room:obtainCard(to, player:getEquipment(Card.SubtypeWeapon), false, fk.ReasonPrey) end
+      if #player:getEquipments(Card.SubtypeWeapon) > 0 then
+        room:obtainCard(to, player:getEquipments(Card.SubtypeWeapon), false, fk.ReasonPrey)
+      end
     end
-  end,
-}
-Fk:addPoxiMethod{
-  name = "os__jianwei_get",
-  card_filter = Util.TrueFunc,
-  feasible = function(selected, data)
-    return data and #data == #selected
-  end,
-  prompt = function ()
-    return "剑威：获得其每个区域各一张牌"
-  end,
-  default_choice = function(data)
-    if not data then return false end
-    local cids = table.map(data, function(v) return v[2][1] end)
-    return cids
   end,
 }
 os__jianwei:addRelatedSkill(os__jianwei_pd)
@@ -2953,7 +2923,6 @@ Fk:loadTranslationTable{
   ["#os__jianwei_pd"] = "剑威",
   ["#os__jianwei-target"] = "剑威：你可与一名攻击范围内的角色拼点：若你赢，你获得其每个区域各一张牌；若你没赢，其获得你装备区里的武器牌",
   ["#os__jianwei-ask"] = "剑威：你可与 %src 拼点：若其没赢，你获得其装备区里的武器牌；若其赢，其获得你每个区域各一张牌",
-  ["os__jianwei_get"] = "剑威",
 
   ["$os__fujian1"] = "得此宝剑，如虎添翼！",
   ["$os__fujian2"] = "丞相至宝，汝岂配用之？啊！……",

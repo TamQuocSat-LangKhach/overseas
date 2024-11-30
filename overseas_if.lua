@@ -2160,6 +2160,60 @@ huancaoang:addSkill(osJifa)
 
 
 
+local liufeng = General(extension, "os_if__liufeng", "shu", 4)
+local chenxun = fk.CreateTriggerSkill{
+  name = "os__chenxun",
+  anim_type = "offensive",
+  events = {fk.RoundStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:canUse(Fk:cloneCard("duel"))
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return not table.contains(player:getTableMark("os__chenxun-round"), p.id) and
+        player:canUseTo(Fk:cloneCard("duel"), p)
+    end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#os__chenxun-invoke", self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    room:addTableMark(player, "os__chenxun-round", to.id)
+    local card = Fk:cloneCard("duel")
+    card.skillName = self.name
+    local use = {
+      from = player.id,
+      tos = {{to.id}},
+      card = card,
+    }
+    room:useCard(use)
+    if player.dead then return end
+    if use.damageDealt and use.damageDealt[to.id] then
+      player:drawCards(2, self.name)
+      if not player.dead then
+        self:doCost(event, target, player, data)
+      end
+    else
+      room:loseHp(player, #player:getTableMark("os__chenxun-round"), self.name)
+    end
+  end,
+}
+liufeng:addSkill(chenxun)
+Fk:loadTranslationTable{
+  ["os_if__liufeng"] = "幻刘封",
+  ["#os_if__liufeng"] = "",
+
+  ["os__chenxun"] = "沉勋",
+  [":os__chenxun"] = "每轮开始时，你可以视为对一名其他角色使用一张【决斗】。结算后，若此牌：对其造成伤害，你摸两张牌，然后对本轮未以此法选择过的"..
+  "其他角色发动此技能；未对其造成伤害，你失去X点体力（X为你本轮以此法使用【决斗】的次数）。",
+  ["#os__chenxun-invoke"] = "沉勋：你可以视为对一名其他角色使用一张【决斗】",
+}
 
 
 
