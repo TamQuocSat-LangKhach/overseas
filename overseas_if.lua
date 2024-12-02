@@ -272,14 +272,8 @@ local osHuanBeiding = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name)
-    local beidingNames = player:getTableMark("@$os__beiding_names")
-    table.removeOne(beidingNames, data.card.trueName)
-    if #beidingNames == 0 then
-      beidingNames = 0
-    end
-
     local room = player.room
-    room:setPlayerMark(player, "@$os__beiding_names", beidingNames)
+    room:removePlayerMark(player, "@$os__beiding_names", data.card.trueName)
     for _, id in ipairs(player:getCardIds("h")) do
       local card = Fk:getCardById(id)
       if card.trueName == data.card.trueName and card:getMark("@@os__beiding_card-inhand") == 1 then
@@ -288,7 +282,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PreCardUse, fk.AfterCardsMove, fk.EventAcquireSkill, fk.EventLoseSkill},
+  refresh_events = {fk.PreCardUse, fk.AfterCardsMove},
   can_refresh = function (self, event, target, player, data)
     if event == fk.PreCardUse then
       return
@@ -308,8 +302,6 @@ local osHuanBeiding = fk.CreateTriggerSkill{
         end
       end)
     end
-
-    return target == player and data == self
   end,
   on_refresh = function (self, event, target, player, data)
     if event == fk.PreCardUse then
@@ -325,19 +317,22 @@ local osHuanBeiding = fk.CreateTriggerSkill{
           end
         end
       end
-    elseif event == fk.EventAcquireSkill then
-      for _, id in ipairs(player:getCardIds("h")) do
-        local card = Fk:getCardById(id)
-        if table.contains(player:getTableMark("@$os__beiding_names"), card.trueName) then
-          player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
-        end
+    end
+  end,
+
+  on_acquire = function (self, player)
+    for _, id in ipairs(player:getCardIds("h")) do
+      local card = Fk:getCardById(id)
+      if table.contains(player:getTableMark("@$os__beiding_names"), card.trueName) then
+        player.room:setCardMark(card, "@@os__beiding_card-inhand", 1)
       end
-    else
-      for _, id in ipairs(player:getCardIds("h")) do
-        local card = Fk:getCardById(id)
-        if card:getMark("@@os__beiding_card-inhand") ~= 0 then
-          player.room:setCardMark(card, "@@os__beiding_card-inhand", 0)
-        end
+    end
+  end,
+  on_lose = function (self, player)
+    for _, id in ipairs(player:getCardIds("h")) do
+      local card = Fk:getCardById(id)
+      if card:getMark("@@os__beiding_card-inhand") ~= 0 then
+        player.room:setCardMark(card, "@@os__beiding_card-inhand", 0)
       end
     end
   end,
@@ -760,15 +755,11 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.BuryVictim, fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and (event ~= fk.EventLoseSkill or data == xianyuan)
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     local room = player.room
     if player:getMark("_os__xianyuan") ~= 0 then
       for _, p in ipairs(room.alive_players) do
-        if p:getMark("@os__xianyuan") > 0 and not table.find(room.alive_players, function (p2)
+        if p:getMark("@os__xianyuan") > 0 and not table.find(room:getOtherPlayers(player, false), function (p2)
           return table.contains(p2:getTableMark("_os__xianyuan"), p.id)
         end) then
           room:setPlayerMark(p, "@os__xianyuan", 0)
