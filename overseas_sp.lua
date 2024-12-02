@@ -1809,7 +1809,7 @@ local os__kaiji = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.roo
+    local room = player.room
     local invoke = false
     for _, pid in ipairs(self.cost_data.tos) do
       local p = room:getPlayerById(pid)
