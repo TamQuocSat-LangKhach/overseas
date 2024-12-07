@@ -6091,6 +6091,7 @@ local shouzhu = fk.CreateTriggerSkill{
             local discard, bottom = ret[2], ret[1]
             room:moveCardTo(discard, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, p.id)
             for i = 1, #bottom, 1 do
+              table.removeOne(room.draw_pile, bottom[i])
               table.insert(room.draw_pile, bottom[i])
             end
             room:sendLog{
