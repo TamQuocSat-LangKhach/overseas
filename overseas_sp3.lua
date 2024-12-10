@@ -36,7 +36,11 @@ local os__ciyin = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
-      local cards = room:getNCards(math.min(10, target.hp * 2))
+      local num = math.min(10, target.hp * 2)
+      local cards = room:getNCards(num)
+      for i = num, 1, -1 do
+        table.removeOne(room.draw_pile, cards[i])
+      end
       room:moveCards{
         ids = cards,
         toArea = Card.Processing,
