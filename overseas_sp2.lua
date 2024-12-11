@@ -3899,7 +3899,7 @@ local os__zhiqu = fk.CreateTriggerSkill{
           from = player.id,
           card = card,
           skillName = self.name,
-        } 
+        }
         if #targets == 1 then
           use.tos = { targets }
           room:useCard(use)

@@ -30,7 +30,10 @@ local os__ciyin = fk.CreateTriggerSkill{
         return true
       end
     else
-      return player.room:askForSkillInvoke(player, self.name, data)
+      if player.room:askForSkillInvoke(player, self.name, data) then
+        self.cost_data = nil
+        return true
+      end
     end
   end,
   on_use = function (self, event, target, player, data)
@@ -38,9 +41,6 @@ local os__ciyin = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       local num = math.min(10, target.hp * 2)
       local cards = room:getNCards(num)
-      for i = num, 1, -1 do
-        table.removeOne(room.draw_pile, cards[i])
-      end
       room:moveCards{
         ids = cards,
         toArea = Card.Processing,
@@ -48,22 +48,27 @@ local os__ciyin = fk.CreateTriggerSkill{
         skillName = self.name,
         proposer = player.id,
       }
-      local _cards = table.filter(cards, function(id) return (Fk:getCardById(id).suit == Card.Spade or Fk:getCardById(id).suit == Card.Heart) and room:getCardArea(id) == Card.Processing end)
-      local to_get, choice = U.askforChooseCardsAndChoice(player, _cards, {"os__ciyin_getAll", "os__ciyin_getSelected"}, self.name, "#os__ciyin-get", nil, 0, #_cards, cards)
-      if choice == "os__ciyin_getAll" then
-        to_get = _cards
+
+      local cardmap = room:askForArrangeCards(player, self.name, {cards, "Top", "os__protect"}, "#os__ciyin-get", true, 0,
+      nil, nil, ".|.|heart,spade")
+      if #cardmap[2] > 0 then
+        player:addToPile("os__protect", cardmap[2], true, self.name, player.id)
       end
-      player:addToPile("os__protect", to_get, true, self.name, player.id)
-      cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
-      if #cards > 0 then
-        room:askForGuanxing(player, cards, nil, {0, 0})
+      if #cardmap[1] > 0 then
+        room:moveCards{
+          ids = table.reverse(cardmap[1]),
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonJustMove,
+          skillName = self.name,
+          moveVisible = false,
+        }
       end
       if player.dead then return end
       local choices = {"os__ciyin_recover", "os__ciyin_draw"}
       local tongxin_choice = {}
       local companion = player:getMark("_os__ciyin") ---@type integer
       if #player:getPile("os__protect") >= 3 and player:getMark("_os__ciyin_choice") == 0 then
-        choice = room:askForChoice(player, choices, self.name, companion == 0 and "#os__ciyin_only-choose" or "#os__ciyin-choose::" .. companion)
+        local choice = room:askForChoice(player, choices, self.name, companion == 0 and "#os__ciyin_only-choose" or "#os__ciyin-choose::" .. companion)
         table.insert(tongxin_choice, choice)
         room:setPlayerMark(player, "_os__ciyin_choice", choice)
       end
