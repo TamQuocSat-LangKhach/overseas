@@ -4841,9 +4841,7 @@ local os__yuanhu_finish = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     player.room:askForUseActiveSkill(player, "os__yuanhu", "#os__yuanhu-trg", true)
   end,
-  on_use = function(self, event, target, player, data)
-    return false
-  end,
+  on_use = Util.FalseFunc,
 }
 os__yuanhu:addRelatedSkill(os__yuanhu_finish)
 

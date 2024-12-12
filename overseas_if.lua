@@ -1344,9 +1344,7 @@ local renxian_delay = fk.CreateTriggerSkill{
   name = "#os__renxian_delay",
 
   refresh_events = {fk.TurnStart},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if target ~= player or data.reason ~= "os__renxian" then
@@ -2180,7 +2178,7 @@ local chenxun = fk.CreateTriggerSkill{
     card.skillName = self.name
     local use = {
       from = player.id,
-      tos = {{to.id}},
+      tos = { {to.id} },
       card = card,
     }
     room:useCard(use)
