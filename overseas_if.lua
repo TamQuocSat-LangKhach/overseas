@@ -273,9 +273,7 @@ local osHuanBeiding = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name)
     local room = player.room
-    local mark = player:getTableMark("@$os__beiding_names")
-    table.removeOne(mark, data.card.trueName)
-    room:setPlayerMark(player, "@$os__beiding_names", mark)
+    room:removeTableMark(player, "@$os__beiding_names", data.card.trueName)
     for _, id in ipairs(player:getCardIds("h")) do
       local card = Fk:getCardById(id)
       if card.trueName == data.card.trueName and card:getMark("@@os__beiding_card-inhand") == 1 then
