@@ -1136,9 +1136,7 @@ local os__jiaohua = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, types, self.name, "#os__jiaohua-ask::" .. self.cost_data[1])
     local id = room:getCardsFromPileByRule(".|.|.|.|.|" .. choice, 1, "allPiles")
     if #id > 0 then
-      local mark = type(player:getMark("_os__jiaohua-turn")) == "table" and player:getMark("_os__jiaohua-turn") or {}
-      table.insert(mark, Fk:getCardById(id[1]):getTypeString())
-      room:setPlayerMark(player, "_os__jiaohua-turn", mark)
+      room:addTableMark(player, "_os__jiaohua-turn", Fk:getCardById(id[1]):getTypeString())
       room:obtainCard(self.cost_data[1], id[1], false, fk.ReasonPrey)
     end
   end,
@@ -4179,7 +4177,7 @@ local os__ruilian = fk.CreateTriggerSkill{
     if event == fk.RoundStart then
       local target = room:getPlayerById(self.cost_data)
       room:setPlayerMark(target, "@@os__ruilian", 1)
-      local ruilianGiver = type(target:getMark("_os__ruilianGiver")) == "table" and target:getMark("_os__ruilianGiver") or {}
+      local ruilianGiver = target:getTableMark("_os__ruilianGiver")
       table.insertIfNeed(ruilianGiver, player.id)
       room:setPlayerMark(target, "_os__ruilianGiver", ruilianGiver)
     else
@@ -4220,7 +4218,7 @@ local os__ruilian = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardsMove then
-      local cids = type(player:getMark("_os__ruilianCids-turn")) == "table" and player:getMark("_os__ruilianCids-turn") or {}
+      local cids = player:getTableMark("_os__ruilianCids-turn")
       local otherCids = {}
       for _, move in ipairs(data) do
         if move.from == player.id and move.moveReason == fk.ReasonDiscard then

@@ -260,9 +260,28 @@ local os__shelie_extra = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
   on_refresh = function(self, event, target, player, data)
-    local suitsRecorded = type(player:getMark("@os__shelie-turn")) == "table" and player:getMark("@os__shelie-turn") or {}
+    local suitsRecorded = player:getTableMark("@os__shelie-turn")
     table.insertIfNeed(suitsRecorded, data.card:getSuitString(true))
     player.room:setPlayerMark(player, "@os__shelie-turn", suitsRecorded)
+  end,
+
+  on_acquire = function (self, player, is_start)
+    if player.phase ~= Player.NotActive then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      if turn_event then
+        local suitsRecorded = player:getTableMark("@os__shelie-turn")
+        local use
+        room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+          use = e.data[1]
+          if use.from == player.id then
+            table.insertIfNeed(suitsRecorded, use.card:getSuitString(true))
+          end
+          return false
+        end, turn_event.id)
+        room:setPlayerMark(player, "@os__shelie-turn", suitsRecorded)
+      end
+    end
   end,
 }
 os__shelie:addRelatedSkill(os__shelie_extra)
@@ -427,9 +446,28 @@ local gundam__shelie_extra = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive and data.card.suit ~= Card.NoSuit
   end,
   on_refresh = function(self, event, target, player, data)
-    local suitsRecorded = type(player:getMark("@gundam__shelie-turn")) == "table" and player:getMark("@gundam__shelie-turn") or {}
+    local suitsRecorded = player:getTableMark("@gundam__shelie-turn")
     table.insertIfNeed(suitsRecorded, data.card:getSuitString(true))
     player.room:setPlayerMark(player, "@gundam__shelie-turn", suitsRecorded)
+  end,
+
+  on_acquire = function (self, player, is_start)
+    if player.phase ~= Player.NotActive then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      if turn_event then
+        local suitsRecorded = player:getTableMark("@gundam__shelie-turn")
+        local use
+        room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+          use = e.data[1]
+          if use.from == player.id then
+            table.insertIfNeed(suitsRecorded, use.card:getSuitString(true))
+          end
+          return false
+        end, turn_event.id)
+        room:setPlayerMark(player, "@gundam__shelie-turn", suitsRecorded)
+      end
+    end
   end,
 }
 gundam__shelie:addRelatedSkill(gundam__shelie_extra)
@@ -472,7 +510,7 @@ local gundam__gongxin = fk.CreateActiveSkill{
     if num > num2 and not player.dead and not target.dead then
       local choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-dis::" .. target.id)
       if choice ~= "Cancel" then
-        local pattern = type(target:getMark("@gundam__gongxin-turn")) == "table" and target:getMark("@gundam__gongxin-turn") or {}
+        local pattern = target:getTableMark("@gundam__gongxin-turn")
         table.insertIfNeed(pattern, choice)
         room:setPlayerMark(target, "@gundam__gongxin-turn", pattern)
       end
@@ -530,7 +568,7 @@ local os__danfa = fk.CreateTriggerSkill{
     if (target ~= player or not player:hasSkill(self)) then return false end
     if event == fk.EventPhaseStart then return (player.phase == Player.Start or player.phase == Player.Finish) and not player:isNude()
     else
-      local suitsRecorded = type(player:getMark("@os__danfa-turn")) == "table" and player:getMark("@os__danfa-turn") or {}
+      local suitsRecorded = player:getTableMark("@os__danfa-turn")
       local os__cinnabar = table.map(player:getPile("os__cinnabar"), function(cid) return Fk:getCardById(cid):getSuitString() end)
       local suit = data.card:getSuitString()
       return not table.contains(suitsRecorded, "log_" .. suit) and table.contains(os__cinnabar, suit)
@@ -552,9 +590,9 @@ local os__danfa = fk.CreateTriggerSkill{
       player:addToPile("os__cinnabar", self.cost_data, true, self.name)
     else
       player:drawCards(1, self.name)
-      local suitsRecorded = type(player:getMark("@os__danfa-turn")) == "table" and player:getMark("@os__danfa-turn") or {}
-      table.insert(suitsRecorded, "log_" .. data.card:getSuitString())
-      player.room:setPlayerMark(player, "@os__danfa-turn", suitsRecorded)
+      if player:isAlive() then
+        player.room:addTableMark(player, "@os__danfa-turn", "log_" .. data.card:getSuitString())
+      end
     end
   end,
 }
@@ -1284,15 +1322,13 @@ local os__linglu = fk.CreateTriggerSkill{
     local room = player.room
     local mark_name = player:getMark("_os__linglu_jianshuo") == self.cost_data and room:askForChoice(player, {"os__linglu_twice", "Cancel"}, self.name, "#os__linglu_twice-ask:" .. self.cost_data) ~= "Cancel" and "@os__linglu_twice" or "@os__linglu"
     local target = room:getPlayerById(self.cost_data)
-    local mark = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
+    local mark = target:getTableMark(mark_name)
     --table.insertTable(mark, {player.general, 0})
     table.insert(mark, player.general)
     table.insert(mark, 0)
     room:setPlayerMark(target, mark_name, mark)
     mark_name = string.sub(mark_name, 2)
-    mark = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
-    table.insert(mark, player.id)
-    room:setPlayerMark(target, mark_name, mark)
+    room:addTableMark(player, mark_name, player.id)
   end
 }
 local os__linglu_do = fk.CreateTriggerSkill{
@@ -1306,7 +1342,7 @@ local os__linglu_do = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.Damage then
       for _, mark_name in ipairs(mark_names) do
-        local mark = type(player:getMark(mark_name)) == "table" and player:getMark(mark_name) or {}
+        local mark = player:getTableMark(mark_name)
         for i = 2, #mark, 2 do
           mark[i] = mark[i] + data.damage
         end
@@ -1315,7 +1351,7 @@ local os__linglu_do = fk.CreateTriggerSkill{
     else
       for _, mark_name in ipairs(mark_names) do
         if player.dead then break end
-        local mark = type(player:getMark(mark_name)) == "table" and player:getMark(mark_name) or {}
+        local mark = player:getTableMark(mark_name)
         for i = 2, #mark, 2 do
           if player.dead then break end
           room:doIndicate(player:getMark(string.sub(mark_name, 2))[i/2], {player.id})
@@ -1888,7 +1924,7 @@ local os__funan = fk.CreateTriggerSkill{
     if player:getMark("@@os__funan_update") == 0 then
       local card = data.responseToEvent.card
       room:obtainCard(target, card, false, fk.ReasonPrey)
-      local cidsRecorded = type(target:getMark("_os__funan-turn")) == "table" and target:getMark("_os__funan-turn") or {}
+      local cidsRecorded = target:getTableMark("_os__funan-turn")
       table.insertTable(cidsRecorded, card:isVirtual() and card.subcards or {card.id})
       room:setPlayerMark(target, "_os__funan-turn", cidsRecorded)
     end
@@ -2004,9 +2040,7 @@ local os__qirang = fk.CreateTriggerSkill{
     local cids = room:getCardsFromPileByRule(".|.|.|.|.|trick")
     if #cids > 0 then
       local cid = cids[1]
-      local cidsRecorded = player:getTableMark("_os__qirangTrick-phase")
-      table.insert(cidsRecorded, cid)
-      room:setPlayerMark(player, "_os__qirangTrick-phase", cidsRecorded)
+      room:addTableMark(player, "_os__qirangTrick-phase", cid)
       room:obtainCard(player, cid, false, fk.ReasonPrey)
     end
   end,
@@ -3950,10 +3984,8 @@ local os__xianfeng = fk.CreateTriggerSkill{
       room:addPlayerMark(player, "@os__xianfeng")
     else
       player:drawCards(1, self.name)
-      local record = type(player:getMark("_os__xianfeng_others")) == "table" and player:getMark("_os__xianfeng_others") or {}
-      table.insert(record, target.id)
-      room:setPlayerMark(player, "_os__xianfeng_others", record)
-      record = type(target:getMark("@os__xianfeng_others")) == "table" and target:getMark("@os__xianfeng_others") or {player.general, 0}
+      room:addTableMark(player, "_os__xianfeng_others", target.id)
+      local record = type(target:getMark("@os__xianfeng_others")) == "table" and target:getMark("@os__xianfeng_others") or {player.general, 0}
       record[2] = record[2] - 1
       room:setPlayerMark(target, "@os__xianfeng_others", record)
     end
@@ -4470,10 +4502,10 @@ local os__jinglue = fk.CreateActiveSkill{
     }, self.name)
     room:setCardMark(Fk:getCardById(cid), "_os__sishi", {target.id, player.id})
     local mark_name = "_os__jinglue_now-" .. tostring(player.id)
-    record = type(target:getMark(mark_name)) == "table" and target:getMark(mark_name) or {}
+    record = target:getTableMark(mark_name)
     table.insertIfNeed(record, cid)
     room:setPlayerMark(target, mark_name, record)
-    record = type(player:getMark("_os__jinglue")) == "table" and player:getMark("_os__jinglue") or {}
+    record = player:getTableMark("_os__jinglue")
     table.insertIfNeed(record, target.id)
     room:setPlayerMark(player, "_os__jinglue", record)
   end,
@@ -6308,7 +6340,7 @@ local yichong = fk.CreateTriggerSkill{
             room:setPlayerMark(orig_to, "@yichong_que", #mark2 > 0 and mark2 or 0)
           end
         end
-        local mark2 = type(to:getMark("@yichong_que")) == "table" and to:getMark("@yichong_que") or {}
+        local mark2 = to:getTableMark("@yichong_que")
         table.insert(mark2, choice)
         room:setPlayerMark(to, "@yichong_que", mark2)
         room:setPlayerMark(player, "yichong_target", {self.cost_data, choice})

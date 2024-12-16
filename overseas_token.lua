@@ -97,7 +97,7 @@ local talismanSkill = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.card
   end,
   on_refresh = function(self, event, target, player, data)
-    local talismanRecorded = type(player:getMark("@$talisman")) == "table" and player:getMark("@$talisman") or {}
+    local talismanRecorded = player:getTableMark("@$talisman")
     table.insertIfNeed(talismanRecorded, data.card.trueName)
     player.room:setPlayerMark(player, "@$talisman", talismanRecorded)
   end,

@@ -71,9 +71,7 @@ local osBeiding = fk.CreateTriggerSkill{
     local room = player.room
     local namesChosen = self.cost_data
 
-    local namesChosenThisTurn = player:getTableMark("os__beiding_names-turn")
-    table.insert(namesChosenThisTurn, namesChosen)
-    room:setPlayerMark(player, "os__beiding_names-turn", namesChosen)
+    room:addTableMark(player, "os__beiding_names-turn", namesChosen)
 
     namesChosen = table.map(namesChosen, function(name)
       local realName = name:split("__")
@@ -118,7 +116,7 @@ local osBeidingUse = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["os__beiding"] = "北定",
-  [":os__beiding"] = "一名角色的准备阶段开始时，你可以声明并记录至多X种未被〖北定〗记录过的基本牌或普通锦囊牌牌名。" .. 
+  [":os__beiding"] = "一名角色的准备阶段开始时，你可以声明并记录至多X种未被〖北定〗记录过的基本牌或普通锦囊牌牌名。" ..
   "若如此做，此回合的弃牌阶段结束时，你视为依次使用本回合记录的牌（无距离限制），若此牌的目标不包含当前回合角色，" ..
   "其摸一张牌（X为你的体力值）。",
   ["#os__beiding_use"] = "北定",
@@ -745,11 +743,7 @@ local xianyuan_trigger = fk.CreateTriggerSkill{
         room:setPlayerMark(target, "@os__xianyuan", 0)
         local mark
         for _, p in ipairs(room.alive_players) do
-          mark = p:getTableMark("_os__xianyuan")
-          if table.removeOne(mark, target.id) then
-            if #mark == 0 then mark = 0 end
-            room:setPlayerMark(p, "_os__xianyuan", mark)
-          end
+          room:removeTableMark(p, "_os__xianyuan", target.id)
         end
       end
     end

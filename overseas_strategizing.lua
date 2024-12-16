@@ -1120,9 +1120,7 @@ local os__chuhai = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, self.name, "offensive")
     player:broadcastSkillInvoke(self.name, math.random(2))
-    local record = player:getTableMark("_os__chuhai")
-    table.insert(record, target.id)
-    room:setPlayerMark(player, "_os__chuhai", record)
+    room:addTableMark(player, "_os__chuhai", target.id)
     room:addPlayerMark(player, "@os__chuhai")
     if player:getMark("@os__chuhai") > 1 then
       room:updateQuestSkillState(player, self.name, true) -- ……

@@ -305,13 +305,13 @@ local os__jianming = fk.CreateTriggerSkill{
   events = {fk.AfterCardUseDeclared, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.card.suit ~= Card.NoSuit then
-      local suitsRecorded = type(player:getMark("@os__jianming-turn")) == "table" and player:getMark("@os__jianming-turn") or {}
+      local suitsRecorded = player:getTableMark("@os__jianming-turn")
       return not table.contains(suitsRecorded, "log_" .. data.card:getSuitString())
     end
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
-    local suitsRecorded = type(player:getMark("@os__jianming-turn")) == "table" and player:getMark("@os__jianming-turn") or {}
+    local suitsRecorded = player:getTableMark("@os__jianming-turn")
     table.insert(suitsRecorded, "log_" .. data.card:getSuitString())
     player.room:setPlayerMark(player, "@os__jianming-turn", suitsRecorded)
   end,
@@ -888,7 +888,7 @@ local os__yangming = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local typesRecorded = type(player:getMark("@os__yangming-phase")) == "table" and player:getMark("@os__yangming-phase") or {}
+    local typesRecorded = player:getTableMark("@os__yangming-phase")
     table.insert(typesRecorded, data.card:getTypeString() .. "_char")
     room:setPlayerMark(player, "@os__yangming-phase", typesRecorded)
   end,
@@ -1489,9 +1489,7 @@ local chengxi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local record = player:getTableMark("_os__chengxi-turn")
-    table.insert(record, target.id)
-    room:setPlayerMark(player, "_os__chengxi-turn", record)
+    room:addTableMark(player, "_os__chengxi-turn", target.id)
     player:drawCards(1, self.name)
     if not player:canPindian(target) then return end
     local pindian = player:pindian({target}, self.name)
