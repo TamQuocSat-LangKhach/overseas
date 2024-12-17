@@ -71,7 +71,9 @@ local osBeiding = fk.CreateTriggerSkill{
     local room = player.room
     local namesChosen = self.cost_data
 
-    room:addTableMark(player, "os__beiding_names-turn", namesChosen)
+    local namesChosenThisTurn = player:getTableMark("os__beiding_names-turn")
+    table.insertTable(namesChosenThisTurn, namesChosen)
+    room:setPlayerMark(player, "os__beiding_names-turn", namesChosenThisTurn)
 
     namesChosen = table.map(namesChosen, function(name)
       local realName = name:split("__")
