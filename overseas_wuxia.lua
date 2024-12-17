@@ -1906,7 +1906,7 @@ local os__dengjian = fk.CreateTriggerSkill{
 local os__dengjian_buff = fk.CreateTargetModSkill{
   name = "#os__dengjian_buff",
   bypass_times = function (self, player, skill, scope, card, to)
-    return card:getMark("@@os__fencing-inhand") > 0
+    return card and card:getMark("@@os__fencing-inhand") > 0
   end
 }
 os__dengjian:addRelatedSkill(os__dengjian_buff)

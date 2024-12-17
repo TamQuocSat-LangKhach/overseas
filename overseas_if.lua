@@ -2051,10 +2051,10 @@ local osLiyuanTrigger = fk.CreateTriggerSkill{
 local osLiyuanTargetMod = fk.CreateTargetModSkill{
   name = "#os__liyuan_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return table.contains(card.skillNames, osLiyuan.name)
+    return card and table.contains(card.skillNames, osLiyuan.name)
   end,
   bypass_distances = function(self, player, skill, card)
-    return table.contains(card.skillNames, osLiyuan.name)
+    return card and table.contains(card.skillNames, osLiyuan.name)
   end,
 }
 Fk:loadTranslationTable{
