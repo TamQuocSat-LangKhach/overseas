@@ -4488,7 +4488,6 @@ local os__jinglue = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local record
     local cid = room:askForCardChosen(player, target, {
       card_data = {
         { "$Hand", target:getCardIds(Player.Hand) }
@@ -4496,12 +4495,8 @@ local os__jinglue = fk.CreateActiveSkill{
     }, self.name)
     room:setCardMark(Fk:getCardById(cid), "_os__sishi", {target.id, player.id})
     local mark_name = "_os__jinglue_now-" .. tostring(player.id)
-    record = target:getTableMark(mark_name)
-    table.insertIfNeed(record, cid)
-    room:setPlayerMark(target, mark_name, record)
-    record = player:getTableMark("_os__jinglue")
-    table.insertIfNeed(record, target.id)
-    room:setPlayerMark(player, "_os__jinglue", record)
+    room:addTableMarkIfNeed(target, mark_name, cid)
+    room:addTableMarkIfNeed(player, "_os__jinglue", target.id)
   end,
 }
 local os__jinglue_do = fk.CreateTriggerSkill{
@@ -4653,9 +4648,7 @@ local os__dingzhen = fk.CreateTriggerSkill{
         local discard = room:askForDiscard(p, 1, 1, true, self.name, true, "slash", "#os__dingzhen-discard::" .. player.id)
         if #discard == 0 then
           room:setPlayerMark(p, "@@os__dingzhen-round", 1)
-          local record = p:getTableMark("_os__dingzhen_to-round")
-          table.insert(record, player.id)
-          room:setPlayerMark(p, "_os__dingzhen_to-round", record)
+          room:addTableMark(p, "_os__dingzhen_to-round", player.id)
         end
       end
     end
@@ -6334,9 +6327,7 @@ local yichong = fk.CreateTriggerSkill{
             room:setPlayerMark(orig_to, "@yichong_que", #mark2 > 0 and mark2 or 0)
           end
         end
-        local mark2 = to:getTableMark("@yichong_que")
-        table.insert(mark2, choice)
-        room:setPlayerMark(to, "@yichong_que", mark2)
+        room:addTableMark(to, "@yichong_que", choice)
         room:setPlayerMark(player, "yichong_target", {self.cost_data, choice})
         room:setPlayerMark(player, "@os__yichong", {0})
       end
