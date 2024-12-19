@@ -508,11 +508,9 @@ local gundam__gongxin = fk.CreateActiveSkill{
     end)
     local num2 = #card_suits
     if num > num2 and not player.dead and not target.dead then
-      local choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-dis::" .. target.id)
+      choice = room:askForChoice(player, {"red", "black", "Cancel"}, self.name, "#gundam__gongxin-dis::" .. target.id)
       if choice ~= "Cancel" then
-        local pattern = target:getTableMark("@gundam__gongxin-turn")
-        table.insertIfNeed(pattern, choice)
-        room:setPlayerMark(target, "@gundam__gongxin-turn", pattern)
+        room:addTableMarkIfNeed(target, "@gundam__gongxin-turn", choice)
       end
     end
   end,
@@ -1846,13 +1844,9 @@ local os__gongsun = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local target = room:getPlayerById(self.cost_data[1])
-    local targets = player:getTableMark("_os__gongsun")
-    table.insertIfNeed(targets, target.id)
-    room:setPlayerMark(player, "_os__gongsun", targets)
+    room:addTableMarkIfNeed(player, "_os__gongsun", target.id)
     for _, p in ipairs({player, target}) do
-      local suitsRecorded = p:getTableMark("@os__gongsun")
-      table.insert(suitsRecorded, self.cost_data[2])
-      room:setPlayerMark(p, "@os__gongsun", suitsRecorded)
+      room:addTableMark(p, "@os__gongsun", self.cost_data[2])
     end
   end,
 

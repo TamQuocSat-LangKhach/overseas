@@ -664,9 +664,7 @@ local function addXianyuanMark(room, player, target, num)
   n = math.min(3, num + n)
   room:setPlayerMark(target, "@os__xianyuan", n)
   if player ~= target then
-    local mark = player:getTableMark("_os__xianyuan")
-    table.insertIfNeed(mark, target.id)
-    room:setPlayerMark(player, "_os__xianyuan", mark)
+    room:addTableMarkIfNeed(player, "_os__xianyuan", target.id)
   end
 end
 

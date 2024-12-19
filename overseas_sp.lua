@@ -583,7 +583,7 @@ local os__dingfa = fk.CreateTriggerSkill{
       }
     else
       local target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__dingfa-target", self.name, false)
-      target = room:getPlayerById(target[1]) 
+      target = room:getPlayerById(target[1])
       room:damage{
         from = player,
         to = target,
@@ -606,8 +606,8 @@ local os__dingfa = fk.CreateTriggerSkill{
         end)
       end
     end
-    if num > 0 then 
-      player.room:addPlayerMark(player, "@os__dingfa-turn", x)
+    if num > 0 then
+      player.room:addPlayerMark(player, "@os__dingfa-turn", num)
     end
   end,
 }
@@ -4177,9 +4177,7 @@ local os__ruilian = fk.CreateTriggerSkill{
     if event == fk.RoundStart then
       local target = room:getPlayerById(self.cost_data)
       room:setPlayerMark(target, "@@os__ruilian", 1)
-      local ruilianGiver = target:getTableMark("_os__ruilianGiver")
-      table.insertIfNeed(ruilianGiver, player.id)
-      room:setPlayerMark(target, "_os__ruilianGiver", ruilianGiver)
+      room:addTableMarkIfNeed(target, "_os__ruilianGiver", player.id)
     else
       local id = room:getCardsFromPileByRule(".|.|.|.|.|" .. self.cost_data, 1, "discardPile")
       if #id > 0 then
