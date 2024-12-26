@@ -30,10 +30,10 @@ local os_ex__paoxiaoAudio = fk.CreateTriggerSkill{
 local os_ex__paoxiao = fk.CreateTargetModSkill{
   name = "os_ex__paoxiao",
   bypass_times = function (self, player, skill, scope, card, to)
-    return player:hasSkill(self) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase
+    return player:hasSkill(self) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card
   end,
-  bypass_distances = function(self, player, skill, scope)
-    return player:hasSkill(self) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryPhase) > 0
+  bypass_distances = function(self, player, skill, card)
+    return player:hasSkill(self) and skill.trueName == "slash_skill" and player:usedCardTimes("slash", Player.HistoryPhase) > 0 and card
   end,
 }
 os_ex__paoxiao:addRelatedSkill(os_ex__paoxiaoAudio)

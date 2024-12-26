@@ -20,6 +20,10 @@ Fk:loadTranslationTable{
   ["~os_if__zhugeliang"] = "先帝遗志未竟，吾怎可终于半途。",
 }
 
+ifzhugeliangwin = fk.CreateActiveSkill{ name = "os__beiding_names" }
+ifzhugeliangwin.package = extension
+Fk:addSkill(ifzhugeliangwin)
+
 local osBeiding = fk.CreateTriggerSkill{
   name = "os__beiding",
   anim_type = "control",
@@ -109,6 +113,12 @@ local osBeidingUse = fk.CreateTriggerSkill{
         break
       end
 
+      -- 牌名彩蛋
+      local names = {"fire_attack", "fire__slash", "nullification"}
+      if table.contains(names, name) then
+        player:broadcastSkillInvoke("os__beiding_names", table.indexOf(names, name))
+      end
+
       local use = U.askForUseVirtualCard(room, player, name, nil, self.name, "#os__beiding-use:::" .. name, false, true, true)
       if use and not table.contains(TargetGroup:getRealTargets(use.tos), target.id) and not target.dead then
         target:drawCards(1, self.name)
@@ -129,6 +139,11 @@ Fk:loadTranslationTable{
 
   ["$os__beiding1"] = "众将同心扶汉，北伐或可功成。",
   ["$os__beiding2"] = "虽失天时地利，亦有三分胜机！",
+
+  -- 牌特殊语音
+  ["$os__beiding_names1"] = "卧龙吐息之间，贼众灰飞烟灭！", -- 火攻
+  ["$os__beiding_names2"] = "地火喑喑，焚将百万鱼龙！", -- 火杀
+  ["$os__beiding_names3"] = "君臣将帅同心，敌必无可乘之机！", -- 无懈
 }
 
 osBeiding:addRelatedSkill(osBeidingUse)
@@ -203,23 +218,22 @@ local osHunyou = fk.CreateTriggerSkill{
 local osHunyouBuff = fk.CreateTriggerSkill{
   name = "#os__hunyou_buff",
   anim_type = "defensive",
-  events = {fk.DamageInflicted, fk.PreHpLost, fk.TurnEnd},
+  events = {fk.DamageInflicted, fk.PreHpLost, fk.AfterTurnEnd},
   can_trigger = function (self, event, target, player, data)
-    return player:getMark("@@os__hunyou_prevent-turn") > 0 and (event == fk.TurnEnd or target == player)
+    return player:getMark("@@os__hunyou_prevent-turn") > 0 and (event == fk.AfterTurnEnd or target == player)
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
-    local room = player.room
-    if event == fk.TurnEnd then
-      room:changeHero(
-        player,
-        "os_if_huan__zhugeliang",
-        false,
-        player.deputyGeneral == "os_if__zhugeliang",
-        false,
-        false
-      )
-      player:gainAnExtraTurn(true)
+    if event == fk.AfterTurnEnd then
+      local room = player.room
+      room:handleAddLoseSkills(player, "-os__beiding|-os__jielv|-os__hunyou|os_huan__beiding|os_huan__jielv|os__huanji|os__changgui", nil, true, false)
+      if player.general == "os_if__zhugeliang" then
+        room:setPlayerProperty(player, "general", "os_if_huan__zhugeliang")
+      end
+      if player.deputyGeneral == "os_if__zhugeliang" then
+        room:setPlayerProperty(player, "deputyGeneral", "os_if_huan__zhugeliang")
+      end
+      player:gainAnExtraTurn(true, "os__hunyou")
     else
       return true
     end
@@ -227,7 +241,7 @@ local osHunyouBuff = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["os__hunyou"] = "魂游",
-  [":os__hunyou"] = "限定技，当你处于濒死状态时，你可以将体力回复至1点，本回合防止你受到的伤害和体力流失。" ..
+  [":os__hunyou"] = "限定技，当你处于濒死状态时，你可以将体力回复至1点，本回合防止你受到的伤害和失去体力。" ..
   "此回合结束时，你<a href='os_ruhuan_zhugeliang'>“入幻”</a>并获得一个额外的回合。",
   ["os_ruhuan_zhugeliang"] = "变身为幻形态：<br><b>北定</b>：" ..
   "你使用〖北定〗记录的牌无距离限制且不计入次数；当你使用〖北定〗记录牌名的牌结算结束后，" ..
@@ -259,10 +273,16 @@ Fk:loadTranslationTable{
   ["~os_if_huan__zhugeliang"] = "一人之愿，终难逆天命……",
 }
 
+huanzhugeliangwin = fk.CreateActiveSkill{ name = "os_huan__beiding_names" }
+huanzhugeliangwin.package = extension
+Fk:addSkill(huanzhugeliangwin)
+
+
 local osHuanBeiding = fk.CreateTriggerSkill{
   name = "os_huan__beiding",
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
+  mute = true,
   can_trigger = function (self, event, target, player, data)
     return
       target == player and
@@ -271,8 +291,16 @@ local osHuanBeiding = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
-    player:drawCards(1, self.name)
     local room = player.room
+    room:notifySkillInvoked(player, self.name)
+    -- 牌名彩蛋
+    local names = {"fire_attack", "fire__slash", "nullification"}
+    if table.contains(names, data.card.name) then
+      player:broadcastSkillInvoke("os_huan__beiding_names", table.indexOf(names, data.card.name))
+    else
+      player:broadcastSkillInvoke(self.name)
+    end
+    player:drawCards(1, self.name)
     room:removeTableMark(player, "@$os__beiding_names", data.card.trueName)
     for _, id in ipairs(player:getCardIds("h")) do
       local card = Fk:getCardById(id)
@@ -351,6 +379,11 @@ Fk:loadTranslationTable{
 
   ["$os_huan__beiding1"] = "内外不懈如斯，长安不日可下！",
   ["$os_huan__beiding2"] = "先帝英灵冥鉴，此番定成夙愿！",
+
+  -- 牌特殊语音
+  ["$os_huan__beiding_names1"] = "炎龙归汉，燎尽不臣之贼！", -- 火攻
+  ["$os_huan__beiding_names2"] = "天火离离，复光炎汉国祚！", -- 火杀
+  ["$os_huan__beiding_names3"] = "亮善以谋制人，不为人谋所制！", -- 无懈
 }
 
 osHuanBeiding:addRelatedSkill(osHuanBeidingBuff)
@@ -451,14 +484,13 @@ local osChanggui = fk.CreateTriggerSkill{
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    room:changeHero(
-      player,
-      "os_if__zhugeliang",
-      false,
-      player.deputyGeneral == "os_if_huan__zhugeliang",
-      false,
-      false
-    )
+    room:handleAddLoseSkills(player, "-os_huan__beiding|-os_huan__jielv|-os__huanji|-os__changgui|os__beiding|os__jielv|os__hunyou", nil, true, false)
+    if player.general == "os_if_huan__zhugeliang" then
+      room:setPlayerProperty(player, "general", "os_if__zhugeliang")
+    end
+    if player.deputyGeneral == "os_if_huan__zhugeliang" then
+      room:setPlayerProperty(player, "deputyGeneral", "os_if__zhugeliang")
+    end
     room:changeMaxHp(player, player.hp - player.maxHp)
   end
 }
@@ -1776,12 +1808,10 @@ local osFuxi = fk.CreateTriggerSkill{
     local skills = table.contains(choices, "os__fuxi2") and "" or "-os__chihui|"
     room:handleAddLoseSkills(player, skills .. "-os__fuxi|os__huangzhu|os__liyuan|os__jifa", nil, true, false)
     if player.general == "os_if__caoang" then
-      player.general = "os_if_huan__caoang"
-      room:broadcastProperty(player, "general")
+      room:setPlayerProperty(player, "general", "os_if_huan__caoang")
     end
     if player.deputyGeneral == "os_if__caoang" then
-      player.deputyGeneral = "os_if_huan__caoang"
-      room:broadcastProperty(player, "deputyGeneral")
+      room:setPlayerProperty(player, "deputyGeneral", "os_if_huan__caoang")
     end
 
   end,
@@ -2113,12 +2143,10 @@ local osJifa = fk.CreateTriggerSkill{
     end
     room:handleAddLoseSkills(player, skills .. "-os__jifa|os__chihui|os__fuxi", nil, true, false)
     if player.general == "os_if_huan__caoang" then
-      player.general = "os_if__caoang"
-      room:broadcastProperty(player, "general")
+      room:setPlayerProperty(player, "general", "os_if__caoang")
     end
     if player.deputyGeneral == "os_if_huan__caoang" then
-      player.deputyGeneral = "os_if__caoang"
-      room:broadcastProperty(player, "deputyGeneral")
+      room:setPlayerProperty(player, "deputyGeneral", "os_if__caoang")
     end
   end,
 }
