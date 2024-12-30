@@ -6382,18 +6382,25 @@ local yichong = fk.CreateTriggerSkill{
 
 guonvwang:addSkill(yichong)
 guonvwang:addSkill("wufei")
-
+local guozhaoWin = fk.CreateActiveSkill{ name = "os__guozhao_win_audio" }
+guozhaoWin.package = extension
+Fk:addSkill(guozhaoWin)
 Fk:loadTranslationTable{
   ["os__guozhao"] = "郭女王",
   ["#os__guozhao"] = "文德皇后",
   ["os__yichong"] = "易宠",
   [":os__yichong"] = "准备阶段，你可选择一名其他角色并选择一种花色，获得其所有该花色的牌，并令其获得“雀”标记直到你下个回合开始"..
-  "（若场上已有“雀”标记则转移给该角色）。拥有“雀”标记的角色获得你指定花色的牌时，你获得此牌（你至多因此“雀”标记获得一张牌）。",
+  "（若场上已有“雀”标记则转移给该角色）。拥有“雀”标记的角色获得下一张你指定花色的牌时，你获得之。",
 
   ['@os__yichong'] = "易宠",
   ["#os__yichong-choose"] = "你可以发动 易宠，选择一名其他角色，获得其一种花色的所有牌",
 
-  ["~os__guozhao"] = "不觉泪下……沾衣裳……",
+  ["$os__yichong1"] = "弱水三千，唯妾独讨陛下之心。",
+  ["$os__yichong2"] = "陛下恩宠如此，妾自堪当此位。",
+  ["$wufei_os__guozhao1"] = "纵与姐姐情深，亦不可因此瞒于陛下呀！",
+  ["$wufei_os__guozhao2"] = "此时颇有蹊跷，陛下还当细察。",
+  ["~os__guozhao"] = "臣妾绝无虚言，陛下，陛下……",
+  ["$os__guozhao_win_audio"] = "哼，如此蠢物，哪是本宫的对手。",
 }
 
 return extension
