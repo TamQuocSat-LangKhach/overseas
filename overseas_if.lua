@@ -878,7 +878,7 @@ local os__qinghan = fk.CreateActiveSkill{
       for i = #all_names, 1, -1 do
         local card = Fk:cloneCard(all_names[i])
         card.skillName = self.name
-        if not player:canUseTo(card, target) then
+        if not player:canUseTo(card, target, { bypass_times = true, bypass_distances = true }) then
           table.remove(all_names, i)
         end
       end
@@ -2372,6 +2372,21 @@ local function os__shiyihObtain(room, players, ret, from, skillName)
     end
   end
 end
+local function os__shiyihGetPoxiData(p, player, target, skillName)
+  local other = p == player and target or player
+  local ret = {
+    other,
+    { {Fk:translate(other.general) + (other.deputyGeneral ~= "" and ("/" .. Fk:translate(other.deputyGeneral)) or ""), other:getCardIds(Player.Hand)},
+      {Fk:translate(p.general) + (p.deputyGeneral ~= "" and ("/" .. Fk:translate(p.deputyGeneral)) or ""), p:getCardIds(Player.Hand)} -- TODO: 规范化
+    }, -- card_data
+    {
+      to = other.id,
+      skillName = skillName,
+      prompt = "#os__shiyih-view::" .. other.id,
+    } -- extra_data
+  }
+  return ret
+end
 local os__shiyih = fk.CreateActiveSkill{
   name = "os__shiyih",
   anim_type = "support",
@@ -2397,13 +2412,7 @@ local os__shiyih = fk.CreateActiveSkill{
 
     local other, card_data, extra_data
     for _, p in ipairs(targets) do
-      other = p == player and target or player
-      card_data = { {other.general, other:getCardIds(Player.Hand)}, {p.general, p:getCardIds(Player.Hand)} }
-      extra_data = {
-        to = other.id,
-        skillName = self.name,
-        prompt = "#os__shiyih-view::" .. other.id,
-      }
+      other, card_data, extra_data = table.unpack(os__shiyihGetPoxiData(p, player, target, self.name)) -- FIXME: 注释有误
 
       req:setData(p, {
         type = "os__shiyih",
@@ -2424,13 +2433,7 @@ local os__shiyih = fk.CreateActiveSkill{
     for _, p in ipairs(targets) do
       local result = req:getResult(p)
 
-      other = p == player and target or player -- 重复
-      card_data = { {other.general, other:getCardIds(Player.Hand)}, {p.general, p:getCardIds(Player.Hand)} }
-      extra_data = {
-        to = other.id,
-        skillName = self.name,
-        prompt = "#os__shiyih-view::" .. other.id,
-      }
+      _, card_data, extra_data = table.unpack(os__shiyihGetPoxiData(p, player, target, self.name))
 
       if result == "" then
         ret[p.id] = poxi.default_choice(card_data, extra_data)
@@ -2529,7 +2532,7 @@ Fk:loadTranslationTable{
     "类型不同，你与其从牌堆或弃牌堆中获得一张与展示的牌类型相同的牌。",
   ["os__chunhui"] = "春晖",
   [":os__chunhui"] = "每回合限一次，当你距离1以内且体力值不大于你的角色成为伤害类普通锦囊的目标后，" ..
-    "你可发动此技能，若其不为你，你令其观看你的手牌并获得其中一张牌。此牌结算结束后，若未对其造成伤害，你摸一张牌。",
+    "若你有手牌，你可发动此技能，若其不为你，你令其观看你的手牌并获得其中一张牌。此牌结算结束后，若未对其造成伤害，你摸一张牌。",
 
   ["#os__shiyih-active"] = "拾忆：你可与一名其他角色互相观看手牌，然后各展示自己的一张手牌",
   ["#os__shiyih-view"] = "拾忆：观看%dest的手牌，展示自己的一张手牌",

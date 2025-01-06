@@ -5761,7 +5761,7 @@ local os__duwang = fk.CreateTriggerSkill{
           for _, id in ipairs(to:getCardIds("he")) do
             card:clearSubcards()
             card:addSubcard(id)
-            if to:canUseTo(card, player) then
+            if to:canUseTo(card, player, { bypass_times = true, bypass_distances = true }) then
               table.insert(cards, id)
             end
           end

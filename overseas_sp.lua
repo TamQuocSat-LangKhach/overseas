@@ -23,7 +23,7 @@ local os__qingkou = fk.CreateTriggerSkill{
     local card = Fk:cloneCard("duel")
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return player:canUseTo(card, p)
+        return player:canUseTo(card, p, { bypass_times = true, bypass_distances = true })
       end),
       Util.IdMapper
     )
@@ -108,7 +108,7 @@ local os__fenwu = fk.CreateTriggerSkill{
     local card = Fk:cloneCard("slash")
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return player:canUseTo(card, p)
+        return player:canUseTo(card, p, { bypass_times = true, bypass_distances = true })
       end),
       Util.IdMapper
     )
