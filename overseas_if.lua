@@ -8,6 +8,8 @@ Fk:loadTranslationTable{
   ["os_if"] = "国际幻",
 }
 
+-- 定
+
 local ifzhugeliang = General(extension, "os_if__zhugeliang", "shu", 3, 4)
 local ifzhugeliangwin = fk.CreateActiveSkill{ name = "os_if__zhugeliang_win_audio" }
 ifzhugeliangwin.package = extension
@@ -876,7 +878,7 @@ local os__qinghan = fk.CreateActiveSkill{
       for i = #all_names, 1, -1 do
         local card = Fk:cloneCard(all_names[i])
         card.skillName = self.name
-        if not U.canUseCardTo(room, player, target, card, false, false) then
+        if not player:canUseTo(card, target) then
           table.remove(all_names, i)
         end
       end
@@ -1583,9 +1585,7 @@ local niwo_prohibit = fk.CreateProhibitSkill{
 Fk:addPoxiMethod{
   name = "os__niwo",
   prompt = "#os__niwo",
-  card_filter = function(to_select, selected, data)
-    return true
-  end,
+  card_filter = Util.TrueFunc,
   feasible = function(selected, data)
     if #selected > 0 and #selected % 2 == 0 then
       return #table.filter(selected, function (id)
@@ -1624,7 +1624,9 @@ Fk:loadTranslationTable{
   ["~os_if__luxun"] = "但为大吴万世基业，臣死亦不改匡谏之心！",
 }
 
-local ifcaoang = General(extension, "os_if__caoang", "wei", 3, 4)
+-- 兴
+
+local ifcaoang = General(extension, "os_if__caoang", "wei", 3)
 
 Fk:loadTranslationTable{
   ["os_if__caoang"] = "幻曹昂",
@@ -1709,14 +1711,14 @@ local osChihui = fk.CreateTriggerSkill{
     if player.dead then return false end
     local x = player:getLostHp()
     if x > 0 then
-      room:drawCards(player, x, self.name)
+      room:drawCards(player, math.min(x, 2), self.name)
     end
   end
 }
 Fk:loadTranslationTable{
   ["os__chihui"] = "炽灰",
   [":os__chihui"] = "其他角色的回合开始时，你可以废除一个装备栏，选择：1.弃置其区域里的一张牌；"..
-    "2.将牌堆里的一张对应副类别的牌置入其装备区。若如此做，你失去1点体力，摸X张牌（X为你已损失的体力值）。",
+    "2.将牌堆里的一张对应副类别的牌置入其装备区。若如此做，你失去1点体力，摸X张牌（X为你已损失的体力值且至多为2）。",
 
   ["#os__chihui-choice"] = "是否对%dest发动 炽灰，选择要废除的装备栏",
 
@@ -1828,7 +1830,7 @@ Fk:loadTranslationTable{
     "出牌阶段开始时，你可以选择或变更至多两个已记录且对应装备栏已被废除的装备牌牌名（每种副类别限一个），"..
     "视为拥有这些装备牌的技能直到此装备栏被恢复。<br>"..
     "<b>离渊</b>：你可以将一张对应装备栏已被废除的装备牌当普【杀】使用或打出（无距离、次数限制，不计次数）。"..
-    "当你以此法使用或打出牌时，你摸两张牌。<br>"..
+    "当你以此法使用或打出牌时，你摸一张牌。<br>"..
     "<b>冀筏</b>：锁定技，当你进入濒死状态时，你减X点体力上限（X为你上次发动〖赴曦〗时选择的项数），"..
     "选择此次“退幻”时保留〖煌烛〗或〖离渊〗，然后<a href='os_tuihuan_caoang'>“退幻”</a>并将体力回复至体力上限。",
   ["#os__fuxi-choice"] = "是否发动 赴曦，选择1-2项依序执行，然后“入幻”",
@@ -2075,7 +2077,7 @@ local osLiyuanTrigger = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player:drawCards(2, osLiyuan.name)
+    player:drawCards(1, osLiyuan.name)
   end,
 }
 local osLiyuanTargetMod = fk.CreateTargetModSkill{
@@ -2090,10 +2092,10 @@ local osLiyuanTargetMod = fk.CreateTargetModSkill{
 Fk:loadTranslationTable{
   ["os__liyuan"] = "离渊",
   [":os__liyuan"] = "你可以将一张对应装备栏已被废除的装备牌当普【杀】使用或打出（无距离、次数限制，不计次数）。"..
-    "当你以此法使用或打出牌时，你摸两张牌。",
+    "当你以此法使用或打出牌时，你摸一张牌。",
   ["#os__liyuan_trigger"] = "离渊",
 
-  ["#os__liyuan-viewas"] = "发动 离渊，将1张对应装备栏已被废除的装备牌当普【杀】使用或打出，然后摸2张牌",
+  ["#os__liyuan-viewas"] = "发动 离渊，将1张对应装备栏已被废除的装备牌当普【杀】使用或打出，然后摸1张牌",
 
   ["$os__liyuan1"] = "",
   ["$os__liyuan2"] = "",
@@ -2157,7 +2159,7 @@ Fk:loadTranslationTable{
 
   ["os_tuihuan_caoang"] = "变身为表形态：<br><b>炽灰</b>："..
     "其他角色的回合开始时，你可以废除一个装备栏，选择：1.弃置其区域里的一张牌；"..
-    "2.将牌堆里的一张对应副类别的牌置入其装备区。若如此做，你失去1点体力，摸X张牌（X为你已损失的体力值）。<br>"..
+    "2.将牌堆里的一张对应副类别的牌置入其装备区。若如此做，你失去1点体力，摸X张牌（X为你已损失的体力值且至多为2）。<br>"..
     "<b>赴曦</b>：持恒技，当你进入濒死状态时，或你的装备栏均被废除后，你可以选择一至两项并<a href='os_ruhuan_caoang'>“入幻”</a>并将体力回复至体力上限："..
     "1.获得一个额外回合；2.此次“入幻”时保留〖炽灰〗；3.将手牌摸至X张（X为你的体力上限且至多为5）；"..
     "4.恢复所有装备栏（你的装备栏均被废除时方可选择此项）。",
@@ -2206,28 +2208,335 @@ local chenxun = fk.CreateTriggerSkill{
     room:useCard(use)
     if player.dead then return end
     if use.damageDealt and use.damageDealt[to.id] then
-      player:drawCards(2, self.name)
+      player:drawCards(1, self.name)
       if not player.dead then
         self:doCost(event, target, player, data)
       end
     else
-      room:loseHp(player, #player:getTableMark("os__chenxun-round"), self.name)
+      room:loseHp(player, 1, self.name)
     end
   end,
 }
 liufeng:addSkill(chenxun)
 Fk:loadTranslationTable{
   ["os_if__liufeng"] = "幻刘封",
-  ["#os_if__liufeng"] = "",
+  ["#os_if__liufeng"] = "忠烈不驯",
 
   ["os__chenxun"] = "沉勋",
-  [":os__chenxun"] = "每轮开始时，你可以视为对一名其他角色使用一张【决斗】。结算后，若此牌：对其造成伤害，你摸两张牌，然后对本轮未以此法选择过的"..
-  "其他角色发动此技能；未对其造成伤害，你失去X点体力（X为你本轮以此法使用【决斗】的次数）。",
+  [":os__chenxun"] = "每轮开始时，你可以视为对一名其他角色使用一张【决斗】。结算后，若此牌：对其造成伤害，你摸一张牌，然后可以对本轮未以此法选择过的"..
+  "其他角色发动此技能；未对其造成伤害，你失去1点体力。",
   ["#os__chenxun-invoke"] = "沉勋：你可以视为对一名其他角色使用一张【决斗】",
 }
 
+local huanggai = General(extension, "os_if__huanggai", "wu", 4)
 
+local os__fenxian_vs = fk.CreateActiveSkill{
+  name = "os__fenxian_vs",
+  mute = true,
+  card_num = 1,
+  target_num = 1,
+  expand_pile = function (self)
+    return self.cards
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and (table.contains(self.cards, to_select) or table.contains(Self:getCardIds("e"), to_select))
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards == 0 or #selected > 0 then return false end
+    local card = Fk:cloneCard("duel")
+    card.skillName = self.name
+    card:addSubcard(selected_cards[1])
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return not Self:isProhibited(target, card) and card.skill:modTargetFilter(to_select, {}, Self.id, card, false) and to_select ~= self.from
+  end,
+}
+Fk:addSkill(os__fenxian_vs)
 
+local function canFenxianDuel(from, to, room)
+  local res = false
+  local card = Fk:cloneCard("duel")
+  card.skillName = "os__fenxian"
+  local cards = {}
+  local targets = table.simpleClone(room.alive_players)
+  table.removeOne(targets, to)
+  table.removeOne(targets, from)
+  if #targets > 0 then
+    cards = to:getCardIds("ej")
+    if from.id ~= to.id then table.insertTable(cards, from:getCardIds("ej")) end
+    if #cards > 0 then
+      for _, cid in ipairs(cards) do
+        card:clearSubcards()
+        card:addSubcard(cid)
+        if table.find(targets, function(p) return to:canUseTo(card, p) end) then
+          return true
+        end
+      end
+    end
+  end
+  return res
+end
+local os__fenxian = fk.CreateActiveSkill{
+  name = "os__fenxian",
+  anim_type = "offensive",
+  prompt = "#os__fenxian-active",
+  card_num = 0,
+  target_num = 1,
+  can_use = function (self, player, card, extra_data)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
+    if #selected ~= 0 then return false end
+    local room = Fk:currentRoom()
+    local to = room:getPlayerById(to_select)
+    if canFenxianDuel(Self, to, room) then return true end
+    local c = Fk:cloneCard("fire_attack")
+    c.skillName = self.name
+    return Self:canUseTo(c, to)
+  end,
+  on_use = function (self, room, effect)
+    local to = room:getPlayerById(effect.tos[1])
+    local from = room:getPlayerById(effect.from)
+    local toSelf = from.id == to.id
+    local choices = {}
+    if canFenxianDuel(from, to, room) then table.insert(choices, toSelf and "os__fenxian_duel_self" or "os__fenxian_duel:" .. effect.from) end
+    local card = Fk:cloneCard("fire_attack")
+    card.skillName = self.name
+    if from:canUseTo(card, to) then
+      table.insert(choices, toSelf and "os__fenxian_fire_attack_self" or "os__fenxian_fire_attack:" .. effect.from)
+    end
+    local choice = room:askForChoice(to, choices, self.name)
+    if choice:startsWith("os__fenxian_duel") then
+      local cards = to:getCardIds("j")
+      if from.id ~= to.id then table.insertTable(cards, from:getCardIds("ej")) end
+      local _, dat = room:askForUseViewAsSkill(to, "os__fenxian_vs", toSelf and "#os__fenxian_vs_self-use" or "#os__fenxian_vs-use:" .. from.id, false, { cards = cards, from = effect.from })
+      if dat then
+        room:useVirtualCard("duel", dat.cards, to, room:getPlayerById(dat.targets[1]), self.name, true)
+      else
+        local targets = table.simpleClone(room.alive_players)
+        table.removeOne(targets, to)
+        table.removeOne(targets, from)
+        room:useVirtualCard("duel", table.random(table.connect(cards, to:getCardIds("e")), 1), to, table.random(targets), self.name, true)
+      end
+    else
+      room:useVirtualCard("fire_attack", nil, from, to, self.name, true)
+    end
+  end
+}
 
+local os__juyan = fk.CreateTriggerSkill{
+  name = "os__juyan",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player == target and data.damageType == fk.FireDamage and not data.to.dead
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+    if data.to.dead or player.dead then return end
+    player.room:changeMaxHp(data.to, -1)
+  end,
+}
+
+huanggai:addSkill(os__fenxian)
+huanggai:addSkill(os__juyan)
+
+Fk:loadTranslationTable{
+  ["os_if__huanggai"] = "幻黄盖",
+  ["#os_if__huanggai"] = "",
+
+  ["os__fenxian"] = "焚险",
+  [":os__fenxian"] = "出牌阶段限一次，你可令一名角色选择一项：1.其将你或其场上的一张牌当作【决斗】对一名除你以外的角色使用；2.你视为对其使用一张【火攻】。",
+  ["os__juyan"] = "炬湮",
+  [":os__juyan"] = "锁定技，当你对一名角色造成火焰伤害后，你摸一张牌，然后令其减1点体力上限。",
+
+  ["#os__fenxian-active"] = "焚险：你可令一名角色选择一项：<br>1.其将你或其场上的一张牌当作【决斗】对一名除你以外的角色使用；<br>2.你视为对其使用一张【火攻】。",
+  ["os__fenxian_duel_self"] = "将你场上的一张牌当【决斗】对一名其他角色使用",
+  ["os__fenxian_duel"] = "将你或%src场上的一张牌当【决斗】对一名除%src以外的角色使用",
+  ["os__fenxian_fire_attack_self"] = "你视为对自己使用一张【火攻】",
+  ["os__fenxian_fire_attack"] = "%src视为对你使用一张【火攻】",
+  ["os__fenxian_vs"] = "焚险",
+  ["#os__fenxian_vs_self-use"] = "选择你场上的一张牌当作【决斗】对一名其他角色使用",
+  ["#os__fenxian_vs-use"] = "焚险：选择你或%src场上的一张牌当作【决斗】对一名除%src以外的角色使用",
+}
+
+local dingfuren = General(extension, "os_if__dingfuren", "wei", 3, 3, General.Female)
+
+local function os__shiyihObtain(room, players, ret, from, skillName)
+  local cards
+  for _, p in ipairs(players) do
+    if not p.dead then
+      cards = room:getCardsFromPileByRule(".|.|.|.|.|" .. Fk:getCardById(ret[p.id][1]):getTypeString(), 1, "allPiles")
+      if #cards > 0 then room:obtainCard(p, cards, false, fk.ReasonPrey, from.id, skillName) end
+    end
+  end
+end
+local os__shiyih = fk.CreateActiveSkill{
+  name = "os__shiyih",
+  anim_type = "support",
+  prompt = "#os__shiyih-active",
+  card_num = 0,
+  target_num = 1,
+  can_use = function (self, player, card, extra_data)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function (self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+
+    local targets = {player, target}
+    local poxi = Fk.poxi_methods["os__shiyih"]
+    local command = "AskForPoxi"
+    local req = Request:new(targets, command)
+    req.focus_text = "os__shiyih"
+
+    local other, card_data, extra_data
+    for _, p in ipairs(targets) do
+      other = p == player and target or player
+      card_data = { {other.general, other:getCardIds(Player.Hand)}, {p.general, p:getCardIds(Player.Hand)} }
+      extra_data = {
+        to = other.id,
+        skillName = self.name,
+        prompt = "#os__shiyih-view::" .. other.id,
+      }
+
+      req:setData(p, {
+        type = "os__shiyih",
+        data = card_data,
+        extra_data = extra_data,
+        cancelable = false
+      })
+
+      local log = {
+        type = "#WatchCard",
+        from = p.id,
+        card = other:getCardIds(Player.Hand),
+      }
+      p:doNotify("GameLog", json.encode(log))
+    end
+    req:ask()
+    local ret = {}
+    for _, p in ipairs(targets) do
+      local result = req:getResult(p)
+
+      other = p == player and target or player -- 重复
+      card_data = { {other.general, other:getCardIds(Player.Hand)}, {p.general, p:getCardIds(Player.Hand)} }
+      extra_data = {
+        to = other.id,
+        skillName = self.name,
+        prompt = "#os__shiyih-view::" .. other.id,
+      }
+
+      if result == "" then
+        ret[p.id] = poxi.default_choice(card_data, extra_data)
+      else
+        ret[p.id] = poxi.post_select(result, card_data, extra_data)
+      end
+    end
+
+    player:showCards(ret[player.id])
+    if not target.dead then target:showCards(ret[target.id]) end
+    os__shiyihObtain(room, targets, ret, player, self.name)
+    if Fk:getCardById(ret[target.id][1]).type == Fk:getCardById(ret[player.id][1]).type then
+      for _, p in ipairs(targets) do
+        if not p.dead then p:drawCards(2, self.name) end
+      end
+    else
+      os__shiyihObtain(room, targets, ret, player, self.name)
+    end
+  end
+}
+Fk:addPoxiMethod{
+  name = "os__shiyih",
+  prompt = function (data, extra_data)
+    return extra_data.prompt
+  end,
+  card_filter = function (to_select, selected, data, extra_data)
+    if data and #selected == 0 then
+      return table.contains(data[2][2], to_select)
+    end
+  end,
+  feasible = function(selected, data)
+    return data and #selected == 1
+  end,
+  default_choice = function(data)
+    if not data then return {} end
+    local cids = table.random(data[2][2], 1)
+    return cids
+  end,
+}
+
+local os__chunhui = fk.CreateTriggerSkill{
+  name = "os__chunhui",
+  anim_type = "support",
+  events = {fk.TargetConfirmed},
+  can_trigger = function (self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name) == 0 and player:compareDistance(target, 1, "<=")
+      and target.hp <= player.hp and data.card:isCommonTrick() and data.card.is_damage_card and not player:isKongcheng()
+  end,
+  on_cost = function (self, event, target, player, data)
+    if player.room:askForSkillInvoke(player, self.name, data, target ~= player and "#os__chunhui-invoke::" .. target.id or nil) then
+      self.cost_data = {tos = {target.id} }
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if player ~= target then
+      local card = room:askForCardChosen(target, player, { card_data = { { "$Hand", player:getCardIds(Player.Hand) } } }, self.name, "#os__chunhui-ask:" .. player.id)
+      room:obtainCard(target, card, false, fk.ReasonJustMove, player.id, self.name)
+    end
+    data.extra_data = data.extra_data or {}
+    data.extra_data.os__chunhui = data.extra_data.os__chunhui or {}
+    data.extra_data.os__chunhui[player.id] = target.id
+  end
+}
+local os__chunhui_after = fk.CreateTriggerSkill{
+  name = "#os__chunhui_after",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player.dead and data.extra_data and data.extra_data.os__chunhui then
+      local to = data.extra_data.os__chunhui[player.id]
+      return to and not (data.damageDealt and data.damageDealt[to] and data.damageDealt[to] > 0)
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke("os__chunhui")
+    player.room:notifySkillInvoked(player, "os__chunhui", "drawcard")
+    player:drawCards(1, "os__chunhui")
+  end,
+}
+os__chunhui:addRelatedSkill(os__chunhui_after)
+
+dingfuren:addSkill(os__shiyih)
+dingfuren:addSkill(os__chunhui)
+
+Fk:loadTranslationTable{
+  ["os_if__dingfuren"] = "幻丁夫人",
+  ["#os_if__dingfuren"] = "",
+
+  ["os__shiyih"] = "拾忆",
+  [":os__shiyih"] = "出牌阶段限一次，你可与一名其他角色互相观看手牌，各展示自己的一张手牌，" ..
+    "并从牌堆或弃牌堆中获得一张与此牌类型相同的牌。若你与其展示的牌：类型相同，你与其摸两张牌；" ..
+    "类型不同，你与其从牌堆或弃牌堆中获得一张与展示的牌类型相同的牌。",
+  ["os__chunhui"] = "春晖",
+  [":os__chunhui"] = "每回合限一次，当你距离1以内且体力值不大于你的角色成为伤害类普通锦囊的目标后，" ..
+    "你可发动此技能，若其不为你，你令其观看你的手牌并获得其中一张牌。此牌结算结束后，若未对其造成伤害，你摸一张牌。",
+
+  ["#os__shiyih-active"] = "拾忆：你可与一名其他角色互相观看手牌，然后各展示自己的一张手牌",
+  ["#os__shiyih-view"] = "拾忆：观看%dest的手牌，展示自己的一张手牌",
+  ["#os__shiyih-ask"] = "拾忆：展示一张手牌",
+  ["#os__chunhui-invoke"] = "春晖：你可令 %dest 观看你的手牌并获得其中一张牌",
+  ["#os__chunhui-ask"] = "春晖：选择获得%src一张手牌",
+  ["#os__chunhui_after"] = "春晖",
+}
 
 return extension

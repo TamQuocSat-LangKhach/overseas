@@ -1497,7 +1497,7 @@ local chengxi = fk.CreateActiveSkill{
       room:addPlayerMark(player, "@os__chengxi")
     else
       local slash = Fk:cloneCard("slash")
-      if U.canUseCardTo(room, target, player, slash) then
+      if target:canUseTo(slash, player) then
         room:useVirtualCard("slash", nil, target, player, self.name, true)
       end
     end
@@ -1522,7 +1522,7 @@ local chengxi_do = fk.CreateTriggerSkill{
       local anim_type = (data.card.is_damage_card or table.contains({"dismantlement", "snatch", "chasing_near"}, data.card.name) or data.card.is_derived) and "offensive" or "support"
       room:notifySkillInvoked(player, chengxi.name, anim_type)
       local card = Fk:cloneCard(data.card.name)
-      local _targets = table.filter(table.map(targets, Util.Id2PlayerMapper), function(p) return U.canUseCardTo(room, player, p, card) end)
+      local _targets = table.filter(table.map(targets, Util.Id2PlayerMapper), function(p) return player:canUseTo(card, p) end)
       local use = {} ---@type CardUseStruct
       use.from = player.id
       use.tos = table.map(_targets, function(p) return { p.id } end)
@@ -1595,7 +1595,7 @@ local os__chue = fk.CreateTriggerSkill{
       room:removePlayerMark(player, "@os__bravery", player.hp)
       local card = Fk:cloneCard("slash")
       card.skillName = self.name
-      local availableTargets = table.map(table.filter(room:getOtherPlayers(player), function(p) return U.canUseCardTo(room, player, p, card) end), Util.IdMapper) -- 还原神必操作
+      local availableTargets = table.map(table.filter(room:getOtherPlayers(player), function(p) return player:canUseTo(card, p) end), Util.IdMapper) -- 还原神必操作
       local num = card.skill:getMaxTargetNum(player, card) + player.hp
       if #availableTargets > 0 and num > 0 then
         local targets = room:askForChoosePlayers(player, availableTargets, 1, num, "#os__chue-slash:::" .. num, self.name, false)

@@ -616,9 +616,7 @@ local os__lingbao = fk.CreateActiveSkill{
         local availableTargets = table.map(
         table.filter(room.alive_players, function(p)
           return p:isWounded()
-        end),
-        Util.IdMapper
-        )
+        end), Util.IdMapper)
         if #availableTargets == 0 then return false end
         local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os__lingbao-red", self.name, false)
         if #target > 0 then
@@ -5078,39 +5076,136 @@ Fk:loadTranslationTable{
   ["~os__weixu"] = "颜良小儿，竟敢杀我同伴，看我为其……啊！",  
 }
 
-local os__zhanglu = General(extension, "os__zhanglu", "qun", 3)
-local os__shijun = fk.CreateTriggerSkill{
-  name = "os__shijun$",
-  mute = true,
-  frequency = Skill.Compulsory,
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+local liuxie = General(extension, "os__liuxie", "qun", 3)
+
+local os__zhuiting = fk.CreateTriggerSkill{
+  name = "os__zhuiting$",
+  attached_skill_name = "os__zhuiting_other&",
+
+  refresh_events = {fk.AfterPropertyChange},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self and target == player
-    else
-      return target == player and player:hasSkill(self, true, true)
-    end
+    return target == player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    --[[local targets = table.filter(room:getOtherPlayers(player), function(p)
-      return p.kingdom == "qun"
-    end)]]
-    local targets = room:getOtherPlayers(player)
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        table.forEach(targets, function(p)
-          room:handleAddLoseSkills(p, "os__shijun_other&", nil, false, true)
-        end)
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      table.forEach(targets, function(p)
-        room:handleAddLoseSkills(p, "-os__shijun_other&", nil, false, true)
-      end)
+    if (player.kingdom == "qun" or player.kingdom == "wei") and table.find(room.alive_players, function (p)
+      return p ~= player and p:hasSkill(self, true)
+    end) then
+      room:handleAddLoseSkills(player, self.attached_skill_name, nil, false, true)
+    else
+      room:handleAddLoseSkills(player, "-" .. self.attached_skill_name, nil, false, true)
     end
   end,
+
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and (p.kingdom == "qun" or p.kingdom == "wei") then
+        room:handleAddLoseSkills(p, self.attached_skill_name, nil, false, true)
+      end
+    end
+  end
+}
+local os__zhuiting_other = fk.CreateViewAsSkill{
+  name = "os__zhuiting_other&",
+  anim_type = "control",
+  pattern = "nullification",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand and
+      Fk:getCardById(to_select).color == Self:getMark("os__zhuiting_activated") and
+      Self:getMark("os__zhuiting_activated") ~= Card.NoColor
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("nullification")
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  enabled_at_response = function (self, player, response)
+    return (not response and
+      (response == nil or player:getMark("os__zhuiting_activated") ~= 0) and
+      not player:isKongcheng())
+  end,
+}
+local os__zhuiting_other_trigger = fk.CreateTriggerSkill{
+  name = "#os__zhuiting_other_trigger",
+
+  refresh_events = {fk.HandleAskForPlayCard},
+  can_refresh = function(self, event, target, player, data)
+    if data.afterRequest and (data.extra_data or {}).os__zhuiting_effected then
+      return player:getMark("os__zhuiting_activated") ~= 0
+    end
+
+    return
+      player:hasSkill(os__zhuiting_other) and
+      data.eventData and
+      data.eventData.to and
+      player.room:getPlayerById(data.eventData.to):hasSkill(os__zhuiting) and
+      Exppattern:Parse(data.pattern):match(Fk:cloneCard("nullification"))
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if data.afterRequest then
+      room:setPlayerMark(player, "os__zhuiting_activated", 0)
+    else
+      room:setPlayerMark(player, "os__zhuiting_activated", data.eventData.card.color)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.os__zhuiting_effected = true
+    end
+  end,
+}
+os__zhuiting_other:addRelatedSkill(os__zhuiting_other_trigger)
+Fk:addSkill(os__zhuiting_other)
+
+liuxie:addSkill("tianming")
+liuxie:addSkill("mizhao")
+liuxie:addSkill(os__zhuiting)
+Fk:loadTranslationTable{
+  ["os__liuxie"] = "刘协",
+  ["#os__liuxie"] = "受困天子",
+  ["illustrator:os__liuxie"] = "Liuheng", -- 身不由己
+  ["os__zhuiting"] = "坠廷",
+  [":os__zhuiting"] = "主公技，当一张锦囊牌对你生效前，其他群势力或魏势力角色可以将一张与之颜色相同的手牌当【无懈可击】使用。",
+
+  ["os__zhuiting_other&"] = "坠廷",
+  [":os__zhuiting_other&"] = "当一张锦囊牌对刘协生效前，你可以将一张与之颜色相同的手牌当【无懈可击】使用。",
+
+  ["$tianming_os__liuxie1"] = "天命佑朕，让大汉再次兴起。",
+  ["$tianming_os__liuxie2"] = "此乃天不亡我刘氏啊！",
+  ["$mizhao_os__liuxie1"] = "若依此诏，可铲权臣。",
+  ["$mizhao_os__liuxie2"] = "曹贼，莫想挟天子以令诸侯。",
+  ["~os__liuxie"] = "为何要逼朕退位…"
+}
+
+local os__zhanglu = General(extension, "os__zhanglu", "qun", 3)
+local os__shijun = fk.CreateTriggerSkill{
+  name = "os__shijun$",
+  attached_skill_name = "os__shijun_other&",
+
+  refresh_events = {fk.AfterPropertyChange},
+  can_refresh = function(self, event, target, player, data)
+    return target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if player.kingdom == "qun" and table.find(room.alive_players, function (p)
+      return p ~= player and p:hasSkill(self, true)
+    end) then
+      room:handleAddLoseSkills(player, self.attached_skill_name, nil, false, true)
+    else
+      room:handleAddLoseSkills(player, "-" .. self.attached_skill_name, nil, false, true)
+    end
+  end,
+
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and p.kingdom == "qun" then
+        room:handleAddLoseSkills(p, self.attached_skill_name, nil, false, true)
+      end
+    end
+  end
 }
 local os__shijun_other = fk.CreateActiveSkill{
   name = "os__shijun_other&",
@@ -5123,9 +5218,7 @@ local os__shijun_other = fk.CreateActiveSkill{
     return false
   end,
   card_num = 0,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_num = 0,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -5222,36 +5315,31 @@ local zhangxiu = General(extension, "os__zhangxiu", "qun", 4)
 
 local os__juxiang = fk.CreateTriggerSkill{
   name = "os__juxiang$",
-  mute = true,
-  frequency = Skill.Compulsory,
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  attached_skill_name = "os__juxiang_other&",
+
+  refresh_events = {fk.AfterPropertyChange},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self and target == player
-    else
-      return target == player and player:hasSkill(self, true, true)
-    end
+    return target == player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    --[[local targets = table.filter(room:getOtherPlayers(player), function(p)
-      return p.kingdom == "qun"
-    end)]]
-    local targets = room:getOtherPlayers(player)
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        table.forEach(targets, function(p)
-          room:handleAddLoseSkills(p, "os__juxiang_other&", nil, false, true)
-        end)
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      table.forEach(targets, function(p)
-        room:handleAddLoseSkills(p, "-os__juxiang_other&", nil, false, true)
-      end)
+    if player.kingdom == "qun" and table.find(room.alive_players, function (p)
+      return p ~= player and p:hasSkill(self, true)
+    end) then
+      room:handleAddLoseSkills(player, self.attached_skill_name, nil, false, true)
+    else
+      room:handleAddLoseSkills(player, "-" .. self.attached_skill_name, nil, false, true)
     end
   end,
+
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and p.kingdom == "qun" then
+        room:handleAddLoseSkills(p, self.attached_skill_name, nil, false, true)
+      end
+    end
+  end
 }
 local os__juxiang_other = fk.CreateActiveSkill{
   name = "os__juxiang_other&",
@@ -5271,7 +5359,7 @@ local os__juxiang_other = fk.CreateActiveSkill{
         end
       end
     end
-    return 
+    return false
   end,
   target_num = 0,
   on_use = function(self, room, use)
@@ -5673,7 +5761,7 @@ local os__duwang = fk.CreateTriggerSkill{
           for _, id in ipairs(to:getCardIds("he")) do
             card:clearSubcards()
             card:addSubcard(id)
-            if U.canUseCardTo(room, to, player, card) then
+            if to:canUseTo(card, player) then
               table.insert(cards, id)
             end
           end

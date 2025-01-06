@@ -84,14 +84,14 @@ local os__shanghe = fk.CreateTriggerSkill{
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if not p:isNude() then
         local id = room:askForCard(p, 1, 1, true, self.name, false)[1]
-        if not_include and Fk:getCardById(id).name == "analeptic" then
+        if not_include and Fk:getCardById(id).trueName == "analeptic" then
           not_include = false
         end
         room:moveCardTo(id, Player.Hand, player, fk.ReasonGive, self.name, nil, false)
       end
     end
 
-    if not_include then
+    if not_include and not player.dead and player.hp < 1 then
       room:recover({
         who = player,
         num = 1 - player.hp,
@@ -289,7 +289,7 @@ local os__shengxi = fk.CreateTriggerSkill{
     local room = player.room
     if player.phase == Player.Start then
       local get = nil
-      local shengxi_derivecards = {{"redistribute", Card.Spade, 6}, {"redistribute", Card.Club, 6}, {"redistribute", Card.Heart, 6}, {"redistribute", Card.Diamond, 6}}
+      local shengxi_derivecards = { {"redistribute", Card.Spade, 6}, {"redistribute", Card.Club, 6}, {"redistribute", Card.Heart, 6}, {"redistribute", Card.Diamond, 6} }
       local cards = table.filter(U.prepareDeriveCards(room, shengxi_derivecards, "shengxi_derivecards"), function (id)
         return room:getCardArea(id) == Card.Void
       end)
@@ -307,7 +307,7 @@ local os__shengxi = fk.CreateTriggerSkill{
       if #id > 0 then
         room:obtainCard(player, id[1], false, fk.ReasonPrey, player.id, self.name)
       end
-      player:drawCards(1, self.name)
+      if not player.dead then player:drawCards(1, self.name) end
     end
   end,
 }

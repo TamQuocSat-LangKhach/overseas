@@ -161,8 +161,8 @@ Fk:loadTranslationTable{
   ["os_ex__polu"] = "破虏",
   [":os_ex__polu"] = "主公技，当吴势力角色杀死一名角色或死亡后，你可令任意名角色各摸X张牌（X为你发动过此技能的次数+1）。",
 
-  ["$os_ex__yinghun1"] = "义定四野，武匡海内。",
-  ["$os_ex__yinghun2"] = "江东男儿，皆胸怀匡扶天下之志。",
+  ["$yinghun_os_ex__sunjian1"] = "义定四野，武匡海内。", -- TODO
+  ["$yinghun_os_ex__sunjian2"] = "江东男儿，皆胸怀匡扶天下之志。",
   ["$os_ex__polu1"] = "义定四野，武匡海内。", -- 其实是给英魂的
   ["$os_ex__polu2"] = "江东男儿，皆胸怀匡扶天下之志。",
   ["~os_ex__sunjian"] = "吾身虽死，忠勇须传。",

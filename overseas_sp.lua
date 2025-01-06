@@ -23,7 +23,7 @@ local os__qingkou = fk.CreateTriggerSkill{
     local card = Fk:cloneCard("duel")
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return U.canUseCardTo(room, player, p, card)
+        return player:canUseTo(card, p)
       end),
       Util.IdMapper
     )
@@ -108,7 +108,7 @@ local os__fenwu = fk.CreateTriggerSkill{
     local card = Fk:cloneCard("slash")
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return U.canUseCardTo(room, player, p, card)
+        return player:canUseTo(card, p)
       end),
       Util.IdMapper
     )
@@ -1667,6 +1667,7 @@ local os__daqiaoxiaoqiao = General(extension, "os__daqiaoxiaoqiao", "wu", 3, 3, 
 local os__xingwu = fk.CreateTriggerSkill{
   name = "os__xingwu",
   events = {fk.EventPhaseStart},
+  expand_pile = "os__dance",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Discard and not player:isNude()
   end,
@@ -1726,33 +1727,34 @@ local os__pingting = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill, fk.EventAcquireSkill},
+  refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.to and move.to == player.id and move.toArea == Card.PlayerSpecial and move.specialName == "os__dance"
-        and #player:getPile("os__dance") > 0 then
-          return true
-        elseif move.from == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromSpecialName == "os__dance" and #player:getPile("os__dance") == 0 then
-              return true
-            end
+    for _, move in ipairs(data) do
+      if move.to and move.to == player.id and move.toArea == Card.PlayerSpecial and move.specialName == "os__dance"
+      and #player:getPile("os__dance") > 0 then
+        return true
+      elseif move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromSpecialName == "os__dance" and #player:getPile("os__dance") == 0 then
+            return true
           end
         end
       end
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if #player:getPile("os__dance") > 0 and player:hasSkill(self, true) then
-      room:handleAddLoseSkills(player, "tianxiang|liuli", self.name, false, true)
-    else
-      room:handleAddLoseSkills(player, "-tianxiang|-liuli", self.name, false, true)
-    end
+    local skills = (#player:getPile("os__dance") > 0 and player:hasSkill(self, true)) and "tianxiang|liuli" or "-tianxiang|-liuli"
+    player.room:handleAddLoseSkills(player, skills, self.name, false, true)
   end,
+
+  on_acquire = function (self, player, is_start)
+    local skills = (#player:getPile("os__dance") > 0 and player:hasSkill(self, true)) and "tianxiang|liuli" or "-tianxiang|-liuli"
+    player.room:handleAddLoseSkills(player, skills, self.name, false, true)
+  end,
+  on_lose = function (self, player, is_death)
+    local skills = (#player:getPile("os__dance") > 0 and player:hasSkill(self, true)) and "tianxiang|liuli" or "-tianxiang|-liuli"
+    player.room:handleAddLoseSkills(player, skills, self.name, false, true)
+  end
 }
 
 os__daqiaoxiaoqiao:addSkill(os__xingwu)
@@ -1768,7 +1770,7 @@ Fk:loadTranslationTable{
   [":os__xingwu"] = "弃牌阶段开始时，你可将一张牌置于你的武将牌上（称为“星舞”），然后你可将三张“星舞”置入弃牌堆，选择一名其他角色，弃置其装备区里的所有牌，然后若其为男/非男性角色，你对其造成2/1点伤害。",
   ["os__pingting"] = "娉婷",
   [":os__pingting"] = "锁定技，①每轮开始时或当其他角色于你回合内进入濒死状态时，你摸一张牌，然后将一张牌置于武将牌上（称为“星舞”）。②若你有“星舞”，你拥有〖天香〗和〖流离〗。",
-  
+
   ["#os__xingwu-put"] = "星舞：你可将一张牌置于你的武将牌上（称为“星舞”）",
   ["os__dance"] = "星舞",
   ["#os__xingwu-damage"] = "你可将三张“星舞”置入弃牌堆，弃置一名其他角色装备区里的所有牌，对其造成2/1点伤害",
@@ -2141,7 +2143,7 @@ local os__juchen = fk.CreateTriggerSkill{
     local ids = {}    
     for _, p in ipairs(room:getAlivePlayers()) do --顺序
       local cids = room:askForDiscard(p, 1, 1, true, self.name, false, nil, promt)
-      
+
       if #cids > 0 then
         local id = cids[1]
         if Fk:getCardById(id).color == Card.Red then
@@ -2298,38 +2300,31 @@ os__xiongzheng:addRelatedSkill(os__xiongzheng_judge)
 
 local os__luannian = fk.CreateTriggerSkill{
   name = "os__luannian$",
-  mute = true,
-  frequency = Skill.Compulsory,
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
+  attached_skill_name = "os__luannian_other&",
+
+  refresh_events = {fk.AfterPropertyChange},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    else
-      return target == player and player:hasSkill(self, true, true)
-    end
+    return target == player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    --[[
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
-      return (p.kingdom == "qun")
-    end)
-    ]]
-    local targets = room.alive_players
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        table.forEach(targets, function(p)
-          room:handleAddLoseSkills(p, "os__luannian_other&", nil, false, true)
-        end)
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      table.forEach(targets, function(p)
-        room:handleAddLoseSkills(p, "-os__luannian_other&", nil, false, true)
-      end)
+    if player.kingdom == "qun" and table.find(room.alive_players, function (p)
+      return p ~= player and p:hasSkill(self, true)
+    end) then
+      room:handleAddLoseSkills(player, self.attached_skill_name, nil, false, true)
+    else
+      room:handleAddLoseSkills(player, "-" .. self.attached_skill_name, nil, false, true)
     end
   end,
+
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and p.kingdom == "qun" then
+        room:handleAddLoseSkills(p, self.attached_skill_name, nil, false, true)
+      end
+    end
+  end
 }
 
 local os__luannian_other = fk.CreateActiveSkill{
