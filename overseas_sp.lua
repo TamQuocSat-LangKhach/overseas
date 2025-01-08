@@ -1413,24 +1413,26 @@ local os__mutao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local to = target
-    while true do -- 判断有没有没有杀，又要考虑给出杀后又来杀的情况
+    while true do
       local cids = table.filter(target:getCardIds(Player.Hand), function(id)
         return Fk:getCardById(id).trueName == "slash"
       end)
       if #cids < 1 then break end
       to = to:getNextAlive()
       if to == target then to = to:getNextAlive() end
-      local id = cids[math.random(1, #cids)]
-      room:moveCardTo(id, Player.Hand, to, fk.ReasonGive, self.name, nil, false)
+      room:moveCardTo(table.random(cids), Player.Hand, to, fk.ReasonGive, self.name, nil, false)
     end
-    room:damage{
-      from = target,
-      to = to,
-      damage = math.min(#table.filter(to:getCardIds(Player.Hand), function(id)
+    local num = math.min(#table.filter(to:getCardIds(Player.Hand), function(id)
         return Fk:getCardById(id).trueName == "slash"
-      end), 3),
-      skillName = self.name,
-    }
+      end), 3)
+    if num > 0 then
+      room:damage{
+        from = target,
+        to = to,
+        damage = num,
+        skillName = self.name,
+      }
+    end
   end,
 }
 

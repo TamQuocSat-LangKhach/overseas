@@ -8,23 +8,6 @@ Fk:loadTranslationTable{
   ["os_xing"] = "国际星",
 }
 
---抄自心变佬
-local function getUseExtraTargets(room, data, bypass_distances, remove)
-  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
-  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
-  local tos = {}
-  local current_targets = TargetGroup:getRealTargets(data.tos)
-  if remove then tos = current_targets end
-  for _, p in ipairs(room.alive_players) do
-    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
-      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, bypass_distances) then
-        table.insert(tos, p.id)
-      end
-    end
-  end
-  return tos
-end
-
 local os__godguanyu = General(extension, "os__godguanyu", "god", 4)
 
 local os__wushen = fk.CreateFilterSkill{
@@ -2033,26 +2016,29 @@ local os__qirang = fk.CreateTriggerSkill{
     if #cids > 0 then
       local cid = cids[1]
       room:addTableMark(player, "_os__qirangTrick-phase", cid)
-      room:obtainCard(player, cid, false, fk.ReasonPrey)
+      room:obtainCard(player, cid, false, fk.ReasonPrey, player.id, self.name, "@@os__qirang-phase-inhand")
     end
   end,
 }
 
 local os__qirang_trick = fk.CreateTriggerSkill{
   name = "#os__qirang_trick",
-  events = {fk.TargetSpecifying, fk.CardUsing},
+  events = {fk.AfterCardTargetDeclared, fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and type(player:getMark("_os__qirangTrick-phase")) == "table" and data.card.type == Card.TypeTrick and table.contains(player:getMark("_os__qirangTrick-phase"), data.card.id) 
-    and (event == fk.CardUsing or (data.firstTarget and data.card.sub_type ~= Card.SubtypeDelayedTrick))
+    return target == player and data.card.type == Card.TypeTrick and table.contains(player:getTableMark("_os__qirangTrick-phase"), data.card.id)
+    and (event == fk.CardUsing or data.card.sub_type ~= Card.SubtypeDelayedTrick)
   end,
   on_cost = function(self, event, target, player, data)
-    if event == fk.TargetSpecifying then
+    if event == fk.AfterCardTargetDeclared then
       local room = player.room
-      local targets = getUseExtraTargets(room, data, false, true)
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#os__qirang-target:::"..data.card:toLogString(), self.name, true)
-      if #to > 0 then
-        self.cost_data = to[1]
+      local targets = room:getUseExtraTargets(data)
+      table.insertTableIfNeed(targets, TargetGroup:getRealTargets(data.tos))
+      if #targets == 0 then return false end
+      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#os__qirang-target:::"..data.card:toLogString(), self.name,
+        true, false, "addandcanceltarget_tip", TargetGroup:getRealTargets(data.tos))
+      if #tos > 0 then
+        self.cost_data = {tos = tos}
         return true
       end
     else
@@ -2060,18 +2046,26 @@ local os__qirang_trick = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    if event == fk.TargetSpecifying then
+    if event == fk.AfterCardTargetDeclared then
       local room = player.room
-      room:notifySkillInvoked(player, "os__yuhua", "special")
-      player:broadcastSkillInvoke("os__yuhua")
-      if table.contains(AimGroup:getAllTargets(data.tos), self.cost_data) then
-        TargetGroup:removeTarget(data.targetGroup, self.cost_data)
+      room:notifySkillInvoked(player, "os__qirang", "special")
+      player:broadcastSkillInvoke("os__qirang")
+      local to = self.cost_data.tos[1]
+      if TargetGroup:includeRealTargets(data.tos, to) then
+        TargetGroup:removeTarget(data.tos, to)
       else
-        TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+        table.insert(data.tos, {to})
+        room:sendLog{
+          type = "#AddTargetsBySkill",
+          from = player.id,
+          to = {to},
+          arg = self.name,
+          arg2 = data.card:toLogString()
+        }
       end
     else
       data.disresponsiveList = data.disresponsiveList or {}
-      for _, target in ipairs(player.room.alive_players) do
+      for _, target in ipairs(player.room.players) do
         table.insertIfNeed(data.disresponsiveList, target.id)
       end
     end
@@ -2080,8 +2074,8 @@ local os__qirang_trick = fk.CreateTriggerSkill{
 local os__qirang_buff = fk.CreateTargetModSkill{
   name = "#os__qirang_buff",
   anim_type = "offensive",
-  distance_limit_func = function(self, player, skill, card)
-    return (type(player:getMark("_os__qirangTrick-phase")) == "table" and table.contains(player:getMark("_os__qirangTrick-phase"), card.id)) and 999 or 0
+  bypass_distances = function (self, player, skill, card, to)
+    return card and table.contains(player:getTableMark("_os__qirangTrick-phase"), card.id)
   end,
 }
 os__qirang:addRelatedSkill(os__qirang_buff)
@@ -2121,6 +2115,15 @@ local os__yuhua = fk.CreateTriggerSkill{
       player:drawCards(num, self.name)
     end
   end,
+
+  refresh_events = {fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and player.phase == Player.Discard
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(self.name)
+    player.room:notifySkillInvoked(player, self.name, "defensive")
+  end,
 }
 local os__yuhuaMax = fk.CreateMaxCardsSkill{
   name = "#os__yuhuaMax",
@@ -2128,19 +2131,7 @@ local os__yuhuaMax = fk.CreateMaxCardsSkill{
     return player:hasSkill(os__yuhua) and card.type ~= Card.TypeBasic
   end,
 }
-local os__yuhua_maxcards_audio = fk.CreateTriggerSkill{
-  name = "#os__yuhua_maxcards_audio",
-  refresh_events = {fk.EventPhaseStart},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and player:hasSkill(os__yuhua) and player.phase == Player.Discard
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player:broadcastSkillInvoke(os__yuhua.name)
-    player.room:notifySkillInvoked(player, os__yuhua.name, "special")
-  end,
-}
 os__yuhua:addRelatedSkill(os__yuhuaMax)
-os__yuhua:addRelatedSkill(os__yuhua_maxcards_audio)
 
 os__zhugeguo:addSkill(os__qirang)
 os__zhugeguo:addSkill(os__yuhua)
@@ -2155,6 +2146,7 @@ Fk:loadTranslationTable{
   ["#os__qirang-target"] = "祈禳：你可为 %arg 增加或减少一个目标",
   ["os__yuhuaDraw"] = "摸%arg张牌",
   ["#os__qirang_trick"] = "祈禳",
+  ["@@os__qirang-phase-inhand"] = "祈禳",
 
   ["$os__qirang1"] = "仙甲既来，岂无仙术乎。",
   ["$os__qirang2"] = "集母亲之智，效父亲之法，祈以七星。",
@@ -2660,7 +2652,7 @@ Fk:loadTranslationTable{
   "（暂无）<b>鬼门</b>: 锁定技，当你因弃置而失去黑桃牌后，你判定：若结果点数与你弃置的其中一张黑桃牌点数差值不大于1，则对一名其他角色造成2点雷电伤害。<br/>" ..
   "<b>咒诅</b>: 出牌阶段限一次，你可选择一名其他角色并施法：令其弃置X张牌，若牌数不足则全部弃置并对其造成1点雷电伤害。<br/>" ..
   "<b>地道</b>: 当一名角色的判定牌生效前，你可打出一张牌替换之，若与原判定牌颜色相同，你摸一张牌。</font>",
-  
+
   ["os__zhouhu"] = "咒护",
   [":os__zhouhu"] = "出牌阶段结束时，你可弃置一张红色手牌，选择一名角色并施法：令其回复X点体力。",
   ["os__zuhuo"] = "阻祸",
@@ -3374,7 +3366,8 @@ local os__fengpo = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card.name == "duel") and #AimGroup:getAllTargets(data.tos) == 1 and not player.room:getPlayerById(data.to):isKongcheng()
+    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card.name == "duel")
+      and U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and not player.room:getPlayerById(data.to):isKongcheng()
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3382,33 +3375,12 @@ local os__fengpo = fk.CreateTriggerSkill{
     local cids = to:getCardIds(Player.Hand)
 
     local update = player:getMark("@@os__fengpo_update") > 0
-    if not update then
-      if #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e) 
-        local death = e.data[1]
-        return death.damage and death.damage.from == player
-      end, Player.HistoryGame) == 1 then
-        update = true
-        room:setPlayerMark(player, "@@os__fengpo_update", 1)
-      end
-    end
-    local n = update and #table.filter(cids, function(id) 
-      return Fk:getCardById(id).color == Card.Red
-    end) or #table.filter(cids, function(id) 
-      return Fk:getCardById(id).suit == Card.Diamond
+    local n = #table.filter(cids, function(id)
+      return update and Fk:getCardById(id).color == Card.Red or Fk:getCardById(id).suit == Card.Diamond
     end)
 
-    local choice = "os__fengpo_draw:::" .. n -- default
-    local result = room:askForCustomDialog(player, self.name,
-      "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
-        cids,
-        {"os__fengpo_draw:::" .. n, "os__fengpo_damage:::" .. n},
-        "#os__fengpo-choose::" .. data.to,
-        {}, 0, 0,
-      })
-    if result ~= "" then
-      local reply = json.decode(result)
-      choice = reply.choice
-    end
+    local choice = U.askforViewCardsAndChoice(player, cids, {"os__fengpo_draw:::" .. n, "os__fengpo_damage:::" .. n}, self.name,
+      "#os__fengpo-choose::" .. data.to)
 
     if choice:startsWith("os__fengpo_draw") then
       player:drawCards(n, self.name)
@@ -3419,10 +3391,25 @@ local os__fengpo = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.damage and data.damage.from == player
+    return player:hasSkill(self) and data.damage and data.damage.from == player and player:getMark("@@os__fengpo_update") == 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@os__fengpo_update", 1)
+  end,
+
+  on_acquire = function (self, player, is_start)
+    if not is_start then
+      local room = player.room
+      if #room.logic:getEventsOfScope(GameEvent.Death, 1, function(e)
+        local death = e.data[1]
+        return death.damage and death.damage.from == player
+      end, Player.HistoryGame) == 1 then
+        room:setPlayerMark(player, "@@os__fengpo_update", 1)
+      end
+    end
+  end,
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@@os__fengpo_update", 0)
   end,
 }
 os__mayunlu:addSkill("mashu")
@@ -3430,8 +3417,11 @@ os__mayunlu:addSkill(os__fengpo)
 
 Fk:loadTranslationTable{
   ["os__mayunlu"] = "马云騄",
+  ["illustrator:os__mayunlu"] = "叶碧芳", -- 蝶舞花飞
+  ["#os__mayunlu"] = "剑胆琴心",
+
   ["os__fengpo"] = "凤魄",
-  [":os__fengpo"] = "当你使用【杀】或【决斗】仅指定一名角色为目标后，你可观看其手牌然后选择一项：1. 摸X张牌；2. 令此牌的伤害值基数+X（X为其<font color='red'>♦</font>手牌数，若你于本局游戏内杀死过角色，则修改为“其红色手牌数”）。",
+  [":os__fengpo"] = "当你使用【杀】或【决斗】仅指定一名角色为目标后，你可观看其手牌然后选择一项：1.摸X张牌；2.令此牌的伤害值基数+X（X为其<font color='red'>♦</font>手牌数，若你于本局游戏内杀死过角色，则修改为“其红色手牌数”）。",
 
   ["#os__fengpo-choose"] = "凤魄：观看%dest的手牌并选择",
   ["os__fengpo_draw"] = "摸%arg张牌",
@@ -5503,12 +5493,12 @@ local lijians = fk.CreateTriggerSkill{
       if move.toArea == Card.DiscardPile then
         num = num - #move.moveInfo
       end
-      if num <= 0 then
-        player.room:setPlayerMark(player, "@os__lijians", 0)
-        return false
-      end
     end
-    player.room:setPlayerMark(player, "@os__lijians", num)
+    player.room:setPlayerMark(player, "@os__lijians", math.max(num, 0))
+  end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@os__lijians", 0)
   end,
 }
 local chungang = fk.CreateTriggerSkill{
@@ -5616,7 +5606,7 @@ local quanqian = fk.CreateActiveSkill{
     if #cards > 1 then
       local cids = room:getCardsFromPileByRule(".|.|.|.|.|equip")
       if #cids > 0 then
-        room:obtainCard(player, cids[1], false, fk.ReasonPrey)
+        room:obtainCard(player, cids[1], false, fk.ReasonPrey, player.id, self.name)
         if player.dead then return false end
       end
     end
@@ -5628,23 +5618,29 @@ local quanqian = fk.CreateActiveSkill{
       if num > 0 then player:drawCards(num, self.name) end
     else
       cards = target:getCardIds(Player.Hand)
-      local suit = "log_spade" -- default
-      local result = room:askForCustomDialog(player, self.name,
-        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
-          cards,
-          {"log_spade", "log_club", "log_heart", "log_diamond"},
-          "#os__quanqian-choose::" .. target.id,
-          {}, 0, 0,
-        })
-      if result ~= "" then
-        local reply = json.decode(result)
-        suit = reply.choice
+      local listNames = {"log_spade", "log_club", "log_heart", "log_diamond"}
+      local listCards = { {}, {}, {}, {} }
+      local can_get = false
+      for _, id in ipairs(cards) do
+        local suit = Fk:getCardById(id).suit
+        if suit ~= Card.NoSuit then
+          table.insertIfNeed(listCards[suit], id)
+          can_get = true
+        end
       end
-      room:obtainCard(player, table.filter(cards, function(cid)
-        return Fk:getCardById(cid):getSuitString(true) == suit
-      end), false, fk.ReasonPrey)
+      if can_get then
+        local choice = U.askForChooseCardList(room, player, listNames, listCards, 1, 1, self.name,
+        "#os__quanqian-choose::" .. target.id, false, false)
+        room:obtainCard(player, table.filter(cards, function(cid)
+          return Fk:getCardById(cid):getSuitString(true) == choice[1]
+        end), false, fk.ReasonPrey, player.id, self.name)
+      end
     end
-  end
+  end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@os__quanqian", 0)
+  end,
 }
 local quanqian_trig = fk.CreateTriggerSkill{
   name = "#os__quanqian_trig",
