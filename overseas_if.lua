@@ -1847,7 +1847,7 @@ osFuxi.permanent_skill = true
 ifcaoang:addSkill(osFuxi)
 
 
-local huancaoang = General(extension, "os_if_huan__caoang", "wei", 3, 4)
+local huancaoang = General(extension, "os_if_huan__caoang", "wei", 3)
 huancaoang.hidden = true
 
 Fk:loadTranslationTable{
@@ -2524,7 +2524,7 @@ dingfuren:addSkill(os__chunhui)
 
 Fk:loadTranslationTable{
   ["os_if__dingfuren"] = "幻丁夫人",
-  ["#os_if__dingfuren"] = "",
+  ["#os_if__dingfuren"] = "懿德广扬",
 
   ["os__shiyih"] = "拾忆",
   [":os__shiyih"] = "出牌阶段限一次，你可与一名其他角色互相观看手牌，各展示自己的一张手牌，" ..

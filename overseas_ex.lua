@@ -537,24 +537,25 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)
+    if player.dead then return end
     local card = room:askForDiscard(player, 1, 1, true, self.name, false, ".", "#qianxi-discard")
+    if player.dead then return end
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
       return player:distanceTo(p) == 1 end), Util.IdMapper)
     if #targets == 0 then return false end
     local color = Fk:getCardById(card[1]):getColorString()
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#os_ex__qianxi-choose:::" .. color, self.name, false)
-    --if #to == 0 then to = table.random(targets, 1) end --权宜
-    if #to > 0 then
-      room:setPlayerMark(room:getPlayerById(to[1]), "@qianxi-turn", color)
-      room:setPlayerMark(player, "_os_ex__qianxi_target-turn", to[1])
-    end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#os_ex__qianxi-choose:::" .. color, self.name, false)[1]
+    room:setPlayerMark(room:getPlayerById(to), "@qianxi-turn", color)
+    room:setPlayerMark(player, "_os_ex__qianxi_target-turn", to)
   end,
 
   refresh_events = {fk.Damage, fk.AfterTurnEnd, fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.Damage then return target == player and not data.to.dead and player:getMark("_os_ex__qianxi_target-turn") == data.to.id and data.card and data.card.trueName == "slash" and player.phase ~= Player.NotActive 
-    elseif event == fk.AfterTurnEnd then return target == player and player:getMark("@os_ex__qianxi") ~= 0
-    else return target == player and player.phase == Player.Finish and player:getMark("_os_ex__qianxi_done-turn") > 0 end
+    if target ~= player then return end
+    if event == fk.Damage then return not data.to.dead and player:getMark("_os_ex__qianxi_target-turn") == data.to.id
+      and data.card and data.card.trueName == "slash" and player.phase ~= Player.NotActive
+    elseif event == fk.AfterTurnEnd then return player:getMark("@os_ex__qianxi") ~= 0
+    else return player.phase == Player.Finish and player:getMark("_os_ex__qianxi_done-turn") > 0 end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -569,14 +570,12 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
 local os_ex__qianxi_prohibit = fk.CreateProhibitSkill{
   name = "#os_ex__qianxi_prohibit",
   prohibit_use = function(self, player, card)
-    --if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
-    if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
-    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
+    if player:getMark("@os_ex__qianxi") ~= 0 and card:getColorString() == player:getMark("@os_ex__qianxi") then return true end
+    if player:getMark("@qianxi-turn") ~= 0 and card:getColorString() == player:getMark("@qianxi-turn") then return true end
   end,
   prohibit_response = function(self, player, card)
-    --if not table.contains(player.player_cards[Player.Hand], card.id) then return false end
-    if player:getMark("@os_ex__qianxi") ~= 0 then return card:getColorString() == player:getMark("@os_ex__qianxi") end
-    if player:getMark("@qianxi-turn") ~= 0 then return card:getColorString() == player:getMark("@qianxi-turn") end
+    if player:getMark("@os_ex__qianxi") ~= 0 and card:getColorString() == player:getMark("@os_ex__qianxi") then return true end
+    if player:getMark("@qianxi-turn") ~= 0 and card:getColorString() == player:getMark("@qianxi-turn") then return true end
   end,
 }
 os_ex__qianxi:addRelatedSkill(os_ex__qianxi_prohibit)
@@ -590,7 +589,6 @@ Fk:loadTranslationTable{
   [":os_ex__qianxi"] = "准备阶段开始时，你可摸一张牌，然后弃置一张牌，令距离为1的一名角色本回合不能使用或打出与你以此法弃置的牌颜色相同的手牌，然后结束阶段开始时，若你于本回合使用【杀】对其造成过伤害，你令其不能使用或打出另一种颜色的牌至其下回合结束。",
 
   ["#os_ex__qianxi-choose"] = "潜袭：选择距离为1的一名角色，令其本回合不能使用或打出 %arg 的手牌",
-  ["@qianxi-turn"] = "潜袭",
   ["@os_ex__qianxi"] = "潜袭",
 
   ["$os_ex__qianxi1"] = "暗影深处，袭敌斩首！",
@@ -624,7 +622,7 @@ local os_ex__lihuo = fk.CreateTriggerSkill{
     return false
   end,
   on_use = function(self, event, target, player, data)
-    if event == fk.AfterCardUseDeclared then  
+    if event == fk.AfterCardUseDeclared then
       local fireSlash = Fk:cloneCard("fire__slash")
       fireSlash.skillName = self.name
       fireSlash:addSubcard(data.card)
@@ -683,14 +681,14 @@ local os_ex__chunlao = fk.CreateTriggerSkill{
     if #availableTargets == 0 then return false end
     local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#os_ex__chunlao-ask", self.name, true)
     if #target > 0 then
-      self.cost_data = target[1]
+      self.cost_data = { tos = target }
       return true
     end
     return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local target = room:getPlayerById(self.cost_data)
+    target = room:getPlayerById(self.cost_data[1])
     if target:isAllNude() then return false end
     local cid = room:askForCardChosen(player, target, "hej", self.name)
     target:addToPile("os__dense_alcohol", cid, true, self.name)
@@ -730,7 +728,7 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
         end
       end
     else
-      return room:askForSkillInvoke(player, self.name)
+      return room:askForSkillInvoke(player, self.name, data)
     end
     return false
   end,
@@ -741,7 +739,7 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
       local chengpu = room:getPlayerById(self.cost_data[1])
       room:notifySkillInvoked(chengpu, "os_ex__chunlao")
       local cid = self.cost_data[2]
-      room:moveCardTo(cid, Player.Hand, chengpu, fk.ReasonGive, self.name, nil, false)
+      room:moveCardTo(cid, Player.Hand, chengpu, fk.ReasonGive, self.name, nil, false) -- 什么傻逼技能真受不了了就这样吧
       data.additionalDamage = (data.additionalDamage or 0) + 1
     else
       room:notifySkillInvoked(player, "os_ex__chunlao")
@@ -753,13 +751,15 @@ local os_ex__chunlao_do = fk.CreateTriggerSkill{
         proposer = player.id,
         skillName = self.name,
       })
-      player:drawCards(1, self.name)
-      room:recover({
-        who = target,
-        num = 1,
-        recoverBy = player,
-        skillName = self.name,
-      })
+      if not player.dead then player:drawCards(1, self.name) end
+      if not target.dead then
+        room:recover{
+          who = target,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
     end
   end,
 }
@@ -775,7 +775,7 @@ Fk:loadTranslationTable{
   ["os_ex__lihuo"] = "疠火",
   [":os_ex__lihuo"] = "①你使用普【杀】可改为火【杀】，当此【杀】结算结束后，若此【杀】令其他角色进入过濒死状态，你失去1点体力。②当你使用火【杀】选择目标后，可多选择一个目标。",
   ["os_ex__chunlao"] = "醇醪",
-  [":os_ex__chunlao"] = "准备阶段开始时，若场上没有“醇”，你可选择一名角色，将其区域内的一张牌置于其武将牌上，称为“醇”。有“醇”的角色使用【杀】时，｛若其为其他角色，其可交给你一张牌；若其为你，你可获得你一张牌｝，令此【杀】伤害值基数+1；其进入濒死状态时，你可将一张“醇”置入弃牌堆并摸一张牌，然后其回复1点体力。",
+  [":os_ex__chunlao"] = "准备阶段开始时，若场上没有“醇”，你可选择一名角色，将其区域内的一张牌置于其武将牌上，称为“醇”。有“醇”的角色使用【杀】时，｛若其为其他角色，其可交给你一张牌；若其为你，你可选择你的一张牌，若为装备区内的牌则获得之｝，令此【杀】伤害值基数+1；其进入濒死状态时，你可将一张“醇”置入弃牌堆并摸一张牌，然后其回复1点体力。",
 
   ["#os_ex__lihuo-targets"] = "疠火：你可选择一名角色，令其也成为此火【杀】的目标",
   ["#os_ex__lihuo_judge"] = "疠火",
@@ -809,8 +809,8 @@ local os_ex__gongqi = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player)
     room:setPlayerMark(player, "_os_ex__gongqi-turn", Fk:getCardById(effect.cards[1]).suit)
-    if Fk:getCardById(effect.cards[1]).type == Card.TypeEquip then
-      local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
+    if player:isAlive() and Fk:getCardById(effect.cards[1]).type == Card.TypeEquip then
+      local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player, false), function(p)
         return not p:isNude() end), Util.IdMapper), 1, 1, "#os_ex__gongqi-ask", self.name, true)
       if #to > 0 then
         local target = room:getPlayerById(to[1])
@@ -823,15 +823,15 @@ local os_ex__gongqi = fk.CreateActiveSkill{
 local os_ex__gongqi_attackrange = fk.CreateAttackRangeSkill{
   name = "#os_ex__gongqi_attackrange",
   correct_func = function (self, from, to)
-    return from:hasSkill(self) and 999 or 0
+    return from:hasSkill(os_ex__gongqi) and math.huge or 0
   end,
 }
 local os_ex__gongqi_buff = fk.CreateTargetModSkill{
   name = "#os_ex__gongqi_buff",
   anim_type = "offensive",
-  residue_func = function(self, player, skill, scope, card)
-    return (player:getMark("_os_ex__gongqi-turn") ~= 0 and skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and card.suit == player:getMark("_os_ex__gongqi-turn")) and 999 or 0
-  end,
+  bypass_times = function (self, player, skill, scope, card, to)
+    return player:getMark("_os_ex__gongqi-turn") ~= 0 and skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and card.suit == player:getMark("_os_ex__gongqi-turn")
+  end
 }
 os_ex__gongqi:addRelatedSkill(os_ex__gongqi_attackrange)
 os_ex__gongqi:addRelatedSkill(os_ex__gongqi_buff)
@@ -931,7 +931,11 @@ local os_ex__shenxing = fk.CreateActiveSkill{
     room:addPlayerMark(from, "@os_ex__shenxing")
     room:throwCard(effect.cards, self.name, from)
     room:drawCards(from, 1, self.name)
-  end
+  end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@os_ex__shenxing", 0)
+  end,
 }
 local os_ex__bingyi = fk.CreateTriggerSkill{
   name = "os_ex__bingyi",
@@ -963,9 +967,12 @@ local os_ex__bingyi = fk.CreateTriggerSkill{
       end
     end
     if not color and not cardType then return false end
-    local tos = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), Util.IdMapper), 1, #cards, "#bingyi-choose:::"..#cards, self.name, false)
+    local tos = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, #cards, "#bingyi-choose:::"..#cards, self.name, false)
     room:sortPlayersByAction(tos)
-    table.forEach(tos, function(p) room:getPlayerById(p):drawCards(1, self.name) end)
+    for _, pid in ipairs(tos) do
+      local p = room:getPlayerById(pid)
+      if p:isAlive() then p:drawCards(1, self.name) end
+    end
     if invoke and color and cardType then
       room:setPlayerMark(player, "@os_ex__shenxing", 0)
     end
@@ -992,56 +999,52 @@ Fk:loadTranslationTable{
 }
 
 local caoxiu = General(extension, "os_ex__caoxiu", "wei", 4)
-local os_ex__qianju_distance = fk.CreateDistanceSkill{
-  name = "#os_ex__qianju_distance",
-  correct_func = function(self, from, to)
-    if from:hasSkill(self) then
-      return -#from:getCardIds(Player.Equip)
-    end
-  end,
-}
 local os_ex__qianju = fk.CreateTriggerSkill{
   name = "os_ex__qianju",
   events = {fk.Damage},
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and (data.extra_data or {}).kuanggucheak and player:usedSkillTimes(self.name) == 0 --
+    return target == player and player:hasSkill(self) and (data.extra_data or {}).kuanggucheck and player:usedSkillTimes(self.name) == 0 --
   end,
   on_use = function(self, event, target, player, data)
-    local types = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
+    local subtypes = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
     local room = player.room
+    local choices = {}
+    for _, s in ipairs(subtypes) do
+      if player:hasEmptyEquipSlot(s) then
+        table.insert(choices, s)
+      end
+    end
     local cards = {}
-    local draw_pile = table.clone(room.draw_pile)
+    local draw_pile = table.simpleClone(room.draw_pile)
     table.insertTable(draw_pile, room.discard_pile)
-    table.shuffle(draw_pile)
     for i = 1, #draw_pile, 1 do
       local card = Fk:getCardById(draw_pile[i])
-      if table.contains(types, card.sub_type) and player:getEquipment(card.sub_type) == nil then
+      if table.contains(choices, card.sub_type) then
         table.insert(cards, draw_pile[i])
-        break
       end
     end
     if #cards > 0 then
-      room:sendLog{
-        type = "#os_ex__qianju_log",
-        from = player.id,
-        arg = self.name,
-        arg2 = Fk:getCardById(cards[1], true):toLogString(),
-      }
-      room:moveCardTo(cards, Card.PlayerEquip, player, fk.ReasonJustMove, self.name)
+      room:moveCardIntoEquip(player, table.random(cards), self.name, false, player.id)
     end
   end,
 
   refresh_events = {fk.BeforeHpChanged},
   can_refresh = function(self, event, target, player, data)
-    if data.damageEvent and player == data.damageEvent.from and player:distanceTo(target) < 2 then
-      return true
-    end
+    return data.damageEvent and player == data.damageEvent.from and player:compareDistance(target, 2, "<")
   end,
   on_refresh = function(self, event, target, player, data)
     data.damageEvent.extra_data = data.damageEvent.extra_data or {}
-    data.damageEvent.extra_data.kuanggucheak = true
+    data.damageEvent.extra_data.kuanggucheck = true
+  end,
+}
+local os_ex__qianju_distance = fk.CreateDistanceSkill{
+  name = "#os_ex__qianju_distance",
+  correct_func = function(self, from, to)
+    if from:hasSkill(os_ex__qianju) then
+      return -#from:getCardIds(Player.Equip)
+    end
   end,
 }
 os_ex__qianju:addRelatedSkill(os_ex__qianju_distance)
@@ -1052,9 +1055,9 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self) or data.card.trueName ~= "slash" then return false end
-    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e) 
+    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
       local use = e.data[1]
-      return use.from == player.id and use.card.trueName == "slash" 
+      return use.from == player.id and use.card.trueName == "slash"
     end, Player.HistoryTurn)
     return #events == 1 and events[1].id == player.room.logic:getCurrentEvent().id --就是UseCard
   end,
@@ -1072,7 +1075,7 @@ local os_ex__qingxi = fk.CreateTriggerSkill{
     local choice = room:askForChoice(to, choices, self.name, nil, false, all_choices)
     if choice == "os_ex__qingxi_discard" then
       to:throwAllCards("e")
-      if #player:getCardIds(Player.Equip) > 0 then
+      if #player:getCardIds(Player.Equip) > 0 and to:isAlive() then
         num = math.min(num, num2)
         local cards = room:askForCardsChosen(to, player, num, num, "e", self.name)
         room:throwCard(cards, self.name, player, to)
@@ -1100,7 +1103,7 @@ Fk:loadTranslationTable{
 
   ["$os_ex__qingxi1"] = "此残兵败将，胜之若儿戏耳！",
   ["$os_ex__qingxi2"] = "有休在此，主公何虑？哈哈哈哈！",
-  ["~os_ex__caoxiu"] = "此战大败，休甚是惭愧啊……",
+  ["~os_ex__caoxiu"] = "此战大败，休甚是羞惭啊……",
 }
 
 return extension

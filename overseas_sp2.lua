@@ -4859,9 +4859,7 @@ local os__juezhu = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) < 1 and (#player:getAvailableEquipSlots(Card.SubtypeOffensiveRide) > 0 or #player:getAvailableEquipSlots(Card.SubtypeDefensiveRide) > 0 )
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_num = 1,
   target_filter = function(self, to_select, selected)
     return #selected == 0
@@ -5063,7 +5061,7 @@ Fk:loadTranslationTable{
   ["$os__suizheng3"] = "将军莫慌，万事有吾！",
   ["$os__tuidao1"] = "将军大势已去，续无可奈何啊。",
   ["$os__tuidao2"] = "续投明主，还望将军勿怪才是。",
-  ["~os__weixu"] = "颜良小儿，竟敢杀我同伴，看我为其……啊！",  
+  ["~os__weixu"] = "颜良小儿，竟敢杀我同伴，看我为其……啊！",
 }
 
 local liuxie = General(extension, "os__liuxie", "qun", 3)
@@ -5943,7 +5941,11 @@ local juexing_delay = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@os__juexing")
-  end
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@os__juexing", 0)
+  end,
 }
 juexing:addRelatedSkill(juexing_delay)
 
