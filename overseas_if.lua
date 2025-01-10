@@ -1181,7 +1181,7 @@ local qiji = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and
-      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function (p)
+      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player, false), function (p)
         return player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
       end)
   end,
@@ -1191,7 +1191,7 @@ local qiji = fk.CreateTriggerSkill{
     for _, id in ipairs(player:getCardIds("h")) do
       table.insertIfNeed(types, Fk:getCardById(id).type)
     end
-    local targets = table.filter(room:getOtherPlayers(player), function (p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function (p)
       return player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
     end)
     local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
@@ -1222,13 +1222,13 @@ local qiji_delay = fk.CreateTriggerSkill{
     return target:usedSkillTimes("os__qiji", Player.HistoryPhase) > 0 and data.to == player.id and
       table.contains(data.card.skillNames, "os__qiji") and
       not (data.extra_data and data.extra_data.os__qiji) and
-      table.find(player.room:getOtherPlayers(player), function (p)
+      table.find(player.room:getOtherPlayers(player, false), function (p)
         return target ~= p and not table.contains(player:getTableMark("os__qiji-turn"), p.id)
       end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function (p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function (p)
       return target ~= p and not table.contains(player:getTableMark("os__qiji-turn"), p.id)
     end)
     local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#os__qiji-choose", "os__qiji", true)
@@ -1530,13 +1530,13 @@ local niwo = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and
-      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p)
+      not player:isKongcheng() and table.find(player.room:getOtherPlayers(player, false), function(p)
         return not p:isKongcheng()
       end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function(p)
       return not p:isKongcheng()
     end)
     local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#os__niwo-choose", self.name, true)
@@ -2183,7 +2183,7 @@ local chenxun = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function (p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function (p)
       return not table.contains(player:getTableMark("os__chenxun-round"), p.id) and
         player:canUseTo(Fk:cloneCard("duel"), p)
     end)

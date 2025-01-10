@@ -348,7 +348,7 @@ local os_ex__xuanhuo = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Draw and #player:getCardIds{ Player.Hand, Player.Equip } > 1
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os_ex__xuanhuo-target", self.name, true)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#os_ex__xuanhuo-target", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -540,7 +540,7 @@ local os_ex__qianxi = fk.CreateTriggerSkill{ --……
     if player.dead then return end
     local card = room:askForDiscard(player, 1, 1, true, self.name, false, ".", "#qianxi-discard")
     if player.dead then return end
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+    local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
       return player:distanceTo(p) == 1 end), Util.IdMapper)
     if #targets == 0 then return false end
     local color = Fk:getCardById(card[1]):getColorString()

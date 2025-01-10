@@ -246,7 +246,7 @@ extension:addCards{
 }
 Fk:loadTranslationTable{
   ["underhanding"] = "瞒天过海",
-  [":underhanding"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一至两名区域内有牌的其他角色。<br /><b>效果</b>：你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。<br />此牌不计入你的手牌上限。",
+  [":underhanding"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一至两名区域内有牌的其他角色。<br /><b>效果</b>：你依次获得目标角色区域内的一张牌，然后依次交给目标角色一张牌。<br />【瞒天过海】不计入你的手牌上限。",
   ["underhanding_skill"] = "瞒天过海",
   ["underhanding_action"] = "瞒天过海",
   ["#underhanding-card"] = "瞒天过海：交给 %dest 一张牌",

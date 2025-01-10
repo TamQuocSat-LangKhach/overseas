@@ -329,7 +329,7 @@ local os__kuanji = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     target = room:askForChoosePlayers(
-      player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__kuanji-ask", self.name, true)
+      player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#os__kuanji-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -451,7 +451,7 @@ local os__chayi = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__chayi-ask", self.name, true)
+    target = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#os__chayi-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true
@@ -1217,7 +1217,7 @@ local os__congji = fk.CreateTriggerSkill{
     local room = player.room
     target = room:askForChoosePlayers(
       player,
-      table.map(room:getOtherPlayers(player), Util.IdMapper),
+      table.map(room:getOtherPlayers(player, false), Util.IdMapper),
       1,
       1,
       "#os__congji-ask",
@@ -1465,13 +1465,13 @@ local os__zhibian = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
-      player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p)
+      player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player, false), function(p)
       return player:canPindian(p) end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local availableTargets = table.map(
-      table.filter(room:getOtherPlayers(player), function(p)
+      table.filter(room:getOtherPlayers(player, false), function(p)
         return player:canPindian(p)
       end),
       Util.IdMapper

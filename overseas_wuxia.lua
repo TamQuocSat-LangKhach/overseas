@@ -64,7 +64,7 @@ local os__chaofeng_pd = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local availableTargets = table.map(
-      table.filter(player.room:getOtherPlayers(player), function(p)
+      table.filter(player.room:getOtherPlayers(player, false), function(p)
         return player:canPindian(p)
       end),
       Util.IdMapper
@@ -458,13 +458,14 @@ local os__zhenhu = fk.CreateTriggerSkill{
   events = {fk.TargetSpecifying},
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self) and data.card.is_damage_card and data.firstTarget and table.find(player.room:getOtherPlayers(player), function(p) return player:canPindian(p) end)
+    return player == target and player:hasSkill(self) and data.card.is_damage_card and
+      data.firstTarget and table.find(player.room:getOtherPlayers(player, false), function(p) return player:canPindian(p) end)
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
     local room = player.room
     local availableTargets = table.map(
-      table.filter(room:getOtherPlayers(player), function(p)
+      table.filter(room:getOtherPlayers(player, false), function(p)
         return player:canPindian(p)
       end),
       Util.IdMapper
@@ -696,7 +697,7 @@ local os__yanshi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#os__yanshi-choose", self.name, false)
       local to
       if #tos > 0 then
@@ -783,32 +784,7 @@ local os__xia__lusu = General(extension, "os__xia__lusu", "qun", 4)
 
 local os__kaizeng = fk.CreateTriggerSkill{
   name = "os__kaizeng",
-  mute = true,
-  frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_trigger = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    else
-      return target == player and player:hasSkill(self, true, true)
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        for _, p in ipairs(room:getOtherPlayers(player)) do
-          room:handleAddLoseSkills(p, "os__kaizeng_others&", nil, false, true)
-        end
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        room:handleAddLoseSkills(p, "-os__kaizeng_others&", nil, false, true)
-      end
-    end
-  end,
+  attached_skill_name = "os__kaizeng_others&",
 }
 local os__kaizeng_others = fk.CreateActiveSkill{
   name = "os__kaizeng_others&",
@@ -834,7 +810,7 @@ local os__kaizeng_others = fk.CreateActiveSkill{
     local choice = self.interaction.data
     if not choice then choice = "slash" end--return false end
     local player = room:getPlayerById(effect.from)
-    local targets = table.filter(room:getOtherPlayers(player), function(p) return p:hasSkill("os__kaizeng") and p:usedSkillTimes("os__kaizeng", Player.HistoryPhase) == 0 end)
+    local targets = table.filter(room:getOtherPlayers(player, false), function(p) return p:hasSkill("os__kaizeng") and p:usedSkillTimes("os__kaizeng", Player.HistoryPhase) == 0 end)
     if #targets == 0 then return false end
     local to
     if #targets == 1 then
@@ -932,7 +908,7 @@ local os__liexi = fk.CreateTriggerSkill{
     local room = player.room
     local ids = room:askForDiscard(player, 1, #player:getCardIds(Player.Hand) + #player:getCardIds(Player.Equip), true, self.name, true, nil, "#os__liexi-ask", true)
     if #ids > 0 then
-      local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__liexi-target", self.name, true)
+      local victim = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#os__liexi-target", self.name, true)
       if #victim > 0 then
         self.cost_data = {victim[1], ids}
         return true
@@ -993,7 +969,7 @@ local os__shezhong = fk.CreateTriggerSkill{
     local room = player.room
     if player:getMark("_os__shezhong_damage_others-turn") > 0 then
       local num = player:getMark("_os__shezhong_damage-turn")
-      local victims = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, num, "#os__shezhong1-target:::" .. tostring(num), self.name, true)
+      local victims = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, num, "#os__shezhong1-target:::" .. tostring(num), self.name, true)
       if #victims > 0 then
         for _, p in ipairs(room:getOtherPlayers(player)) do
           if table.contains(victims, p.id) then
@@ -1595,7 +1571,7 @@ local os__chue = fk.CreateTriggerSkill{
       room:removePlayerMark(player, "@os__bravery", player.hp)
       local card = Fk:cloneCard("slash")
       card.skillName = self.name
-      local availableTargets = table.map(table.filter(room:getOtherPlayers(player), function(p) return player:canUseTo(card, p, { bypass_times = true, bypass_distances = true }) end), Util.IdMapper) -- 还原神必操作
+      local availableTargets = table.map(table.filter(room:getOtherPlayers(player, false), function(p) return player:canUseTo(card, p, { bypass_times = true, bypass_distances = true }) end), Util.IdMapper) -- 还原神必操作
       local num = card.skill:getMaxTargetNum(player, card) + player.hp
       if #availableTargets > 0 and num > 0 then
         local targets = room:askForChoosePlayers(player, availableTargets, 1, num, "#os__chue-slash:::" .. num, self.name, false)
@@ -1889,18 +1865,16 @@ local os__dengjian = fk.CreateTriggerSkill{
       return false
     end)
     if #cards > 0 then
-      self.cost_data = cards
+      self.cost_data = {cards = cards}
       return true
     end
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local cards = self.cost_data
+    local cards = self.cost_data.cards
     local card = table.random(cards) ---@type integer
     room:obtainCard(player, card, true, fk.ReasonPrey, player.id, self.name, "@@os__fencing-inhand")
-    local record = player:getTableMark("_os__dengjian-round")
-    table.insert(record, Fk:getCardById(card, true).color)
-    room:setPlayerMark(player, "_os__dengjian-round", record)
+    room:addTableMark(player, "_os__dengjian-round", Fk:getCardById(card, true).color)
   end
 }
 local os__dengjian_buff = fk.CreateTargetModSkill{
@@ -1939,7 +1913,7 @@ local os__xinshou = fk.CreateTriggerSkill{
   on_cost = function (self, event, target, player, data)
     local record = player:getTableMark("_os__xinshou_choice-turn")
     if #record == 2 then
-      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#os__xinshou-invoke2", self.name, true)
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#os__xinshou-invoke2", self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
         return true
@@ -1963,7 +1937,7 @@ local os__xinshou = fk.CreateTriggerSkill{
       local to = room:getPlayerById(self.cost_data)
       room:setPlayerMark(player, "_os__xinshou_target", to.id)
       room:setPlayerMark(player, "@os__xinshou_target", to.general)
-      room:setPlayerMark(player, "_os__xinshou_invalid", 1) -- 控制使用【杀】造成伤害的条件
+      room:invalidateSkill(player, "os__dengjian")
       room:handleAddLoseSkills(to, "os__dengjian", nil)
     else
       local choice = self.cost_data
@@ -1981,10 +1955,10 @@ local os__xinshou = fk.CreateTriggerSkill{
   refresh_events = {fk.Damage},
   can_refresh = function (self, event, target, player, data)
     return target and target:hasSkill("os__dengjian") and player:getMark("_os__xinshou_target") == target.id
-    and data.card and data.card.trueName == "slash"
+    and data.card and data.card.trueName == "slash" and player:getMark("_os__xinshou_validate") ~= 0
   end,
   on_refresh = function (self, event, target, player, data)
-    player.room:setPlayerMark(player, "_os__xinshou_invalid", 0)
+    player.room:setPlayerMark(player, "_os__xinshou_validate", 1)
   end
 }
 
@@ -1999,19 +1973,16 @@ local os__xinshou_detach = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark("_os__xinshou_target"))
+    if player:getMark("_os__xinshou_validate") ~= 0 then
+      room:validateSkill(player, "os__dengjian")
+      room:setPlayerMark(player, "_os__xinshou_validate", 0)
+    end
     room:setPlayerMark(player, "_os__xinshou_target", 0)
     room:setPlayerMark(player, "@os__xinshou_target", 0)
     room:handleAddLoseSkills(to, "-os__dengjian", nil)
   end
 }
-local os__xinshou_invalidity = fk.CreateInvaliditySkill {
-  name = "#os__xinshou_invalidity",
-  invalidity_func = function(self, from, skill)
-    return (from:getMark("_os__xinshou_target") ~= 0 or from:getMark("_os__xinshou_invalid") > 0) and skill:isPlayerSkill(from) and skill.name == "os__dengjian"
-  end
-}
 os__xinshou:addRelatedSkill(os__xinshou_detach)
-os__xinshou:addRelatedSkill(os__xinshou_invalidity)
 
 shie:addSkill(os__dengjian)
 shie:addSkill(os__xinshou)
