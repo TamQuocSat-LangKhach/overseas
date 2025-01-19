@@ -1910,7 +1910,7 @@ local os__lingfa = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     local room = player.room
-    local num = room:getTag("RoundCount")
+    local num = room:getBanner("RoundCount")
     if num <= 2 then
       local targets = table.map(
         table.filter(room:getOtherPlayers(player, false), function(p)
@@ -1934,7 +1934,7 @@ local os__lingfa = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = room:getTag("RoundCount") == 1 and "slash" or "peach"
+    local mark = room:getBanner("RoundCount") == 1 and "slash" or "peach"
     table.forEach(table.filter(room:getOtherPlayers(player, false), function(p)
       return (not p:isNude())
     end), function(p)

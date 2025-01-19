@@ -188,8 +188,8 @@ local underhandingSkill = fk.CreateActiveSkill{
   can_use = Util.CanUse,
   min_target_num = 1,
   max_target_num = 2,
-  mod_target_filter = function(self, to_select, selected, user, card)
-    return user ~= to_select and not Fk:currentRoom():getPlayerById(to_select):isAllNude()
+  mod_target_filter = function(self, to_select, selected, player, card)
+    return to_select ~= player.id and not Fk:currentRoom():getPlayerById(to_select):isAllNude()
   end,
   target_filter = Util.TargetFilter,
   on_effect = function(self, room, effect)
@@ -259,8 +259,8 @@ local redistributeSkill = fk.CreateActiveSkill{
   can_use = Util.CanUse,
   target_num = 2,
   mod_target_filter = Util.TrueFunc,
-  target_filter = function(self, to_select, selected, _, card)
-    if Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card) then return end
+  target_filter = function(self, to_select, selected, _, card, _, player)
+    if player:isProhibited(Fk:currentRoom():getPlayerById(to_select), card) then return end
     if #selected == 1 then
       return Fk:currentRoom():getPlayerById(to_select):getHandcardNum() ~= Fk:currentRoom():getPlayerById(selected[1]):getHandcardNum()
     end
@@ -352,8 +352,8 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
   prompt = "#enemy_at_the_gates_skill",
   can_use = Util.CanUse,
   target_num = 1,
-  mod_target_filter = function(self, to_select, selected, user, card)
-    return user ~= to_select
+  mod_target_filter = function(self, to_select, selected, player, card)
+    return to_select ~= player.id
   end,
   target_filter = Util.TargetFilter,
   on_effect = function(self, room, cardEffectEvent)

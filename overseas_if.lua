@@ -2247,7 +2247,7 @@ local os__fenxian_vs = fk.CreateActiveSkill{
     card.skillName = self.name
     card:addSubcard(selected_cards[1])
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return not Self:isProhibited(target, card) and card.skill:modTargetFilter(to_select, {}, Self.id, card, false) and to_select ~= self.from
+    return not Self:isProhibited(target, card) and card.skill:modTargetFilter(to_select, {}, Self, card, false) and to_select ~= self.from
   end,
 }
 Fk:addSkill(os__fenxian_vs)

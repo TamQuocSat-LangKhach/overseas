@@ -1482,11 +1482,7 @@ local os__chongqi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and data == self and player.room:getTag("RoundCount") and player.room:getTag("RoundCount") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_acquire = function (self, player, is_start)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
