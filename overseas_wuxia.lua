@@ -1167,7 +1167,7 @@ local xinghan = fk.CreateTriggerSkill{
       if player:getPileNameOfId(cid) == "os__chivalry&" and room:getCardOwner(cid) == player then
         local card = Fk:getCardById(cid)
         room:setPlayerMark(player, "os__xinghan_card", cid)
-        if U.canUseCard(room, player, card) then
+        if player:canUse(card) then
           room:delay(100)
           local success, dat = room:askForUseActiveSkill(player, "os__xinghan_viewas", "#os__xinghan-use:::" .. card:toLogString(), true, Util.DummyTable, true)
           room:setPlayerMark(player, "os__xinghan_card", 0)
@@ -1335,6 +1335,7 @@ local huzhong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)
+    if player.dead then return end
     local all_choices = {"os__huzhong_own", "os__huzhong_other::" .. data.to}
     local choices = table.simpleClone(all_choices)
     local targets = room:getUseExtraTargets(data, true, true)
@@ -1371,6 +1372,10 @@ local huzhong = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, self.name, "offensive")
     room:addPlayerMark(player, "@os__huzhong-phase")
   end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@os__huzhong-phase", 0)
+  end
 }
 local huzhong_buff = fk.CreateTargetModSkill{
   name = "#os__huzhong_buff",
@@ -1434,7 +1439,7 @@ Fk:loadTranslationTable{
   [":os__fenwang"] = "锁定技，①当你受到属性伤害时，你须弃置一张手牌，否则此伤害+1。②当你对其他角色造成普通伤害时，若你的手牌数大于其手牌数，此伤害+1。",
 
   ["os__huzhong_own"] = "此【杀】可额外选择一个目标",
-  ["os__huzhong_other"] = "弃置%dest一张手牌，若此【杀】造成伤害，你本阶段使用【杀】次数+1",
+  ["os__huzhong_other"] = "弃置%dest一张手牌",
   ["#os__huzhong-extra"] = "护众：此【杀】可额外选择一个目标",
   ["#os__huzhong_delay"] = "护众",
   ["@os__huzhong-phase"] = "护众",
@@ -1538,7 +1543,7 @@ local os__chue = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     if event == fk.TurnEnd then
-      return player:getMark("@os__bravery") >= player.hp and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
+      return player:getMark("@os__bravery") >= player.hp and player:canUse(Fk:cloneCard("slash"), { bypass_times = true, bypass_distances = true })
     end
     if target ~= player then return false end
     return event ~= fk.TargetSpecifying or (data.card.trueName == "slash" and player.hp > 0 and #AimGroup:getAllTargets(data.tos) == 1 and

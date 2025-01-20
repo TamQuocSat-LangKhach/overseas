@@ -16,7 +16,7 @@ local os__qingkou = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
-      player.phase == Player.Start and U.canUseCard(player.room, player, Fk:cloneCard("duel"))
+      player.phase == Player.Start and player:canUse(Fk:cloneCard("duel"))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -101,7 +101,7 @@ local os__fenwu = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
-      player.phase == Player.Finish and player.hp > 0 and U.canUseCard(player.room, player, Fk:cloneCard("slash"))
+      player.phase == Player.Finish and player.hp > 0 and player:canUse(Fk:cloneCard("slash"), {bypass_times = true, bypass_distances = true})
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

@@ -1483,9 +1483,11 @@ local os__chongqi = fk.CreateTriggerSkill{
   end,
 
   on_acquire = function (self, player, is_start)
-    local room = player.room
-    for _, p in ipairs(room.alive_players) do
-      room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
+    if not is_start then
+      local room = player.room
+      for _, p in ipairs(room.alive_players) do
+        room:handleAddLoseSkills(p, "os__feifu", nil, false, true)
+      end
     end
   end,
 }
@@ -2690,7 +2692,7 @@ Fk:loadTranslationTable{
   ["@os__zhouzu"] = "咒诅",
   ["#os__zhouzu_conjure"] = "咒诅",
   ["#os__didao-ask"] = "地道：你可打出一张牌替换 %src 的判定，若与原判定牌颜色相同，你摸一张牌",
-  
+
   ["$os__fengji1"] = "蜂趋蚁附，皆为道来。",
   ["$os__fengji2"] = "蜂攒蚁集，皆为道往！",
   ["$os__yiju1"] = "鸱张蚁聚，为从天道！",
@@ -3296,9 +3298,13 @@ Fk:loadTranslationTable{
   ["illustrator:os__liuhong"] = "biou09",
 
   ["os__yujue"] = "鬻爵",
-  [":os__yujue"] = "①其他角色的出牌阶段，其可交给你任意张牌（每阶段至多两张）。②你的回合外，你每获得其他角色的一张牌，你可令其选择一项：1. 弃置攻击范围内的一名其他角色的一张牌；2. 使用下一张牌时获得一张同类型的牌。（每名角色每回合每项限一次）",
+  [":os__yujue"] = "①其他角色的出牌阶段，其可交给你任意张牌（每阶段至多两张）。②你的回合外，"..
+  "你每获得其他角色的一张牌，你可令其选择一项：1. 弃置攻击范围内的一名其他角色的一张牌；"..
+  "2. 使用下一张牌时获得一张同类型的牌。（每名角色每回合每项限一次）",
   ["os__gezhi"] = "革制",
-  [":os__gezhi"] = "①当你于你的出牌阶段使用牌时，若为你此阶段首次使用此类型的牌，你可重铸一张手牌。②出牌阶段结束时，若本阶段你以此法重铸了至少两张牌，你可令一名角色选择一项：1. 攻击范围+2；2. 手牌上限+2；3. 体力上限+1。（每名角色每项限一次）",
+  [":os__gezhi"] = "①当你于你的出牌阶段使用牌时，若为你此阶段首次使用此类型的牌，你可重铸一张手牌。"..
+  "②出牌阶段结束时，若本阶段你以此法重铸了至少两张牌，你可令一名角色选择一项："..
+  "1. 攻击范围+2；2. 手牌上限+2；3. 体力上限+1。（每名角色每项限一次）",
   ["os__fengqix"] = "烽起", -- 上声用x，去声用h（s），入声用-p/t/k
   [":os__fengqix"] = "主公技，锁定技，群雄角色出牌阶段可因〖鬻爵〗交给你牌数量修改为4；武将牌上有主公技的角色成为〖革制〗指定的角色时，其选项增加一项：获得其武将牌上的主公技。",
 
@@ -3736,7 +3742,7 @@ local os__jilun = fk.CreateTriggerSkill{ --机论的获得技能
           from = player.id,
           tos = table.map(dat.targets, function(e) return {e} end),
           card = card,
-        } 
+        }
         Fk.skills["os__jilun_vs"]:beforeUse(player, use)
         room:useCard(use)
       end

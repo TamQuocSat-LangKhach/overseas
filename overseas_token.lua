@@ -97,9 +97,7 @@ local talismanSkill = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.card
   end,
   on_refresh = function(self, event, target, player, data)
-    local talismanRecorded = player:getTableMark("@$talisman")
-    table.insertIfNeed(talismanRecorded, data.card.trueName)
-    player.room:setPlayerMark(player, "@$talisman", talismanRecorded)
+    player.room:addPlayerMark(player, "@$talisman", data.card.trueName)
   end,
 }
 Fk:addSkill(talismanSkill)
@@ -375,8 +373,7 @@ local enemyAtTheGatesSkill = fk.CreateActiveSkill{
         })
       end
     end
-    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
-    room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+    room:cleanProcessingArea(cards, self.name)
   end,
 }
 local enemyAtTheGates = fk.CreateTrickCard{
