@@ -158,11 +158,7 @@ local os__chuanshu_delay = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "special")
       player:broadcastSkillInvoke("os__chuanshu")
       local num = 3 * #player:getMark("@os__chuanshu")
-      if data.from == player then
-        data.fromCard.number = math.min(data.fromCard.number + num, 13)
-      else
-        data.results[player.id].toCard.number = math.min(data.results[player.id].toCard.number + num, 13)
-      end
+      room:changePindianNumber(data, player, num, self.name)
     end
   end,
 
@@ -534,12 +530,7 @@ local os__lvren = fk.CreateTriggerSkill{
     if event == fk.DamageCaused then
       room:addPlayerMark(data.to, "@@os__blade")
     else
-      local num = 2 * (#data.tos + 1)
-      if data.from == player then
-        data.fromCard.number = math.min(data.fromCard.number + num, 13)
-      else
-        data.results[player.id].toCard.number = math.min(data.results[player.id].toCard.number + num, 13)
-      end
+      room:changePindianNumber(data, player, 2 * (#data.tos + 1), self.name)
     end
   end,
 }
@@ -1286,6 +1277,7 @@ local danlie = fk.CreateActiveSkill{
 local danlie_pd = fk.CreateTriggerSkill{
   name = "#danlie_pd",
   mute = true,
+  main_skill = danlie,
   events = {fk.PindianCardsDisplayed},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and (data.from == player or table.contains(data.tos, player)) and player:isWounded()
@@ -1295,12 +1287,7 @@ local danlie_pd = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, danlie.name)
     player:broadcastSkillInvoke(danlie.name)
-    local num = player:getLostHp()
-    if data.from == player then
-      data.fromCard.number = math.min(data.fromCard.number + num, 13)
-    else
-      data.results[player.id].toCard.number = math.min(data.results[player.id].toCard.number + num, 13)
-    end
+    room:changePindianNumber(data, player, player:getLostHp(), danlie.name)
   end,
 }
 

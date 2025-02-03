@@ -924,16 +924,11 @@ local os__qinghan_pindian = fk.CreateTriggerSkill{
   main_skill = os__qinghan,
   events = {fk.PindianCardsDisplayed},
   can_trigger = function (self, event, target, player, data)
-    return player:hasSkill(os__qinghan) and (player == data.from or data.results[player.id])
+    return player:hasSkill(os__qinghan) and (player == data.from or data.results[player.id]) and #player:getCardIds(Player.Equip) > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
-    local num = 2 * #player:getCardIds(Player.Equip)
-    if target == data.from.id then
-      data.fromCard.number = math.min(data.fromCard.number + num, 13)
-    elseif data.results[target] then
-      data.results[target].toCard.number = math.min(data.results[target].toCard.number + num, 13)
-    end
+    player.room:changePindianNumber(data, player, 2 * #player:getCardIds(Player.Equip), self.name)
   end,
 }
 os__qinghan:addRelatedSkill(os__qinghan_pindian)

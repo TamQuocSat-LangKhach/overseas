@@ -2839,7 +2839,7 @@ local os__jianwei = fk.CreateTriggerSkill{
     if event == fk.TargetSpecified then
       return target == player and data.card and data.card.trueName == "slash"
     else
-      return data.from == player or table.contains(data.tos, player)
+      return (data.from == player or table.contains(data.tos, player)) and player:getAttackRange() > 0
     end
   end,
   on_cost = Util.TrueFunc,
@@ -2851,12 +2851,7 @@ local os__jianwei = fk.CreateTriggerSkill{
       data.extra_data.os__jianweiNullified = data.extra_data.os__jianweiNullified or {}
       data.extra_data.os__jianweiNullified[tostring(data.to)] = (data.extra_data.os__jianweiNullified[tostring(data.to)] or 0) + 1
     else
-      local num = player:getAttackRange()
-      if data.from == player then
-        data.fromCard.number = math.min(data.fromCard.number + num, 13)
-      else
-        data.results[player.id].toCard.number = math.min(data.results[player.id].toCard.number + num, 13)
-      end
+      room:changePindianNumber(data, player, player:getAttackRange(), self.name)
     end
   end,
 
@@ -5246,11 +5241,7 @@ local os__niju = fk.CreateTriggerSkill{
     local num = tonumber(choice[4])
     if choice[1] == "os__niju_minus" then num = - num end
     local target = tonumber(choice[3])
-    if target == data.from.id then
-      data.fromCard.number = math.max(math.min(data.fromCard.number + num, 13), 1)
-    elseif data.results[target] then
-      data.results[target].toCard.number = math.max(math.min(data.results[target].toCard.number + num, 13), 1)
-    end
+    player.room:changePindianNumber(data, player.room:getPlayerById(target), num, self.name)
     local from = data.fromCard.number
     for _, r in pairs(data.results) do
       if r.toCard.number ~= from then
