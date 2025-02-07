@@ -1044,6 +1044,7 @@ local liubei = General(extension, "os__xia__liubei", "shu", 4)
 local shenyi = fk.CreateTriggerSkill{
   name = "os__shenyi",
   events = {fk.Damaged},
+  derived_piles = "os__chivalry",
   can_trigger = function(self, event, target, player, data)
     if not (player:hasSkill(self) and (player:inMyAttackRange(target) or player == target) and
       player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == target and e.data[1].from and e.data[1].from ~= player end)[1].data[1] == data and
@@ -1067,7 +1068,7 @@ local shenyi = fk.CreateTriggerSkill{
       card = room:getCardsFromPileByRule(".|.|.|.|.|" .. Fk:cloneCard(choice):getTypeString())
     end
     if #card > 0 then
-      player:addToPile("os__chivalry&", card[1], true, self.name)
+      player:addToPile("os__chivalry", card[1], true, self.name)
     end
     if target ~= player and not target.dead and not player:isKongcheng() then
       local cards = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, nil, "#os__shenyi-give::" .. target.id)
@@ -1080,6 +1081,11 @@ local shenyi = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@$os__shenyi", 0)
+    UsableSkill.onLose(self, player, is_death)
+  end
 }
 local shenyi_delay = fk.CreateTriggerSkill{
   name = "#os__shenyi_delay",
@@ -1115,20 +1121,10 @@ local shenyi_delay = fk.CreateTriggerSkill{
   end,
 }
 shenyi:addRelatedSkill(shenyi_delay)
-local shenyi_prohibit = fk.CreateProhibitSkill{
-  name = "#os__shenyi_prohibit",
-  prohibit_use = function (self, player, card)
-    return player:hasSkill(shenyi) and not player:hasSkill("os__xinghan") and player:getPileNameOfId(card.id) == "os__chivalry&"
-  end,
-  prohibit_response = function(self, player, card)
-    return player:hasSkill(shenyi) and not player:hasSkill("os__xinghan") and player:getPileNameOfId(card.id) == "os__chivalry&"
-  end,
-}
-shenyi:addRelatedSkill(shenyi_prohibit)
 
 local xinghan_vs = fk.CreateViewAsSkill{
   name = "os__xinghan_viewas",
-  expand_pile = "os__chivalry&",
+  expand_pile = "os__chivalry",
   card_filter = function(self, to_select, selected)
     if #selected == 0 then
       return Self:getMark("os__xinghan_card") == to_select
@@ -1145,17 +1141,17 @@ local xinghan = fk.CreateTriggerSkill{
   name = "os__xinghan",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and #player:getPile("os__chivalry&") > #player.room.alive_players
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and #player:getPile("os__chivalry") > #player.room.alive_players
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#os__xinghan-ask")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = player:getPile("os__chivalry&")
+    local cards = player:getPile("os__chivalry")
     for i = #cards, 1, -1 do
       local cid = cards[i]
-      if player:getPileNameOfId(cid) == "os__chivalry&" and room:getCardOwner(cid) == player then
+      if player:getPileNameOfId(cid) == "os__chivalry" and room:getCardOwner(cid) == player then
         local card = Fk:getCardById(cid)
         room:setPlayerMark(player, "os__xinghan_card", cid)
         if player:canUse(card) then
@@ -1194,17 +1190,17 @@ local xinghan_delay = fk.CreateTriggerSkill{
     end
   end,
 }
-local xinghan_prohibit = fk.CreateProhibitSkill{
-  name = "#os__xinghan_prohibit",
-  prohibit_use = function (self, player, card)
-    return (not player:hasSkill(xinghan) or (player.phase ~= Player.NotActive and not player.dying and player:getMark("os__xinghan_card") == 0)) and player:getPileNameOfId(card.id) == "os__chivalry&"
-  end,
-  prohibit_response = function(self, player, card)
-    return (not player:hasSkill(xinghan) or (player.phase ~= Player.NotActive and not player.dying)) and player:getPileNameOfId(card.id) == "os__chivalry&"
+local xinghan_filter = fk.CreateFilterSkill{
+  name = "#os__xinghan_filter",
+
+  handly_cards = function (self, player)
+    if player:hasSkill(xinghan) and (Fk:currentRoom():getCurrent() ~= player or player.dying) then
+      return player:getPile("os__chivalry")
+    end
   end,
 }
 xinghan:addRelatedSkill(xinghan_delay)
-xinghan:addRelatedSkill(xinghan_prohibit)
+xinghan:addRelatedSkill(xinghan_filter)
 
 liubei:addSkill(shenyi)
 liubei:addSkill(xinghan)
@@ -1222,13 +1218,14 @@ Fk:loadTranslationTable{
   ["#os__shenyi-ask_own"] = "伸义：你可选择一种基本牌或锦囊牌的牌名（每种限一次）",
   ["#os__shenyi-ask_other"] = "伸义：你可选择一种基本牌或锦囊牌的牌名（每种限一次），然后可将任意张手牌交给 %dest",
   ["#os__shenyi-give"] = "伸义：你可将任意张手牌交给 %dest",
-  ["os__chivalry&"] = "侠义",
+  ["os__chivalry"] = "侠义",
   ["@@os__shenyi"] = "伸义",
   ["#os__shenyi_delay"] = "伸义",
   ["@$os__shenyi"] = "伸义",
   ["#os__xinghan-ask"] = "兴汉：你可依次使用“侠义”牌，然后此回合结束时，你弃置所有手牌并失去X点体力（X为你的体力值-1且至少为1）",
   ["#os__xinghan-use"] = "兴汉：使用“侠义”牌 %arg",
   ["os__xinghan_viewas"] = "兴汉",
+  ["#os__xinghan_filter"] = "侠义",
 
   ["$os__shenyi1"] = "施仁德于天下，伸大义于四海！",
   ["$os__shenyi2"] = "汉道虽衰，亦不容汝等奸祟放肆！",
