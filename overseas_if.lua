@@ -1726,8 +1726,8 @@ Fk:loadTranslationTable{
 
   ["$os__chihui1"] = "愿舍身以照长夜，助父亲突破重围！",
   ["$os__chihui2"] = "冷夜孤光，亦怀炽焰于心。",
-  ["#os__chihui_os_if_huan__caoang1"] = "欲成王业，蜡炬成灰终无悔！",
-  ["#os__chihui_os_if_huan__caoang2"] = "但为大魏社稷，又何顾此身！",
+  ["$os__chihui_os_if_huan__caoang1"] = "欲成王业，蜡炬成灰终无悔！",
+  ["$os__chihui_os_if_huan__caoang2"] = "但为大魏社稷，又何顾此身！",
 }
 
 ifcaoang:addSkill(osChihui)
@@ -1846,6 +1846,9 @@ Fk:loadTranslationTable{
 
 osFuxi.permanent_skill = true
 ifcaoang:addSkill(osFuxi)
+
+ifcaoang:addRelatedSkill("os__huangzhu")
+ifcaoang:addRelatedSkill("os__liyuan")
 
 
 local huancaoang = General(extension, "os_if_huan__caoang", "wei", 3)
@@ -2034,8 +2037,8 @@ Fk:loadTranslationTable{
 
   ["$os__huangzhu1"] = "赤心所愿，只愿天下清明！",
   ["$os__huangzhu2"] = "魏室初兴，长夜终尽。",
-  ["#os__huangzhu_os_if__caoang1"] = "既见明日煌煌，何惧长夜漫漫。",
-  ["#os__huangzhu_os_if__caoang2"] = "九天之光，终破长空！",
+  ["$os__huangzhu_os_if__caoang1"] = "既见明日煌煌，何惧长夜漫漫。",
+  ["$os__huangzhu_os_if__caoang2"] = "九天之光，终破长空！",
 }
 
 huancaoang:addSkill(osHuangzhu)
@@ -2180,6 +2183,7 @@ Fk:loadTranslationTable{
 
 huancaoang:addSkill(osJifa)
 
+huancaoang:addRelatedSkill("os__chihui")
 
 
 local liufeng = General(extension, "os_if__liufeng", "shu", 4)
