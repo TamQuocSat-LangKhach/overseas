@@ -2782,7 +2782,6 @@ Fk:loadTranslationTable{
   ["$os_xing__zhilue1"] = "时以进而取之，无则磨锋以待。",
   ["$os_xing__zhilue2"] = "知敌之薄弱，略我之计谋。",
   ["~os_xing__zhanghe"] = "吾筹划而思，奈何还是慢了一步。",
-  ["os_xing__zhanghe_win_audio"] = "胜利语音",
   ["$os_xing__zhanghe_win_audio"] = "天易之理可胜，知略更甚以往。",
 }
 

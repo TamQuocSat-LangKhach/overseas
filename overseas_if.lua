@@ -1622,11 +1622,15 @@ Fk:loadTranslationTable{
 -- 兴
 
 local ifcaoang = General(extension, "os_if__caoang", "wei", 3)
+local ifcaoangwin = fk.CreateActiveSkill{ name = "os_if__caoang_win_audio" }
+ifcaoangwin.package = extension
+Fk:addSkill(ifcaoangwin)
 
 Fk:loadTranslationTable{
   ["os_if__caoang"] = "幻曹昂",
   ["#os_if__caoang"] = "穿时寻冀",
-  ["~os_if__caoang"] = "",
+  ["~os_if__caoang"] = "漫漫长夜，何时可见光明。",
+  ["$os_if__caoang_win_audio"] = "拂晓之光，终慰吾灵。",
 }
 
 local osChihui = fk.CreateTriggerSkill{
@@ -1720,8 +1724,10 @@ Fk:loadTranslationTable{
   ["os__chihui_discard"] = "弃置%dest区域里的一张牌",
   ["os__chihui_putequip"] = "将%arg置入%dest的装备区",
 
-  ["$os__chihui1"] = "",
-  ["$os__chihui2"] = "",
+  ["$os__chihui1"] = "愿舍身以照长夜，助父亲突破重围！",
+  ["$os__chihui2"] = "冷夜孤光，亦怀炽焰于心。",
+  ["#os__chihui_os_if_huan__caoang1"] = "欲成王业，蜡炬成灰终无悔！",
+  ["#os__chihui_os_if_huan__caoang2"] = "但为大魏社稷，又何顾此身！",
 }
 
 ifcaoang:addSkill(osChihui)
@@ -1834,8 +1840,8 @@ Fk:loadTranslationTable{
   ["os__fuxi3"] = "将手牌摸至%arg张",
   ["os__fuxi4"] = "恢复所有装备栏",
 
-  ["$os__fuxi1"] = "",
-  ["$os__fuxi2"] = "",
+  ["$os__fuxi1"] = "身为残叶之灰，此心亦向光明。",
+  ["$os__fuxi2"] = "煌煌昔日，吾可复见之。",
 }
 
 osFuxi.permanent_skill = true
@@ -1844,11 +1850,15 @@ ifcaoang:addSkill(osFuxi)
 
 local huancaoang = General(extension, "os_if_huan__caoang", "wei", 3)
 huancaoang.hidden = true
+local ifhuancaoangwin = fk.CreateActiveSkill{ name = "os_if_huan__caoang_win_audio" }
+ifhuancaoangwin.package = extension
+Fk:addSkill(ifhuancaoangwin)
 
 Fk:loadTranslationTable{
   ["os_if_huan__caoang"] = "幻曹昂",
   ["#os_if_huan__caoang"] = "穿时寻冀",
-  --["~os_if_huan__caoang"] = "",
+  ["~os_if_huan__caoang"] = "纵天予再造之恩，然恨吾亦未能成业。",
+  ["$os_if_huan__caoang_win_audio"] = "煌煌大魏，万世长明！",
 }
 
 local osHuangzhu = fk.CreateTriggerSkill{
@@ -2022,8 +2032,10 @@ Fk:loadTranslationTable{
   ["@os__huangzhu_TreasureSlot"] = "",
 
 
-  ["$os__huangzhu1"] = "",
-  ["$os__huangzhu2"] = "",
+  ["$os__huangzhu1"] = "赤心所愿，只愿天下清明！",
+  ["$os__huangzhu2"] = "魏室初兴，长夜终尽。",
+  ["#os__huangzhu_os_if__caoang1"] = "既见明日煌煌，何惧长夜漫漫。",
+  ["#os__huangzhu_os_if__caoang2"] = "九天之光，终破长空！",
 }
 
 huancaoang:addSkill(osHuangzhu)
@@ -2092,8 +2104,10 @@ Fk:loadTranslationTable{
 
   ["#os__liyuan-viewas"] = "发动 离渊，将1张对应装备栏已被废除的装备牌当普【杀】使用或打出，然后摸1张牌",
 
-  ["$os__liyuan1"] = "",
-  ["$os__liyuan2"] = "",
+  ["$os__liyuan1"] = "退临深意，幡然腾空！",
+  ["$os__liyuan2"] = "爪甲碎尽，引灵显辉！",
+  ["$os__liyuan_os_if__caoang1"] = "虽九死之地，亦当搏一线生机。",
+  ["$os__liyuan_os_if__caoang2"] = "吾志在天下万方，岂能困亡于此！",
 }
 
 osLiyuan:addRelatedSkill(osLiyuanTrigger)
@@ -2160,8 +2174,8 @@ Fk:loadTranslationTable{
     "4.恢复所有装备栏（你的装备栏均被废除时方可选择此项）。",
 
   ["#os__jifa-choice"] = "冀筏：选择本次“退幻”时保留的技能",
-  ["$os__jifa1"] = "",
-  ["$os__jifa2"] = "",
+  ["$os__jifa1"] = "往昔如水旧新事，身赴黄夕又经年。",
+  ["$os__jifa2"] = "淯水川流如斯，难尽昔日扰攘。",
 }
 
 huancaoang:addSkill(osJifa)
