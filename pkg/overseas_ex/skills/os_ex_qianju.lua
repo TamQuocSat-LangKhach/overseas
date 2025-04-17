@@ -1,19 +1,30 @@
-local os_ex__qianju = fk.CreateSkill {
-  name = "os_ex__qianju"
+local osExQianju = fk.CreateSkill {
+  name = "os_ex__qianju",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
-  ['os_ex__qianju'] = '千驹',
-  [':os_ex__qianju'] = '锁定技，你计算与其他角色的距离-X（X为你的装备区里的牌数）；每回合限一次，当你对你至其的距离小于2的角色造成伤害后，你将牌堆或弃牌堆中一张装备牌置入你的装备区。',
+  ["os_ex__qianju"] = "千驹",
+  [":os_ex__qianju"] = "锁定技，你计算与其他角色的距离-X（X为你的装备区里的牌数）；每回合限一次，" ..
+  "当你对你至其的距离小于2的角色造成伤害后，你将牌堆或弃牌堆中一张装备牌置入你的装备区。",
 }
 
-os_ex__qianju:addEffect(fk.Damage, {
-  global = false,
+osExQianju:addEffect(fk.Damage, {
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(skill.name) and (data.extra_data or {}).kuanggucheck and player:usedSkillTimes(os_ex__qianju.name) == 0
+    return
+      target == player and
+      player:hasSkill(osExQianju.name) and
+      (data.extra_data or {}).kuanggucheck and
+      player:usedSkillTimes(osExQianju.name) == 0
   end,
   on_use = function(self, event, target, player, data)
-    local subtypes = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
+    local subtypes = {
+      Card.SubtypeWeapon,
+      Card.SubtypeArmor,
+      Card.SubtypeDefensiveRide,
+      Card.SubtypeOffensiveRide,
+      Card.SubtypeTreasure,
+    }
     local room = player.room
     local choices = {}
     for _, s in ipairs(subtypes) do
@@ -31,13 +42,12 @@ os_ex__qianju:addEffect(fk.Damage, {
       end
     end
     if #cards > 0 then
-      room:moveCardIntoEquip(player, table.random(cards), os_ex__qianju.name, false, player.id)
+      room:moveCardIntoEquip(player, table.random(cards), osExQianju.name, false, player)
     end
   end,
 })
 
-os_ex__qianju:addEffect(fk.BeforeHpChanged, {
-  global = false,
+osExQianju:addEffect(fk.BeforeHpChanged, {
   can_refresh = function(self, event, target, player, data)
     return data.damageEvent and player == data.damageEvent.from and player:compareDistance(target, 2, "<")
   end,
@@ -47,16 +57,12 @@ os_ex__qianju:addEffect(fk.BeforeHpChanged, {
   end,
 })
 
-local os_ex__qianju_distance = fk.CreateSkill {
-  name = "#os_ex__qianju_distance"
-}
-
-os_ex__qianju_distance:addEffect('distance', {
+osExQianju:addEffect("distance", {
   correct_func = function(self, from, to)
-    if from:hasSkill(os_ex__qianju.name) then
-      return -#from:getCardIds(Player.Equip)
+    if from:hasSkill(osExQianju.name) then
+      return -#from:getCardIds("e")
     end
   end,
 })
 
-return os_ex__qianju
+return osExQianju
