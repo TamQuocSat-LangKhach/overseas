@@ -23,12 +23,9 @@ os__dingzhen:addEffect(fk.RoundStart, {
   end,
   on_cost = function(self, event, target, player)
     local num = player.hp
-    local available_targets = table.map(
-      table.filter(player.room.alive_players, function(p)
-        return p:compareDistance(player, num, "<=")
-      end),
-      Util.IdMapper
-    )
+    local available_targets = table.filter(player.room.alive_players, function(p)
+      return p:compareDistance(player, num, "<=")
+    end)
     local targets = player.room:askToChoosePlayers(player, {
       targets = available_targets,
       min_num = 1,
