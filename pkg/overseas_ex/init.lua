@@ -11,6 +11,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__zhangfei", "shu", 4):addSkills { "os_ex__paoxiao", "os_ex__xuhe" }
 Fk:loadTranslationTable{
   ["os_ex__zhangfei"] = "界张飞",
+  ["#os_ex__zhangfei"] = "万夫不当",
+  ["illustrator:os_ex__zhangfei"] = "巴萨小马",
 
   ["~os_ex__zhangfei"] = "桃园一拜，此生无憾！",
 }
@@ -22,6 +24,8 @@ General:new(extension, "os_ex__sunjian", "wu", 4, 5):addSkills {
 }
 Fk:loadTranslationTable{
   ["os_ex__sunjian"] = "界孙坚",
+  ["#os_ex__sunjian"] = "武烈帝",
+  ["illustrator:os_ex__sunjian"] = "漫想族",
 
   ["$yinghun_os_ex__sunjian1"] = "义定四野，武匡海内。", -- TODO
   ["$yinghun_os_ex__sunjian2"] = "江东男儿，皆胸怀匡扶天下之志。",
@@ -36,6 +40,8 @@ General:new(extension, "os_ex__menghuo", "qun", 4):addSkills {
 }
 Fk:loadTranslationTable{
   ["os_ex__menghuo"] = "界孟获",
+  ["#os_ex__menghuo"] = "南蛮王",
+  ["illustrator:os_ex__menghuo"] = "凝聚永恒",
 
   ["$huoshou_os_ex__menghuo1"] = "汉人，岂是我等的对手。",
   ["$huoshou_os_ex__menghuo2"] = "定叫你们有来无回！",
@@ -52,6 +58,8 @@ General:new(extension, "os_ex__zhurong", "qun", 4, 4, General.Female):addSkills 
 
 Fk:loadTranslationTable{
   ["os_ex__zhurong"] = "界祝融",
+  ["#os_ex__zhurong"] = "野性的女王",
+  ["illustrator:os_ex__zhurong"] = "alien",
 
   ["$juxiang_os_ex__zhurong1"] = "今日，就让这群汉人长长见识。",
   ["$juxiang_os_ex__zhurong2"] = "我的大象，终于有了用武之地。",
@@ -62,6 +70,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__fazheng", "shu", 3):addSkills { "os_ex__enyuan", "os_ex__xuanhuo" }
 Fk:loadTranslationTable{
   ["os_ex__fazheng"] = "界法正",
+  ["#os_ex__fazheng"] = "蜀汉的辅翼",
+  ["illustrator:os_ex__fazheng"] = "聚一_旭",
 
   ["~os_ex__fazheng"] = "汉室复兴，我，是看不到了……",
 }
@@ -69,6 +79,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__guohuai", "wei", 4):addSkills { "os_ex__jingce", "os_ex__yuzhang" }
 Fk:loadTranslationTable{
   ["os_ex__guohuai"] = "界郭淮",
+  ["#os_ex__guohuai"] = "垂问秦雍",
+  ["illustrator:os_ex__guohuai"] = "凝聚永恒",
 
   ["~os_ex__guohuai"] = "姜维小儿，竟然……",
 }
@@ -76,6 +88,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__madai", "shu", 4):addSkills { "mashu", "os_ex__qianxi" }
 Fk:loadTranslationTable{
   ["os_ex__madai"] = "界马岱",
+  ["#os_ex__madai"] = "临危受命",
+  ["illustrator:os_ex__madai"] = "三道纹",
 
   ["~os_ex__madai"] = "丞相临终使命，岱已达成。",
 }
@@ -92,6 +106,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__handang", "wu", 4):addSkills { "os_ex__gongqi", "os_ex__jiefan" }
 Fk:loadTranslationTable{
   ["os_ex__handang"] = "界韩当",
+  ["#os_ex__handang"] = "石城侯",
+  ["illustrator:os_ex__handang"] = "monkey",
 
   ["~os_ex__handang"] = "今后，就靠你们了……",
 }
@@ -99,6 +115,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__guyong", "wu", 3):addSkills { "os_ex__shenxing", "os_ex__bingyi" }
 Fk:loadTranslationTable{
   ["os_ex__guyong"] = "界顾雍",
+  ["#os_ex__guyong"] = "庙堂的玉磬",
+  ["illustrator:os_ex__guyong"] = "三道纹",
 
   ["~os_ex__guyong"] = "陛下厚爱，雍……",
 }
@@ -106,6 +124,8 @@ Fk:loadTranslationTable{
 General:new(extension, "os_ex__caoxiu", "wei", 4):addSkills { "os_ex__qianju", "os_ex__qingxi" }
 Fk:loadTranslationTable{
   ["os_ex__caoxiu"] = "界曹休",
+  ["#os_ex__caoxiu"] = "龙光骐骥",
+  ["illustrator:os_ex__caoxiu"] = "匠人绘",
 
   ["~os_ex__caoxiu"] = "此战大败，休甚是羞惭啊……",
 }

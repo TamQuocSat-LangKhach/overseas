@@ -13,14 +13,14 @@ Fk:loadTranslationTable{
 
 osExBingyi:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       player:hasSkill(osExBingyi.name) and
       player.phase == Player.Finish and
       not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     ---@type string
     local skillName = osExBingyi.name
     local room = player.room

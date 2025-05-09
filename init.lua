@@ -8,7 +8,7 @@ local overseas_ex = require (prefix .. "overseas_ex")
 local overseas_sp = require (prefix .. "overseas_sp")
 -- local overseas_strategizing = require (prefix .. "overseas_strategizing")
 -- local overseas_wuxia = require (prefix .. "overseas_wuxia")
--- local overseas_if = require (prefix .. "overseas_if")
+local overseas_if = require (prefix .. "overseas_if")
 local overseas_derived = require (prefix .. "overseas_derived")
 
 Fk:loadTranslationTable{
@@ -20,6 +20,6 @@ return {
   overseas_sp,
   -- overseas_strategizing,
   -- overseas_wuxia,
-  -- overseas_if,
+  overseas_if,
   overseas_derived,
 }

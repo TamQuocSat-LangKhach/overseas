@@ -52,7 +52,7 @@ local os__yingji = fk.CreateViewAsSkill{
     end
     return UI.ComboBox { choices = allCardNames }
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     local choice = self.interaction.data
     if not choice then return end
     local c = Fk:cloneCard(choice)
@@ -854,7 +854,7 @@ local os__sidai = fk.CreateViewAsSkill{
   --pattern = "slash",
   frequency = Skill.Limited,
   card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     local c = Fk:cloneCard("slash")
     c:addSubcards(table.filter(Self.player_cards[Player.Hand], function(cid)
       return Fk:getCardById(cid).type == Card.TypeBasic

@@ -21,7 +21,7 @@ Fk:loadTranslationTable{
 
 osExChunlao:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       player:hasSkill(osExChunlao.name) and
@@ -30,7 +30,7 @@ osExChunlao:addEffect(fk.EventPhaseStart, {
         return #p:getPile("os__dense_alcohol") == 0
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local availableTargets = table.filter(room.alive_players, function(p)
       return not p:isAllNude()
@@ -55,7 +55,7 @@ osExChunlao:addEffect(fk.EventPhaseStart, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     ---@type string
     local skillName = osExChunlao.name
     local room = player.room
@@ -88,7 +88,7 @@ osExChunlao:addEffect(fk.CardUsing, {
         return p:hasSkill(osExChunlao.name)
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     ---@type string
     local skillName = osExChunlao.name
     local room = player.room
@@ -149,7 +149,7 @@ osExChunlao:addEffect(fk.CardUsing, {
 osExChunlao:addEffect(fk.EnterDying, {
   is_delay_effect = true,
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(osExChunlao.name) and #target:getPile("os__dense_alcohol") > 0
   end,
   on_cost = function(self, event, target, player, data)
@@ -160,7 +160,7 @@ osExChunlao:addEffect(fk.EnterDying, {
       }
     )
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     ---@type string
     local skillName = osExChunlao.name
     local room = player.room

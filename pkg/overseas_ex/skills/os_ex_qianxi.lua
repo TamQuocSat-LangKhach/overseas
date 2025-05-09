@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 osExQianxi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(osExQianxi.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     ---@type string
     local skillName = osExQianxi.name
     local room = player.room
@@ -71,7 +71,7 @@ osExQianxi:addEffect(fk.EventPhaseStart, {
 })
 
 osExQianxi:addEffect(fk.EventPhaseStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return
       target == player and
       player.phase == Player.Finish and
@@ -87,7 +87,7 @@ osExQianxi:addEffect(fk.EventPhaseStart, {
           player:getMark("_os_ex__qianxi_target-turn") == to.id
       end, Player.HistoryTurn) > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local p = room:getPlayerById(player:getMark("_os_ex__qianxi_target-turn"))
     if p then
@@ -98,10 +98,10 @@ osExQianxi:addEffect(fk.EventPhaseStart, {
 
 osExQianxi:addEffect(fk.TurnEnd, {
   late_refresh = true,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@os_ex__qianxi") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@os_ex__qianxi", 0)
   end,

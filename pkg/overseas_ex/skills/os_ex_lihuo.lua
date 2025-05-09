@@ -78,7 +78,7 @@ osExLihuo:addEffect(fk.CardUseFinished, {
       data.extra_data.os_ex__lihuoDying == true
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, osExLihuo.name)
   end,
 })
@@ -92,7 +92,7 @@ osExLihuo:addEffect(fk.EnterDying, {
     local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
     return parentUseData and (parentUseData.data.extra_data or {}).os_ex__lihuoUser == player.id
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local parentUseData = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
     if parentUseData then
       parentUseData.data.extra_data = parentUseData.data.extra_data or {}

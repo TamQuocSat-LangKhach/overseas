@@ -37,7 +37,7 @@ local os__chaofeng = fk.CreateViewAsSkill{
     end
     return UI.ComboBox { choices = allCardNames }
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     local choice = self.interaction.data
     if not choice or #cards ~= 1 then return end
     local c = Fk:cloneCard(choice)
@@ -344,7 +344,7 @@ local os__jiange = fk.CreateViewAsSkill{
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type ~= Card.TypeBasic
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     if #cards ~= 1 then
       return nil
     end
@@ -1130,7 +1130,7 @@ local xinghan_vs = fk.CreateViewAsSkill{
       return Self:getMark("os__xinghan_card") == to_select
     end
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     if #cards == 1 then
       return Fk:getCardById(cards[1])
     end

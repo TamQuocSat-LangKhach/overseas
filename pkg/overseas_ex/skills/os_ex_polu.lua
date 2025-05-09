@@ -32,7 +32,7 @@ osExPolu:addEffect(fk.Deathed, {
       self:doCost(event, target, player, data)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     ---@type string
     local skillName = osExPolu.name
     local alivePlayers = player.room:getAlivePlayers(false)
@@ -51,7 +51,7 @@ osExPolu:addEffect(fk.Deathed, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local targets = event:getCostData(self)
     local room = player.room
     room:sortByAction(targets)

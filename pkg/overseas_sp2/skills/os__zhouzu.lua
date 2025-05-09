@@ -35,11 +35,11 @@ os__zhouzu:addEffect('active', {
 
 os__zhouzu:addEffect(fk.TurnEnd, {
   mute = true,
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     return player:getMark("@os__zhouzu") ~= 0 and string.sub(player:getMark("@os__zhouzu")[2], -1) == "0"
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local nums = string.split(player:getMark("@os__zhouzu")[2], "-")
     local num = tonumber(nums[1])
@@ -68,10 +68,10 @@ os__zhouzu:addEffect(fk.TurnEnd, {
     room:setPlayerMark(player, "_os__zhouzu", 0)
   end,
 
-  can_refresh = function(self, event, player, data)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark("@os__zhouzu") ~= 0
   end,
-  on_refresh = function(self, event, player, data)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local nums = string.split(player:getMark("@os__zhouzu")[2], "-")
     room:setPlayerMark(player, "@os__zhouzu", {player:getMark("@os__zhouzu")[1], nums[1] .. "-" .. (tonumber(nums[2]) - 1)})

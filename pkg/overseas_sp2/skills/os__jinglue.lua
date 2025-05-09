@@ -45,7 +45,7 @@ os__jinglue:addEffect('active', {
 -- 触发技能
 os__jinglue:addEffect(fk.CardUsing + fk.TurnEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     local mark
     if event == fk.CardUsing then
       for _, id in ipairs(data.card:isVirtual() and data.card.subcards or {data.card.id}) do

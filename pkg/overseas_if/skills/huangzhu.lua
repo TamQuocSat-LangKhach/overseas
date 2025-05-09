@@ -1,30 +1,46 @@
-local osHuangzhu = fk.CreateSkill { name = "os__huangzhu" }
-
-Fk:loadTranslationTable {
-  ['os__huangzhu'] = '煌烛',
-  ['@$os__huangzhu'] = '煌烛',
-  ['#os__huangzhu-choice'] = '是否发动 煌烛，选择一个已被废除的装备栏',
-  ['#os__huangzhu-invoke'] = '是否发动 煌烛，视为拥有至多2张已记录的装备牌的技能',
-  [':os__huangzhu'] = '准备阶段，你可以选择一个已被废除的装备栏，从牌堆或弃牌堆中随机获得一张对应副类别的装备牌（若无则随机获得一张装备牌），并记录此牌牌名。出牌阶段开始时，你可以选择或变更至多两个已记录且对应装备栏已被废除的装备牌牌名（每种副类别限一个），视为拥有这些装备牌的技能直到此装备栏被恢复。',
-  ['$os__huangzhu1'] = '赤心所愿，只愿天下清明！',
-  ['$os__huangzhu2'] = '魏室初兴，长夜终尽。',
+local huangzhu = fk.CreateSkill {
+  name = "os__huangzhu",
 }
 
-osHuangzhu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
-    if player:hasSkill(osHuangzhu.name) and target == player then
+Fk:loadTranslationTable{
+  ["os__huangzhu"] = "煌烛",
+  [":os__huangzhu"] = "准备阶段，你可以选择一个已被废除的装备栏，从牌堆或弃牌堆中随机获得一张对应副类别的装备牌"..
+  "（若无则随机获得一张装备牌），并记录此牌牌名。<br>"..
+  "出牌阶段开始时，你可以选择或变更至多两个已记录且对应装备栏已被废除的装备牌牌名（每种副类别限一个），"..
+  "视为拥有这些装备牌的技能直到此装备栏被恢复。",
+
+  ["#os__huangzhu-choice"] = "煌烛：选择一个已废除的装备栏，获得一张此副类别的装备牌",
+  ["@$os__huangzhu"] = "煌烛",
+  ["#os__huangzhu-invoke"] = "煌烛：你可以视为拥有至多2张已记录的装备牌的技能",
+
+  ["@os__huangzhu_WeaponSlot"] = "",
+  ["@os__huangzhu_ArmorSlot"] = "",
+  ["@os__huangzhu_DefensiveRideSlot"] = "",
+  ["@os__huangzhu_OffensiveRideSlot"] = "",
+  ["@os__huangzhu_TreasureSlot"] = "",
+
+
+  ["$os__huangzhu1"] = "赤心所愿，只愿天下清明！",
+  ["$os__huangzhu2"] = "魏室初兴，长夜终尽。",
+}
+
+huangzhu:addEffect(fk.EventPhaseStart, {
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(huangzhu.name) and target == player then
       if player.phase == Player.Start then
         return table.find(player.equipSlots, function (slot)
           return table.contains(player.sealedSlots, slot)
         end)
       elseif player.phase == Player.Play then
-        return #player:getTableMark("@$os__huangzhu") > 0 and table.find(player.equipSlots, function (slot)
-          return table.contains(player.sealedSlots, slot)
-        end)
+        return #player:getTableMark("@$os__huangzhu") > 0 and
+          table.find(player.equipSlots, function (slot)
+            return table.contains(player.sealedSlots, slot)
+          end)
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player.phase == Player.Start then
       local all_choices = {
         "WeaponSlot",
@@ -43,23 +59,22 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
       table.insert(choices, "Cancel")
       local choice = player.room:askToChoice(player, {
         choices = choices,
-        skill_name = osHuangzhu.name,
+        skill_name = huangzhu.name,
         prompt = "#os__huangzhu-choice",
-        detailed = false,
-        all_choices = all_choices
+        all_choices = all_choices,
       })
       if choice ~= "Cancel" then
-        event:setCostData(self, choice)
+        event:setCostData(self, {choice = choice})
         return true
       end
     elseif player.phase == Player.Play then
       return player.room:askToSkillInvoke(player, {
-        skill_name = osHuangzhu.name,
-        prompt = "#os__huangzhu-invoke"
+        skill_name = huangzhu.name,
+        prompt = "#os__huangzhu-invoke",
       })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Start then
       local subtype_string_table = {
@@ -69,7 +84,7 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
         [Player.DefensiveRideSlot] = "defensive_ride",
         [Player.OffensiveRideSlot] = "offensive_ride",
       }
-      local cards = room:getCardsFromPileByRule(".|.|.|.|.|" .. subtype_string_table[event:getCostData(self)], 1, "allPiles")
+      local cards = room:getCardsFromPileByRule(".|.|.|.|.|" .. subtype_string_table[event:getCostData(self).choice], 1, "allPiles")
       if #cards == 0 then
         cards = room:getCardsFromPileByRule(".|.|.|.|.|equip", 1, "allPiles")
       end
@@ -79,7 +94,7 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
       if table.insertIfNeed(card_names, card.name) then
         room:setPlayerMark(player, "@$os__huangzhu", card_names)
       end
-      room:obtainCard(player, card, true, fk.ReasonJustMove, player.id, osHuangzhu.name)
+      room:obtainCard(player, card, true, fk.ReasonJustMove, player, huangzhu.name)
     else
       local card_names = player:getTableMark("@$os__huangzhu")
       local names = {}
@@ -90,7 +105,7 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
       if #choices == 0 then return false end
       local name1 = room:askToChoice(player, {
         choices = choices,
-        skill_name = osHuangzhu.name
+        skill_name = huangzhu.name
       })
       table.insert(names, name1)
       local subtype = Fk:cloneCard(name1).sub_type
@@ -102,7 +117,7 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
         table.insert(choices, "Cancel")
         name1 = room:askToChoice(player, {
           choices = choices,
-          skill_name = osHuangzhu.name
+          skill_name = huangzhu.name
         })
         if name1 ~= "Cancel" then
           table.insert(names, name1)
@@ -136,13 +151,13 @@ osHuangzhu:addEffect(fk.EventPhaseStart, {
   end,
 })
 
-osHuangzhu:addEffect(fk.AreaResumed, {
-  can_refresh = function(self, event, target, player)
-    return player:hasSkill(osHuangzhu.name) and player == target
+huangzhu:addEffect(fk.AreaResumed, {
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(huangzhu.name, true) and player == target
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for _, slot in ipairs(target.data.slots) do
+    for _, slot in ipairs(data.slots) do
       local name = player:getMark("@os__huangzhu_" .. slot)
       if type(name) == "string" then
         room:setPlayerMark(player, "@os__huangzhu_" .. slot, 0)
@@ -155,8 +170,7 @@ osHuangzhu:addEffect(fk.AreaResumed, {
   end,
 })
 
-osHuangzhu:addEffect("on_lose", {
-  on_lose = function(self, player)
+huangzhu:addLoseEffect(function (self, player, is_death)
     local room = player.room
     room:setPlayerMark(player, "@$os__huangzhu", 0)
     local all_slots = {
@@ -176,7 +190,6 @@ osHuangzhu:addEffect("on_lose", {
         end
       end
     end
-  end,
-})
+end)
 
-return osHuangzhu
+return huangzhu

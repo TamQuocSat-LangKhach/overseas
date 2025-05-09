@@ -34,7 +34,7 @@ os__jichou:addEffect("viewas", {
     end
     return UI.ComboBox { choices = cardNames, all_choices = allCardNames }
   end,
-  view_as = function(self, cards)
+  view_as = function(self, player, cards)
     local choice = skill.interaction.data
     if not choice then return end
     local c = Fk:cloneCard(choice)
