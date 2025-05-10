@@ -61,7 +61,7 @@ chihui:addEffect(fk.TurnStart, {
     room:abortPlayerArea(player, {event:getCostData(self).choice})
     if player.dead or target.dead then return end
 
-    local subtype = Util.convertSubtypeAndEquipSlot(event:getCostData(self))
+    local subtype = Util.convertSubtypeAndEquipSlot(event:getCostData(self).choice)
     local mapper = {
       [Card.SubtypeWeapon] = "weapon",
       [Card.SubtypeArmor] = "armor",

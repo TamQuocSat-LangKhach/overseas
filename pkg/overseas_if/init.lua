@@ -173,12 +173,12 @@ Fk:loadTranslationTable{
   ["$os__qianxiong1"] = "暗伏甲士，待机而行！",
   ["$os__qianxiong2"] = "明既不能取胜，不妨以暗箭诛之！",
 
-  ["os__zhengshi"] = "争適",
-  [":os__zhengshi"] = "游戏开始时，令你和两名其他角色获得〖雋嗣〗。拥有〖雋嗣〗的角色死亡后或首轮开始时，若你拥有〖雋嗣〗，你可以令一名"..
+  ["os__zhengdi"] = "争適",
+  [":os__zhengdi"] = "游戏开始时，令你和两名其他角色获得〖雋嗣〗。拥有〖雋嗣〗的角色死亡后或首轮开始时，若你拥有〖雋嗣〗，你可以令一名"..
   "角色因〖雋嗣〗摸牌数或弃牌数+1或-1。",
-  ["$os__zhengshi1"] = "世子之位，非我莫属！",
-  ["$os__zhengshi2"] = "身陷王侯之门，自然有此一遭！",
-  ["$os__zhengshi3"] = "哈哈哈哈，一步之遥，可成吾业！",
+  ["$os__zhengdi1"] = "世子之位，非我莫属！",
+  ["$os__zhengdi2"] = "身陷王侯之门，自然有此一遭！",
+  ["$os__zhengdi3"] = "哈哈哈哈，一步之遥，可成吾业！",
 
   ["os__junsi"] = "雋嗣",
   [":os__junsi"] = "锁定技，每回合各限两次，当你对拥有〖雋嗣〗的角色造成伤害后，你摸一张牌；当你受到拥有〖雋嗣〗的角色造成的伤害后，"..
@@ -214,19 +214,13 @@ Fk:loadTranslationTable{
   --["~os_if__liufeng"] = "",
 }
 
---General:new(extension, "os_if__caozhi", "wei", 3):addSkills { "os__hanhong", "os__huazhang" }
+General:new(extension, "os_if__caozhi", "wei", 3):addSkills { "os__hanhong", "os__huazhang" }
 Fk:loadTranslationTable{
   ["os_if__caozhi"] = "幻曹植",
   ["#os_if__caozhi"] = "赋怀山河",
   --["illustrator:os_if__caozhi"] = "",
 
-  --["~os_if__caozhi"] = "",
-  ["os__hanhong"] = "翰鸿",
-  [":os__hanhong"] = "出牌阶段每种花色限一次，你可以声明一种花色并弃置X张牌（X为你手牌中花色最多的牌数），观看牌堆顶前等量张你声明花色的牌，"..
-  "获得其中一张牌。若你弃置了♣牌，你摸一张牌。",
-  ["os__huazhang"] = "华章",
-  [":os__huazhang"] = "出牌阶段结束时，若你的手牌数不小于2，你可以重铸所有手牌，这些牌每满足一项：花色相同、点数连续、牌名相同，"..
-  "你便依次执行一项：1.摸X张牌；2.本回合手牌上限+X；3.摸X张牌且本回合手牌上限+X（X为重铸的牌数）。",
+  ["~os_if__caozhi"] = "从此江海寄浮生……",
 }
 
 --General:new(extension, "os_if__caochong", "wei", 3):addSkills { "os__fushu", "os__xiumu" }

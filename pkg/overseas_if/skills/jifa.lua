@@ -24,7 +24,7 @@ Fk:loadTranslationTable{
 jifa:addEffect(fk.EnterDying, {
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(jifa.name)
+    return target == player and player:hasSkill(jifa.name) and player.dying
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

@@ -115,7 +115,7 @@ local spec = {
 fuxi:addEffect(fk.EnterDying, {
   anim_type = "defensive",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(fuxi.name)
+    return target == player and player:hasSkill(fuxi.name) and player.dying
   end,
   on_cost = spec.on_cost,
   on_use = spec.on_use,
